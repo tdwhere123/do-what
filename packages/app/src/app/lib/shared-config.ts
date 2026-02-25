@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
+import { buildSystemMemoryPrefix } from "./memory";
 import { listAgentRunTextEvents } from "../state/sessions";
 
 export type McpEntry = {
