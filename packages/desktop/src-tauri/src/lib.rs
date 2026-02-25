@@ -10,7 +10,6 @@ mod orchestrator;
 mod paths;
 mod platform;
 mod types;
-mod updater;
 mod utils;
 mod workspace;
 
@@ -40,7 +39,6 @@ use commands::scheduler::{scheduler_delete_job, scheduler_list_jobs};
 use commands::skills::{
     install_skill_template, list_local_skills, read_local_skill, uninstall_skill, write_local_skill,
 };
-use commands::updater::updater_environment;
 use commands::window::set_window_decorations;
 use commands::workspace::{
     workspace_add_authorized_root, workspace_bootstrap, workspace_create, workspace_create_remote,
@@ -65,8 +63,7 @@ pub fn run() {
     #[cfg(desktop)]
     let builder = builder
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_updater::Builder::new().build());
+        .plugin(tauri_plugin_shell::init());
 
     let app = builder
         .manage(EngineManager::default())
@@ -117,7 +114,6 @@ pub fn run() {
             write_local_skill,
             read_opencode_config,
             write_opencode_config,
-            updater_environment,
             app_build_info,
             reset_openwork_state,
             reset_opencode_cache,
