@@ -49,6 +49,7 @@ import {
   listCommands as listCommandsTyped,
 } from "./lib/opencode-session";
 import { clearPerfLogs, finishPerf, perfNow, recordPerfLog } from "./lib/perf-log";
+import { buildContextPrefix } from "./lib/shared-config";
 import {
   DEFAULT_MODEL,
   HIDE_TITLEBAR_PREF_KEY,
@@ -60,6 +61,7 @@ import {
   VARIANT_PREF_KEY,
 } from "./constants";
 import { parseMcpServersFromContent, removeMcpFromConfig, validateMcpServerName } from "./mcp";
+import { addSessionToProject } from "./state/sessions";
 import type {
   Client,
   DashboardTab,
@@ -943,8 +945,16 @@ export default function App() {
       attachments: [] as ComposerAttachment[],
       text: fallbackText,
     };
-    const content = (resolvedDraft.resolvedText ?? resolvedDraft.text).trim();
-    if (!content && !resolvedDraft.attachments.length) return;
+    const baseContent = (resolvedDraft.resolvedText ?? resolvedDraft.text).trim();
+    if (!baseContent && !resolvedDraft.attachments.length) return;
+
+    const contextPrefix = await buildContextPrefix(resolvedDraft.parentSessionIds ?? []);
+    const content = `${contextPrefix}${baseContent}`.trim();
+    const effectiveDraft: ComposerDraft = {
+      ...resolvedDraft,
+      text: content,
+      resolvedText: content,
+    };
 
     const c = client();
     if (!c) return;
@@ -963,6 +973,10 @@ export default function App() {
       sessionID = selectedSessionId();
     }
     if (!sessionID) return;
+
+    if (effectiveDraft.projectId) {
+      addSessionToProject(effectiveDraft.projectId, sessionID);
+    }
 
     setBusy(true);
     setBusyLabel("status.running");
@@ -993,7 +1007,7 @@ export default function App() {
 
       const model = selectedSessionModel();
       const agent = selectedSessionAgent();
-      const parts = buildPromptParts(resolvedDraft);
+      const parts = buildPromptParts(effectiveDraft);
 
       if (resolvedDraft.mode === "shell") {
         await shellInSession(c, sessionID, content);

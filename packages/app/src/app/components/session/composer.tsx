@@ -5,6 +5,7 @@ import { ArrowUp, AtSign, Check, ChevronDown, File as FileIcon, Paperclip, Squar
 
 import type { ComposerAttachment, ComposerDraft, ComposerPart, PromptMode, SlashCommandOption } from "../../types";
 import { perfNow, recordPerfLog } from "../../lib/perf-log";
+import { createProject, useProjects } from "../../state/sessions";
 
 type MentionOption = {
   id: string;
@@ -478,10 +479,41 @@ export default function Composer(props: ComposerProps) {
   const [history, setHistory] = createSignal({ prompt: [] as ComposerDraft[], shell: [] as ComposerDraft[] });
   const [variantMenuOpen, setVariantMenuOpen] = createSignal(false);
   const [selectedRuntime, setSelectedRuntime] = createSignal<"opencode" | "claude-code" | "codex">("opencode");
+  const { projects } = useProjects();
+  const [selectedProjectId, setSelectedProjectId] = createSignal<string | null>(null);
+  const [parentSessionIds, setParentSessionIds] = createSignal<string[]>([]);
   const [showInboxUploadAction, setShowInboxUploadAction] = createSignal(false);
   const activeVariant = createMemo(() => props.modelVariant ?? "none");
   const attachmentsDisabled = createMemo(() => !props.attachmentsEnabled);
   const hasDraftContent = createMemo(() => draftText().trim().length > 0 || attachments().length > 0);
+
+  const selectedProject = createMemo(() => projects.find((project) => project.id === selectedProjectId()) ?? null);
+  const projectSessionOptions = createMemo(() => selectedProject()?.sessionIds ?? []);
+
+  const handleProjectChange = (value: string) => {
+    if (value === "") {
+      setSelectedProjectId(null);
+      setParentSessionIds([]);
+      return;
+    }
+    if (value === "__new__") {
+      const name = window.prompt("Project name");
+      if (!name?.trim()) return;
+      const workdir = window.prompt("Project workdir", "") ?? "";
+      const created = createProject(name.trim(), workdir.trim());
+      setSelectedProjectId(created.id);
+      setParentSessionIds([]);
+      return;
+    }
+    setSelectedProjectId(value);
+    setParentSessionIds([]);
+  };
+
+  const toggleParentSession = (sessionId: string) => {
+    setParentSessionIds((current) =>
+      current.includes(sessionId) ? current.filter((id) => id !== sessionId) : [...current, sessionId],
+    );
+  };
 
   onCleanup(() => {
     for (const url of objectUrls) {
@@ -726,6 +758,9 @@ export default function Composer(props: ComposerProps) {
       attachments: attachments(),
       text,
       resolvedText,
+      runtime: selectedRuntime(),
+      projectId: selectedProjectId(),
+      parentSessionIds: parentSessionIds(),
     });
     const draftChangeMs = Math.round((perfNow() - draftChangeStartedAt) * 100) / 100;
     const totalMs = Math.round((perfNow() - flushStartedAt) * 100) / 100;
@@ -925,6 +960,9 @@ export default function Composer(props: ComposerProps) {
       parts: [{ type: "text", text }],
       attachments: attachments(),
       text,
+      runtime: selectedRuntime(),
+      projectId: selectedProjectId(),
+      parentSessionIds: parentSessionIds(),
     });
     queueMicrotask(() => {
       suppressPromptSync = false;
@@ -1026,7 +1064,16 @@ export default function Composer(props: ComposerProps) {
     const parts = buildPartsFromEditor(editorRef, pasteTextById);
     const text = normalizeText(partsToText(parts));
     const resolvedText = normalizeText(partsToResolvedText(parts));
-    const draft: ComposerDraft = { mode: mode(), parts, attachments: attachments(), text, resolvedText };
+    const draft: ComposerDraft = {
+      mode: mode(),
+      parts,
+      attachments: attachments(),
+      text,
+      resolvedText,
+      runtime: selectedRuntime(),
+      projectId: selectedProjectId(),
+      parentSessionIds: parentSessionIds(),
+    };
 
     // Detect slash command: text like "/commandname arg1 arg2"
     if (text.startsWith("/")) {
@@ -1868,6 +1915,38 @@ export default function Composer(props: ComposerProps) {
                           </Show>
                         </div>
 
+                        <select
+                          value={selectedProjectId() ?? ""}
+                          onChange={(event) => handleProjectChange(event.currentTarget.value)}
+                          class="text-xs border rounded px-1 py-0.5 bg-transparent max-w-[11rem]"
+                          disabled={props.busy}
+                        >
+                          <option value="">No project</option>
+                          <For each={projects}>
+                            {(project) => <option value={project.id}>{project.name}</option>}
+                          </For>
+                          <option value="__new__">+ New project</option>
+                        </select>
+
+                        <Show when={selectedProject()}>
+                          <div class="flex items-center gap-1 max-w-[14rem] overflow-x-auto">
+                            <For each={projectSessionOptions()}>
+                              {(sessionId) => {
+                                const active = () => parentSessionIds().includes(sessionId);
+                                return (
+                                  <button
+                                    type="button"
+                                    class={`px-2 py-0.5 rounded border text-[10px] ${active() ? "bg-dls-active text-dls-text border-dls-border" : "text-dls-secondary border-dls-border"}`}
+                                    onClick={() => toggleParentSession(sessionId)}
+                                    title={sessionId}
+                                  >
+                                    {sessionId.slice(0, 8)}
+                                  </button>
+                                );
+                              }}
+                            </For>
+                          </div>
+                        </Show>
 
                         <select
                           value={selectedRuntime()}
