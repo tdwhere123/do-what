@@ -1,4 +1,4 @@
-import { For, Match, Switch, createMemo } from "solid-js";
+import { For, Match, Switch, createMemo, createSignal, onMount } from "solid-js";
 
 import Button from "../components/button";
 import type { OpencodeConnectStatus, ProviderListItem, SettingsTab, StartupPreference } from "../types";
@@ -14,6 +14,7 @@ import type {
   OrchestratorStatus,
   OpenworkServerInfo,
 } from "../lib/tauri";
+import { checkRuntimeAvailable } from "../lib/tauri";
 import { currentLocale, t } from "../../i18n";
 
 export type SettingsViewProps = {
@@ -104,9 +105,27 @@ export type SettingsViewProps = {
 };
 
 export default function SettingsView(props: SettingsViewProps) {
-  const tabs: SettingsTab[] = ["general", "workspace", "model", "advanced", "debug"];
+  const tabs: SettingsTab[] = ["general", "workspace", "model", "runtimes", "advanced", "debug"];
   const activeTab = () => props.settingsTab;
   const connectedProviderCount = createMemo(() => props.providerConnectedIds.length);
+  const [claudeVersion, setClaudeVersion] = createSignal("Checking...");
+  const [codexVersion, setCodexVersion] = createSignal("Checking...");
+
+  const refreshRuntimes = async () => {
+    try {
+      setClaudeVersion(await checkRuntimeAvailable("claude-code"));
+    } catch {
+      setClaudeVersion("Not found");
+    }
+
+    try {
+      setCodexVersion(await checkRuntimeAvailable("codex"));
+    } catch {
+      setCodexVersion("Using OpenAI API fallback");
+    }
+  };
+
+  onMount(() => void refreshRuntimes());
 
   return (
     <div class="space-y-5">
@@ -152,6 +171,32 @@ export default function SettingsView(props: SettingsViewProps) {
             <div class="flex gap-2">
               <Button onClick={props.openDefaultModelPicker}>Choose default model</Button>
               <Button variant="secondary" onClick={props.editModelVariant}>Edit variant</Button>
+            </div>
+          </div>
+        </Match>
+
+        <Match when={activeTab() === "runtimes"}>
+          <div class="space-y-3 rounded-xl border border-dls-border p-4">
+            <div class="text-sm font-medium">Runtimes</div>
+            <div class="rounded-lg border border-dls-border p-3 space-y-2">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="text-sm">Claude Code</div>
+                  <div class="text-xs text-dls-secondary">Requires `claude login` on this machine</div>
+                </div>
+                <Button variant="secondary" onClick={refreshRuntimes}>Check</Button>
+              </div>
+              <div class="text-xs text-dls-secondary">Status: {claudeVersion()}</div>
+            </div>
+            <div class="rounded-lg border border-dls-border p-3 space-y-2">
+              <div class="flex items-center justify-between">
+                <div class="text-sm">Codex</div>
+                <div class="flex gap-2">
+                  <Button variant="secondary" onClick={refreshRuntimes}>Check CLI</Button>
+                  <Button variant="outline" onClick={() => props.setSettingsTab("advanced")}>Configure API Key</Button>
+                </div>
+              </div>
+              <div class="text-xs text-dls-secondary">Status: {codexVersion()}</div>
             </div>
           </div>
         </Match>

@@ -1,3 +1,4 @@
+pub mod agent_run;
 pub mod command_files;
 pub mod config;
 pub mod engine;
