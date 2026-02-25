@@ -38,10 +38,8 @@ import Button from "../components/button";
 import ExtensionsView from "./extensions";
 import ScheduledTasksView from "./scheduled";
 import SoulView from "./soul";
-import ConfigView from "./config";
 import SettingsView from "./settings";
 import SkillsView from "./skills";
-import IdentitiesView from "./identities";
 import StatusBar from "../components/status-bar";
 import ProviderAuthModal, { type ProviderOAuthStartResult } from "../components/provider-auth-modal";
 import ShareWorkspaceModal from "../components/share-workspace-modal";
@@ -53,11 +51,9 @@ import {
   History,
   HeartPulse,
   Loader2,
-  MessageCircle,
   MoreHorizontal,
   Plus,
   Settings,
-  SlidersHorizontal,
   Zap,
 } from "lucide-solid";
 
@@ -295,14 +291,8 @@ export default function DashboardView(props: DashboardViewProps) {
         return "Soul";
       case "skills":
         return "Skills";
-      case "plugins":
+      case "extensions":
         return "Extensions";
-      case "mcp":
-        return "Extensions";
-      case "identities":
-        return "Messaging";
-      case "config":
-        return "Advanced";
       case "settings":
         return "Settings";
       default:
@@ -505,7 +495,7 @@ export default function DashboardView(props: DashboardViewProps) {
         if (currentTab === "skills" && !cancelled) {
           await props.refreshSkills();
         }
-        if ((currentTab === "plugins" || currentTab === "mcp") && !cancelled) {
+        if (currentTab === "extensions" && !cancelled) {
           await Promise.all([props.refreshPlugins(), props.refreshMcpServers()]);
         }
         if (currentTab === "scheduled" && !cancelled) {
@@ -539,7 +529,7 @@ export default function DashboardView(props: DashboardViewProps) {
   const soulNavIconClass = () => (soulModeEnabled() ? "soul-nav-icon-active" : "");
 
   const navItem = (t: DashboardTab, label: any, icon: any) => {
-    const active = () => props.tab === t || (t === "mcp" && props.tab === "plugins");
+    const active = () => props.tab === t;
     return (
       <button
         class={`w-full h-10 flex items-center gap-3 px-3 rounded-lg text-sm font-medium transition-colors ${
@@ -560,8 +550,9 @@ export default function DashboardView(props: DashboardViewProps) {
     props.setTab("settings");
   };
 
-  const openConfig = () => {
-    props.setTab(props.developerMode ? "config" : "identities");
+  const openWorkspaceSettings = () => {
+    props.setSettingsTab("workspace");
+    props.setTab("settings");
   };
 
   const openSoulForWorkspace = (workspaceId?: string) => {
@@ -575,11 +566,6 @@ export default function DashboardView(props: DashboardViewProps) {
     })();
   };
 
-  createEffect(() => {
-    if (props.developerMode) return;
-    if (props.tab !== "config") return;
-    props.setTab("identities");
-  });
 
   const shareWorkspace = createMemo(() => {
     const id = shareWorkspaceId();
@@ -1350,10 +1336,9 @@ export default function DashboardView(props: DashboardViewProps) {
               />
             </Match>
 
-            <Match when={props.tab === "plugins" || props.tab === "mcp"}>
+            <Match when={props.tab === "extensions"}>
               <ExtensionsView
-                initialSection={props.tab === "plugins" ? "plugins" : "mcp"}
-                setDashboardTab={props.setTab}
+                initialSection="plugins"
                 busy={props.busy}
                 activeWorkspaceRoot={props.activeWorkspaceRoot}
                 refreshMcpServers={props.refreshMcpServers}
@@ -1390,46 +1375,6 @@ export default function DashboardView(props: DashboardViewProps) {
               />
             </Match>
 
-            <Match when={props.tab === "identities"}>
-              <IdentitiesView
-                busy={props.busy}
-                openworkServerStatus={props.openworkServerStatus}
-                openworkServerUrl={props.openworkServerUrl}
-                openworkServerClient={props.openworkServerClient}
-                openworkReconnectBusy={props.openworkReconnectBusy}
-                reconnectOpenworkServer={props.reconnectOpenworkServer}
-                openworkServerWorkspaceId={props.openworkServerWorkspaceId}
-                activeWorkspaceRoot={props.activeWorkspaceRoot}
-                developerMode={props.developerMode}
-              />
-            </Match>
-
-            <Match when={props.tab === "config" && props.developerMode}>
-              <ConfigView
-                busy={props.busy}
-                clientConnected={props.clientConnected}
-                anyActiveRuns={props.anyActiveRuns}
-                openworkServerStatus={props.openworkServerStatus}
-                openworkServerUrl={props.openworkServerUrl}
-                openworkServerSettings={props.openworkServerSettings}
-                openworkServerHostInfo={props.openworkServerHostInfo}
-                openworkServerWorkspaceId={props.openworkServerWorkspaceId}
-                updateOpenworkServerSettings={props.updateOpenworkServerSettings}
-                resetOpenworkServerSettings={props.resetOpenworkServerSettings}
-                testOpenworkServerConnection={props.testOpenworkServerConnection}
-                canReloadWorkspace={props.canReloadWorkspace}
-                reloadWorkspaceEngine={props.reloadWorkspaceEngine}
-                reloadBusy={props.reloadBusy}
-                reloadError={props.reloadError}
-                workspaceAutoReloadAvailable={props.workspaceAutoReloadAvailable}
-                workspaceAutoReloadEnabled={props.workspaceAutoReloadEnabled}
-                setWorkspaceAutoReloadEnabled={props.setWorkspaceAutoReloadEnabled}
-                workspaceAutoReloadResumeEnabled={props.workspaceAutoReloadResumeEnabled}
-                setWorkspaceAutoReloadResumeEnabled={props.setWorkspaceAutoReloadResumeEnabled}
-                developerMode={props.developerMode}
-              />
-            </Match>
-
             <Match when={props.tab === "settings"}>
                 <SettingsView
                   startupPreference={props.startupPreference}
@@ -1450,6 +1395,19 @@ export default function DashboardView(props: DashboardViewProps) {
                   openworkServerCapabilities={props.openworkServerCapabilities}
                   openworkServerDiagnostics={props.openworkServerDiagnostics}
                   openworkServerWorkspaceId={props.openworkServerWorkspaceId}
+                  openworkServerSettings={props.openworkServerSettings}
+                  updateOpenworkServerSettings={props.updateOpenworkServerSettings}
+                  resetOpenworkServerSettings={props.resetOpenworkServerSettings}
+                  testOpenworkServerConnection={props.testOpenworkServerConnection}
+                  canReloadWorkspace={props.canReloadWorkspace}
+                  reloadWorkspaceEngine={props.reloadWorkspaceEngine}
+                  reloadBusy={props.reloadBusy}
+                  reloadError={props.reloadError}
+                  workspaceAutoReloadAvailable={props.workspaceAutoReloadAvailable}
+                  workspaceAutoReloadEnabled={props.workspaceAutoReloadEnabled}
+                  setWorkspaceAutoReloadEnabled={props.setWorkspaceAutoReloadEnabled}
+                  workspaceAutoReloadResumeEnabled={props.workspaceAutoReloadResumeEnabled}
+                  setWorkspaceAutoReloadResumeEnabled={props.setWorkspaceAutoReloadResumeEnabled}
                   openworkAuditEntries={props.openworkAuditEntries}
                   openworkAuditStatus={props.openworkAuditStatus}
                   openworkAuditError={props.openworkAuditError}
@@ -1584,7 +1542,7 @@ export default function DashboardView(props: DashboardViewProps) {
               }
           }
           exportDisabledReason={exportDisabledReason()}
-          onOpenBots={openConfig}
+          onOpenBots={openWorkspaceSettings}
         />
         </div>
 
@@ -1593,14 +1551,14 @@ export default function DashboardView(props: DashboardViewProps) {
           openworkServerStatus={props.openworkServerStatus}
           developerMode={props.developerMode}
           onOpenSettings={() => openSettings("general")}
-          onOpenMessaging={openConfig}
+          onOpenMessaging={openWorkspaceSettings}
           onOpenProviders={() => props.openProviderAuthModal()}
-          onOpenMcp={() => props.setTab("mcp")}
+          onOpenMcp={() => props.setTab("extensions")}
           providerConnectedIds={props.providerConnectedIds}
           mcpStatuses={props.mcpStatuses}
         />
         <nav class="md:hidden border-t border-dls-border bg-dls-surface">
-          <div class={`mx-auto max-w-5xl px-4 py-3 grid gap-2 ${props.developerMode ? "grid-cols-6" : "grid-cols-5"}`}>
+          <div class={`mx-auto max-w-5xl px-4 py-3 grid gap-2 grid-cols-5`}>
             <button
               class={`flex flex-col items-center gap-1 text-xs ${
                 props.tab === "scheduled" ? "text-gray-12" : "text-gray-10"
@@ -1630,33 +1588,22 @@ export default function DashboardView(props: DashboardViewProps) {
             </button>
             <button
               class={`flex flex-col items-center gap-1 text-xs ${
-                props.tab === "mcp" || props.tab === "plugins" ? "text-gray-12" : "text-gray-10"
+                props.tab === "extensions" ? "text-gray-12" : "text-gray-10"
               }`}
-              onClick={() => props.setTab("mcp")}
+              onClick={() => props.setTab("extensions")}
             >
               <Box size={18} />
               Extensions
             </button>
             <button
               class={`flex flex-col items-center gap-1 text-xs ${
-                props.tab === "identities" ? "text-gray-12" : "text-gray-10"
+                props.tab === "settings" ? "text-gray-12" : "text-gray-10"
               }`}
-              onClick={() => props.setTab("identities")}
+              onClick={() => props.setTab("settings")}
             >
-              <MessageCircle size={18} />
-              IDs
+              <Settings size={18} />
+              Settings
             </button>
-            <Show when={props.developerMode}>
-              <button
-                class={`flex flex-col items-center gap-1 text-xs ${
-                  props.tab === "config" ? "text-gray-12" : "text-gray-10"
-                }`}
-                onClick={() => props.setTab("config")}
-              >
-                <SlidersHorizontal size={18} />
-                Advanced
-              </button>
-            </Show>
           </div>
         </nav>
       </main>
@@ -1666,9 +1613,8 @@ export default function DashboardView(props: DashboardViewProps) {
           {navItem("scheduled", "Automations", <History size={18} />)}
           {navItem("soul", "Soul", <HeartPulse size={18} class={soulNavIconClass()} />)}
           {navItem("skills", "Skills", <Zap size={18} />)}
-          {navItem("mcp", "Extensions", <Box size={18} />)}
-          {navItem("identities", "Messaging", <MessageCircle size={18} />)}
-          <Show when={props.developerMode}>{navItem("config", "Advanced", <SlidersHorizontal size={18} />)}</Show>
+          {navItem("extensions", "Extensions", <Box size={18} />)}
+          {navItem("settings", "Settings", <Settings size={18} />)}
         </div>
       </aside>
     </div>

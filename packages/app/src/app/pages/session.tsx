@@ -2363,7 +2363,8 @@ export default function SessionView(props: SessionViewProps) {
   };
 
   const openConfig = () => {
-    props.setTab(props.developerMode ? "config" : "identities");
+    props.setSettingsTab("workspace");
+    props.setTab("settings");
     props.setView("dashboard");
   };
 
@@ -2461,7 +2462,7 @@ export default function SessionView(props: SessionViewProps) {
   };
 
   const openMcp = () => {
-    props.setTab("mcp");
+    props.setTab("extensions");
     props.setView("dashboard");
   };
 
@@ -3410,12 +3411,12 @@ export default function SessionView(props: SessionViewProps) {
           <button
             type="button"
             class={`w-full h-10 flex items-center gap-3 px-3 rounded-lg text-sm font-medium transition-colors ${
-              showRightSidebarSelection() && (props.tab === "mcp" || props.tab === "plugins")
+              showRightSidebarSelection() && props.tab === "extensions"
                 ? "bg-dls-active text-dls-text"
                 : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
             }`}
             onClick={() => {
-              props.setTab("mcp");
+              props.setTab("extensions");
               props.setView("dashboard");
             }}
           >
@@ -3425,12 +3426,13 @@ export default function SessionView(props: SessionViewProps) {
           <button
             type="button"
             class={`w-full h-10 flex items-center gap-3 px-3 rounded-lg text-sm font-medium transition-colors ${
-              showRightSidebarSelection() && props.tab === "identities"
+              false
                 ? "bg-dls-active text-dls-text"
                 : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
             }`}
             onClick={() => {
-              props.setTab("identities");
+              props.setSettingsTab("workspace");
+              props.setTab("settings");
               props.setView("dashboard");
             }}
           >
@@ -3441,7 +3443,7 @@ export default function SessionView(props: SessionViewProps) {
             <button
               type="button"
               class={`w-full h-10 flex items-center gap-3 px-3 rounded-lg text-sm font-medium transition-colors ${
-                showRightSidebarSelection() && props.tab === "config"
+                props.tab === "settings"
                   ? "bg-dls-active text-dls-text"
                   : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
               }`}

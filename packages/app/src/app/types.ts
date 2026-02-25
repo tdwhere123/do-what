@@ -137,13 +137,10 @@ export type DashboardTab =
   | "scheduled"
   | "soul"
   | "skills"
-  | "plugins"
-  | "mcp"
-  | "identities"
-  | "config"
+  | "extensions"
   | "settings";
 
-export type SettingsTab = "general" | "model" | "advanced" | "debug";
+export type SettingsTab = "general" | "workspace" | "model" | "advanced" | "debug";
 
 export type WorkspacePreset = "starter" | "automation" | "minimal";
 

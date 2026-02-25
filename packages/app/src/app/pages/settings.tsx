@@ -27,6 +27,7 @@ import {
   pickFile,
 } from "../lib/tauri";
 import { currentLocale, t } from "../../i18n";
+import ConfigView from "./config";
 
 export type SettingsViewProps = {
   startupPreference: StartupPreference | null;
@@ -47,6 +48,19 @@ export type SettingsViewProps = {
   openworkServerCapabilities: OpenworkServerCapabilities | null;
   openworkServerDiagnostics: OpenworkServerDiagnostics | null;
   openworkServerWorkspaceId: string | null;
+  openworkServerSettings: OpenworkServerSettings;
+  updateOpenworkServerSettings: (next: OpenworkServerSettings) => void;
+  resetOpenworkServerSettings: () => void;
+  testOpenworkServerConnection: (next: OpenworkServerSettings) => Promise<boolean>;
+  canReloadWorkspace: boolean;
+  reloadWorkspaceEngine: () => Promise<void>;
+  reloadBusy: boolean;
+  reloadError: string | null;
+  workspaceAutoReloadAvailable: boolean;
+  workspaceAutoReloadEnabled: boolean;
+  setWorkspaceAutoReloadEnabled: (value: boolean) => void | Promise<void>;
+  workspaceAutoReloadResumeEnabled: boolean;
+  setWorkspaceAutoReloadResumeEnabled: (value: boolean) => void | Promise<void>;
   openworkAuditEntries: OpenworkAuditEntry[];
   openworkAuditStatus: "idle" | "loading" | "error";
   openworkAuditError: string | null;
@@ -121,31 +135,6 @@ export type SettingsViewProps = {
   connectNotion: () => void;
   engineDoctorVersion: string | null;
 };
-
-// OpenCodeRouter Settings Component
-//
-// Messaging identities + routing are managed in the Identities tab.
-export function OpenCodeRouterSettings(_props: {
-  busy: boolean;
-  openworkServerStatus: OpenworkServerStatus;
-  openworkServerUrl: string;
-  openworkServerSettings: OpenworkServerSettings;
-  openworkServerWorkspaceId: string | null;
-  openworkServerHostInfo: OpenworkServerInfo | null;
-  developerMode: boolean;
-}) {
-  return (
-    <div class="bg-gray-2/30 border border-gray-6/50 rounded-2xl p-5 space-y-2">
-      <div class="flex items-center gap-2">
-        <MessageCircle size={16} class="text-gray-11" />
-        <div class="text-sm font-medium text-gray-12">Messaging</div>
-      </div>
-      <div class="text-xs text-gray-10">
-        Manage Telegram/Slack identities and bindings in the <span class="font-medium text-gray-12">Identities</span> tab.
-      </div>
-    </div>
-  );
-}
 
 
 export default function SettingsView(props: SettingsViewProps) {
@@ -529,6 +518,8 @@ export default function SettingsView(props: SettingsViewProps) {
 
   const tabLabel = (tab: SettingsTab) => {
     switch (tab) {
+      case "workspace":
+        return "Workspace";
       case "model":
         return "Model";
       case "advanced":
@@ -541,7 +532,7 @@ export default function SettingsView(props: SettingsViewProps) {
   };
 
   const availableTabs = createMemo<SettingsTab[]>(() => {
-    const tabs: SettingsTab[] = ["general", "model", "advanced"];
+    const tabs: SettingsTab[] = ["general", "workspace", "model", "advanced"];
     if (props.developerMode) tabs.push("debug");
     return tabs;
   });
@@ -788,6 +779,33 @@ export default function SettingsView(props: SettingsViewProps) {
               </div>
             </div>
           </div>
+        </Match>
+
+
+        <Match when={activeTab() === "workspace"}>
+          <ConfigView
+            busy={props.busy}
+            clientConnected={props.opencodeConnectStatus?.status === "connected"}
+            anyActiveRuns={props.anyActiveRuns}
+            openworkServerStatus={props.openworkServerStatus}
+            openworkServerUrl={props.openworkServerUrl}
+            openworkServerSettings={props.openworkServerSettings}
+            openworkServerHostInfo={props.openworkServerHostInfo}
+            openworkServerWorkspaceId={props.openworkServerWorkspaceId}
+            updateOpenworkServerSettings={props.updateOpenworkServerSettings}
+            resetOpenworkServerSettings={props.resetOpenworkServerSettings}
+            testOpenworkServerConnection={props.testOpenworkServerConnection}
+            canReloadWorkspace={props.canReloadWorkspace}
+            reloadWorkspaceEngine={props.reloadWorkspaceEngine}
+            reloadBusy={props.reloadBusy}
+            reloadError={props.reloadError}
+            workspaceAutoReloadAvailable={props.workspaceAutoReloadAvailable}
+            workspaceAutoReloadEnabled={props.workspaceAutoReloadEnabled}
+            setWorkspaceAutoReloadEnabled={props.setWorkspaceAutoReloadEnabled}
+            workspaceAutoReloadResumeEnabled={props.workspaceAutoReloadResumeEnabled}
+            setWorkspaceAutoReloadResumeEnabled={props.setWorkspaceAutoReloadResumeEnabled}
+            developerMode={props.developerMode}
+          />
         </Match>
 
         <Match when={activeTab() === "model"}>
