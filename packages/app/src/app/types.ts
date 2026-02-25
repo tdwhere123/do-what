@@ -134,6 +134,7 @@ export type EngineRuntime = "direct" | "openwork-orchestrator";
 export type OnboardingStep = "welcome" | "local" | "server" | "connecting";
 
 export type DashboardTab =
+  | "sessions"
   | "scheduled"
   | "soul"
   | "skills"
@@ -313,15 +314,3 @@ export type WorkspaceDisplay = WorkspaceInfo & {
   name: string;
 };
 
-export type UpdateHandle = {
-  available: boolean;
-  currentVersion: string;
-  version: string;
-  date?: string;
-  body?: string;
-  rawJson: Record<string, unknown>;
-  close: () => Promise<void>;
-  download: (onEvent?: (event: any) => void) => Promise<void>;
-  install: () => Promise<void>;
-  downloadAndInstall: (onEvent?: (event: any) => void) => Promise<void>;
-};

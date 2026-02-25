@@ -182,17 +182,6 @@ pub struct OrchestratorStatus {
     pub last_error: Option<String>,
 }
 
-#[derive(Debug, Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct OpenCodeRouterInfo {
-    pub running: bool,
-    pub version: Option<String>,
-    pub workspace_path: Option<String>,
-    pub opencode_url: Option<String>,
-    pub pid: Option<u32>,
-    pub last_stdout: Option<String>,
-    pub last_stderr: Option<String>,
-}
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -225,14 +214,6 @@ pub struct OpencodeConfigFile {
     pub content: Option<String>,
 }
 
-#[derive(Debug, Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct UpdaterEnvironment {
-    pub supported: bool,
-    pub reason: Option<String>,
-    pub executable_path: Option<String>,
-    pub app_bundle_path: Option<String>,
-}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]

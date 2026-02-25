@@ -23,10 +23,8 @@ import {
 import {
   openworkServerInfo,
   orchestratorStatus,
-  opencodeRouterInfo,
   type OrchestratorStatus,
   type OpenworkServerInfo,
-  type OpenCodeRouterInfo,
 } from "../lib/tauri";
 import { isTauriRuntime } from "../utils";
 import type { StartupPreference } from "../types";
@@ -48,7 +46,6 @@ export function createOpenworkServerStore(options: {
   const [hostInfo, setHostInfo] = createSignal<OpenworkServerInfo | null>(null);
   const [diagnostics, setDiagnostics] = createSignal<OpenworkServerDiagnostics | null>(null);
   const [reconnectBusy, setReconnectBusy] = createSignal(false);
-  const [routerInfo, setRouterInfo] = createSignal<OpenCodeRouterInfo | null>(null);
   const [orchStatus, setOrchStatus] = createSignal<OrchestratorStatus | null>(null);
   const [auditEntries, setAuditEntries] = createSignal<OpenworkAuditEntry[]>([]);
   const [auditStatus, setAuditStatus] = createSignal<"idle" | "loading" | "error">("idle");
@@ -263,32 +260,6 @@ export function createOpenworkServerStore(options: {
     });
   });
 
-  // Poll OpenCode Router info (developer mode, Tauri only)
-  createEffect(() => {
-    if (!isTauriRuntime()) return;
-    if (!options.developerMode()) {
-      setRouterInfo(null);
-      return;
-    }
-    if (!options.documentVisible()) return;
-
-    let active = true;
-    const run = async () => {
-      try {
-        const info = await opencodeRouterInfo();
-        if (active) setRouterInfo(info);
-      } catch {
-        if (active) setRouterInfo(null);
-      }
-    };
-
-    run();
-    const interval = window.setInterval(run, 10_000);
-    onCleanup(() => {
-      active = false;
-      window.clearInterval(interval);
-    });
-  });
 
   // Poll orchestrator status (developer mode, Tauri only)
   createEffect(() => {
@@ -328,7 +299,6 @@ export function createOpenworkServerStore(options: {
     hostInfo,
     diagnostics,
     reconnectBusy,
-    routerInfo,
     orchestratorStatus: orchStatus,
     auditEntries,
     auditStatus,
@@ -351,7 +321,6 @@ export function createOpenworkServerStore(options: {
     setHostInfo,
     setDiagnostics,
     setReconnectBusy,
-    setRouterInfo,
     setOrchestratorStatus: setOrchStatus,
     setAuditEntries,
     setAuditStatus,

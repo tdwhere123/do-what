@@ -1,14 +1,11 @@
 use tauri::{AppHandle, Manager, State};
 
-use crate::commands::opencode_router::opencodeRouter_start;
 use crate::config::{read_opencode_config, write_opencode_config};
 use crate::engine::doctor::{
     opencode_serve_help, opencode_version, resolve_engine_path, resolve_sidecar_candidate,
 };
 use crate::engine::manager::EngineManager;
 use crate::engine::spawn::{find_free_port, spawn_engine};
-use crate::opencode_router::manager::OpenCodeRouterManager;
-use crate::opencode_router::spawn::resolve_opencode_router_health_port;
 use crate::openwork_server::{
     manager::OpenworkServerManager, resolve_connect_url, start_openwork_server,
 };
@@ -129,7 +126,6 @@ pub fn engine_stop(
     manager: State<EngineManager>,
     orchestrator_manager: State<OrchestratorManager>,
     openwork_manager: State<OpenworkServerManager>,
-    opencode_router_manager: State<OpenCodeRouterManager>,
 ) -> EngineInfo {
     let mut state = manager.inner.lock().expect("engine mutex poisoned");
     if let Ok(mut orchestrator_state) = orchestrator_manager.inner.lock() {
@@ -138,9 +134,6 @@ pub fn engine_stop(
     EngineManager::stop_locked(&mut state);
     if let Ok(mut openwork_state) = openwork_manager.inner.lock() {
         OpenworkServerManager::stop_locked(&mut openwork_state);
-    }
-    if let Ok(mut opencode_router_state) = opencode_router_manager.inner.lock() {
-        OpenCodeRouterManager::stop_locked(&mut opencode_router_state);
     }
     EngineManager::snapshot_locked(&mut state)
 }
@@ -236,7 +229,6 @@ pub fn engine_start(
     manager: State<EngineManager>,
     orchestrator_manager: State<OrchestratorManager>,
     openwork_manager: State<OpenworkServerManager>,
-    opencode_router_manager: State<OpenCodeRouterManager>,
     project_dir: String,
     prefer_sidecar: Option<bool>,
     opencode_bin_path: Option<String>,
@@ -448,18 +440,6 @@ pub fn engine_start(
             state.last_stderr = None;
         }
 
-        let opencode_router_health_port = match resolve_opencode_router_health_port() {
-            Ok(port) => Some(port),
-            Err(error) => {
-                if let Ok(mut state) = manager.inner.lock() {
-                    state.last_stderr = Some(truncate_output(
-                        &format!("OpenCodeRouter health port: {error}"),
-                        8000,
-                    ));
-                }
-                None
-            }
-        };
 
         if let Err(error) = start_openwork_server(
             &app,
@@ -468,7 +448,7 @@ pub fn engine_start(
             Some(&opencode_connect_url),
             opencode_username.as_deref(),
             opencode_password.as_deref(),
-            opencode_router_health_port,
+            None,
         ) {
             if let Ok(mut state) = manager.inner.lock() {
                 state.last_stderr =
@@ -476,20 +456,6 @@ pub fn engine_start(
             }
         }
 
-        if let Err(error) = opencodeRouter_start(
-            app.clone(),
-            opencode_router_manager,
-            project_dir.clone(),
-            Some(opencode_connect_url),
-            opencode_username.clone(),
-            opencode_password.clone(),
-            opencode_router_health_port,
-        ) {
-            if let Ok(mut state) = manager.inner.lock() {
-                state.last_stderr =
-                    Some(truncate_output(&format!("OpenCodeRouter: {error}"), 8000));
-            }
-        }
 
         return Ok(EngineInfo {
             running: true,
@@ -631,16 +597,6 @@ pub fn engine_start(
 
     let opencode_connect_url =
         resolve_connect_url(port).unwrap_or_else(|| format!("http://{client_host}:{port}"));
-    let opencode_router_health_port = match resolve_opencode_router_health_port() {
-        Ok(port) => Some(port),
-        Err(error) => {
-            state.last_stderr = Some(truncate_output(
-                &format!("OpenCodeRouter health port: {error}"),
-                8000,
-            ));
-            None
-        }
-    };
 
     if let Err(error) = start_openwork_server(
         &app,
@@ -649,22 +605,11 @@ pub fn engine_start(
         Some(&opencode_connect_url),
         opencode_username.as_deref(),
         opencode_password.as_deref(),
-        opencode_router_health_port,
+        None,
     ) {
         state.last_stderr = Some(truncate_output(&format!("OpenWork server: {error}"), 8000));
     }
 
-    if let Err(error) = opencodeRouter_start(
-        app.clone(),
-        opencode_router_manager,
-        project_dir.clone(),
-        Some(opencode_connect_url),
-        opencode_username,
-        opencode_password,
-        opencode_router_health_port,
-    ) {
-        state.last_stderr = Some(truncate_output(&format!("OpenCodeRouter: {error}"), 8000));
-    }
 
     Ok(EngineManager::snapshot_locked(&mut state))
 }

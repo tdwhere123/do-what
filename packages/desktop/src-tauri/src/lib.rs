@@ -3,7 +3,6 @@ mod commands;
 mod config;
 mod engine;
 mod fs;
-mod opencode_router;
 mod openwork_server;
 mod opkg;
 mod orchestrator;
@@ -24,10 +23,6 @@ use commands::misc::{
     app_build_info, opencode_db_migrate, opencode_mcp_auth, reset_opencode_cache,
     reset_openwork_state,
 };
-use commands::opencode_router::{
-    opencodeRouter_config_set, opencodeRouter_info, opencodeRouter_start, opencodeRouter_status,
-    opencodeRouter_stop,
-};
 use commands::openwork_server::openwork_server_info;
 use commands::opkg::{import_skill, opkg_install};
 use commands::orchestrator::{
@@ -47,7 +42,6 @@ use commands::workspace::{
     workspace_update_remote,
 };
 use engine::manager::EngineManager;
-use opencode_router::manager::OpenCodeRouterManager;
 use openwork_server::manager::OpenworkServerManager;
 use orchestrator::manager::OrchestratorManager;
 use tauri::Manager;
@@ -69,7 +63,6 @@ pub fn run() {
         .manage(EngineManager::default())
         .manage(OrchestratorManager::default())
         .manage(OpenworkServerManager::default())
-        .manage(OpenCodeRouterManager::default())
         .manage(WorkspaceWatchState::default())
         .invoke_handler(tauri::generate_handler![
             engine_start,
@@ -85,11 +78,6 @@ pub fn run() {
             sandbox_stop,
             sandbox_cleanup_openwork_containers,
             openwork_server_info,
-            opencodeRouter_info,
-            opencodeRouter_start,
-            opencodeRouter_stop,
-            opencodeRouter_status,
-            opencodeRouter_config_set,
             workspace_bootstrap,
             workspace_set_active,
             workspace_create,
@@ -144,11 +132,6 @@ pub fn run() {
                 app_handle.state::<OpenworkServerManager>().inner.lock()
             {
                 OpenworkServerManager::stop_locked(&mut openwork_server);
-            }
-            if let Ok(mut opencode_router) =
-                app_handle.state::<OpenCodeRouterManager>().inner.lock()
-            {
-                OpenCodeRouterManager::stop_locked(&mut opencode_router);
             }
         }
     });

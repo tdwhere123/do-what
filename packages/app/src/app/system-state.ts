@@ -3,7 +3,6 @@ import { createEffect, createMemo, createSignal, type Accessor } from "solid-js"
 import type { Session } from "@opencode-ai/sdk/v2/client";
 import type { ProviderListItem } from "./types";
 
-import { check } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 
 import type {
@@ -12,7 +11,6 @@ import type {
   ReloadReason,
   ReloadTrigger,
   ResetOpenworkMode,
-  UpdateHandle,
 } from "./types";
 import { addOpencodeCacheHint, isTauriRuntime, safeStringify } from "./utils";
 import { mapConfigProvidersToList } from "./utils/providers";
@@ -60,11 +58,6 @@ export function createSystemState(options: {
   const [dockerCleanupBusy, setDockerCleanupBusy] = createSignal(false);
   const [dockerCleanupResult, setDockerCleanupResult] = createSignal<string | null>(null);
 
-  const [updateAutoCheck, setUpdateAutoCheck] = createSignal(true);
-  const [updateAutoDownload, setUpdateAutoDownload] = createSignal(false);
-  const [updateStatus, setUpdateStatus] = createSignal<any>({ state: "idle", lastCheckedAt: null });
-  const [pendingUpdate, setPendingUpdate] = createSignal<{ update: UpdateHandle; version: string; notes?: string } | null>(null);
-  const [updateEnv, setUpdateEnv] = createSignal<{ supported?: boolean; reason?: string | null } | null>(null);
 
   const [resetModalOpen, setResetModalOpen] = createSignal(false);
   const [resetModalMode, setResetModalMode] = createSignal<ResetOpenworkMode>("onboarding");
@@ -411,155 +404,8 @@ export function createSystemState(options: {
     }
   }
 
-  async function checkForUpdates(optionsCheck?: { quiet?: boolean }) {
-    if (!isTauriRuntime()) return;
 
-    const env = updateEnv();
-    if (env && !env.supported) {
-      if (!optionsCheck?.quiet) {
-        setUpdateStatus({
-          state: "error",
-          lastCheckedAt:
-            updateStatus().state === "idle"
-              ? (updateStatus() as { state: "idle"; lastCheckedAt: number | null }).lastCheckedAt
-              : null,
-          message: env.reason ?? "Updates are not supported in this environment.",
-        });
-      }
-      return;
-    }
 
-    const prev = updateStatus();
-    setUpdateStatus({ state: "checking", startedAt: Date.now() });
-
-    try {
-      const update = (await check({ timeout: 8_000 })) as unknown as UpdateHandle | null;
-      const checkedAt = Date.now();
-
-      if (!update) {
-        setPendingUpdate(null);
-        setUpdateStatus({ state: "idle", lastCheckedAt: checkedAt });
-        return;
-      }
-
-      const notes = typeof update.body === "string" ? update.body : undefined;
-      setPendingUpdate({ update, version: update.version, notes });
-      setUpdateStatus({
-        state: "available",
-        lastCheckedAt: checkedAt,
-        version: update.version,
-        date: update.date,
-        notes,
-      });
-    } catch (e) {
-      const message = e instanceof Error ? e.message : safeStringify(e);
-
-      if (optionsCheck?.quiet) {
-        setUpdateStatus(prev);
-        return;
-      }
-
-      setPendingUpdate(null);
-      setUpdateStatus({ state: "error", lastCheckedAt: null, message });
-    }
-  }
-
-  async function downloadUpdate() {
-    const pending = pendingUpdate();
-    if (!pending) return;
-
-    const state = updateStatus();
-    if (state.state === "downloading" || state.state === "ready") return;
-
-    options.setError(null);
-    const lastCheckedAt = state.state === "available" ? state.lastCheckedAt : Date.now();
-
-    setUpdateStatus({
-      state: "downloading",
-      lastCheckedAt,
-      version: pending.version,
-      totalBytes: null,
-      downloadedBytes: 0,
-      notes: pending.notes,
-    });
-
-    try {
-      let totalBytes: number | null = null;
-      let downloadedBytes = 0;
-      let lastPublishedBytes = 0;
-      let lastPublishedAt = 0;
-
-      const publishProgress = (force = false) => {
-        const now = Date.now();
-        const elapsed = now - lastPublishedAt;
-        const movedBytes = downloadedBytes - lastPublishedBytes;
-        if (!force && elapsed < 180 && movedBytes < 256 * 1024) {
-          return;
-        }
-        lastPublishedAt = now;
-        lastPublishedBytes = downloadedBytes;
-        setUpdateStatus((current: any) => {
-          if (current.state !== "downloading") return current;
-          return {
-            ...current,
-            totalBytes,
-            downloadedBytes,
-          };
-        });
-      };
-
-      await pending.update.download((event: any) => {
-        if (!event || typeof event !== "object") return;
-        const record = event as Record<string, any>;
-
-        if (record.event === "Started") {
-          totalBytes =
-            record.data && typeof record.data.contentLength === "number" ? record.data.contentLength : null;
-          publishProgress(true);
-          return;
-        }
-
-        if (record.event === "Progress") {
-          const chunk = record.data && typeof record.data.chunkLength === "number" ? record.data.chunkLength : 0;
-          downloadedBytes += chunk;
-          publishProgress(false);
-          return;
-        }
-      });
-
-      publishProgress(true);
-
-      setUpdateStatus({
-        state: "ready",
-        lastCheckedAt,
-        version: pending.version,
-        notes: pending.notes,
-      });
-    } catch (e) {
-      const message = e instanceof Error ? e.message : safeStringify(e);
-      setUpdateStatus({ state: "error", lastCheckedAt, message });
-    }
-  }
-
-  async function installUpdateAndRestart() {
-    const pending = pendingUpdate();
-    if (!pending) return;
-
-    if (anyActiveRuns()) {
-      options.setError("Stop active runs before installing an update.");
-      return;
-    }
-
-    options.setError(null);
-    try {
-      await pending.update.install();
-      await pending.update.close();
-      await relaunch();
-    } catch (e) {
-      const message = e instanceof Error ? e.message : safeStringify(e);
-      setUpdateStatus({ state: "error", lastCheckedAt: null, message });
-    }
-  }
 
   return {
     reloadRequired,
@@ -582,19 +428,6 @@ export function createSystemState(options: {
     dockerCleanupBusy,
     dockerCleanupResult,
     cleanupOpenworkDockerContainers,
-    updateAutoCheck,
-    setUpdateAutoCheck,
-    updateAutoDownload,
-    setUpdateAutoDownload,
-    updateStatus,
-    setUpdateStatus,
-    pendingUpdate,
-    setPendingUpdate,
-    updateEnv,
-    setUpdateEnv,
-    checkForUpdates,
-    downloadUpdate,
-    installUpdateAndRestart,
     resetModalOpen,
     setResetModalOpen,
     resetModalMode,
