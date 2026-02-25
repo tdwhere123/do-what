@@ -1,0 +1,54 @@
+{
+  "project": "openwork",
+  "target": "v0.3",
+  "milestones": {
+    "v0.1": {
+      "description": "Engine + client",
+      "items": [
+        { "id": "v0.1-1", "title": "Tauri app shell", "status": "completed" },
+        {
+          "id": "v0.1-2",
+          "title": "Start/stop OpenCode server (host mode)",
+          "status": "completed"
+        },
+        { "id": "v0.1-3", "title": "Connect client and show health", "status": "completed" },
+        { "id": "v0.1-4", "title": "List sessions", "status": "completed" }
+      ]
+    },
+    "v0.2": {
+      "description": "Full run loop",
+      "items": [
+        { "id": "v0.2-1", "title": "Create session", "status": "completed" },
+        { "id": "v0.2-2", "title": "Send prompt", "status": "completed" },
+        { "id": "v0.2-3", "title": "Subscribe to SSE events", "status": "completed" },
+        { "id": "v0.2-4", "title": "Render step/tool timeline", "status": "completed" },
+        { "id": "v0.2-5", "title": "Surface permission requests + respond", "status": "completed" }
+      ]
+    },
+    "v0.3": {
+      "description": "Premium UX",
+      "items": [
+        { "id": "v0.3-1", "title": "Design-driven UI (design.ts)", "status": "completed" },
+        { "id": "v0.3-2", "title": "Mobile navigation + responsive layouts", "status": "completed" },
+        { "id": "v0.3-3", "title": "Templates (create/save/run)", "status": "completed" },
+        { "id": "v0.3-4", "title": "Skills manager (list/install/import)", "status": "completed" },
+        { "id": "v0.3-5", "title": "Folder picker (native dialog)", "status": "completed" },
+        { "id": "v0.3-6", "title": "No reasoning/tool metadata leaks", "status": "completed" }
+      ]
+    }
+  },
+  "notes": [
+    "Frontend uses @opencode-ai/sdk/v2/client to avoid bundling Node-only server code.",
+    "Engine spawns `opencode serve` from Rust with a per-run working directory.",
+    "`cargo check` runs successfully; a placeholder icon exists at `packages/desktop/src-tauri/icons/icon.png`.",
+    "OpenCode mirror cloned at `vendor/opencode` (gitignored).",
+    "UI follows `design.ts` (ported to Solid + Tailwind) and is wired to real OpenCode v2 sessions/messages/todos/permissions.",
+    "Folder picking uses Tauri dialog plugin (no manual path required in Host mode).",
+    "Templates UI exists (create/save/run) backed by localStorage.",
+    "Skills UI exists: list installed `.opencode/skill` and install/import via OpenPackage + local folder import (Host mode).",
+    "Redacts sensitive metadata keys (e.g. reasoningEncryptedContent) from UI to prevent leaks.",
+    "`pnpm typecheck` and `pnpm build:ui` succeed.",
+    "Permissions entrypoint exists, but permission prompts may not appear without agent-driven tool calls."
+  ],
+  "lastUpdated": "2026-01-14"
+}
