@@ -117,19 +117,6 @@ export type SessionViewProps = {
   stopHost: () => void;
   headerStatus: string;
   busyHint: string | null;
-  updateStatus: {
-    state: string;
-    lastCheckedAt?: number | null;
-    version?: string;
-    date?: string;
-    notes?: string;
-    totalBytes?: number | null;
-    downloadedBytes?: number;
-    message?: string;
-  } | null;
-  updateEnv: { supported?: boolean; reason?: string | null } | null;
-  anyActiveRuns: boolean;
-  installUpdateAndRestart: () => void;
   createSessionAndOpen: () => Promise<string | undefined>;
   sendPromptAsync: (draft: ComposerDraft) => Promise<void>;
   abortSession: (sessionId?: string) => Promise<void>;
@@ -2368,98 +2355,6 @@ export default function SessionView(props: SessionViewProps) {
     props.setView("dashboard");
   };
 
-  const showUpdatePill = createMemo(() => {
-    if (!isTauriRuntime()) return false;
-    const state = props.updateStatus?.state;
-    return state === "available" || state === "downloading" || state === "ready";
-  });
-
-  const updateDownloadPercent = createMemo<number | null>(() => {
-    const total = props.updateStatus?.totalBytes;
-    if (total == null || total <= 0) return null;
-    const downloaded = props.updateStatus?.downloadedBytes ?? 0;
-    const clamped = Math.max(0, Math.min(1, downloaded / total));
-    return Math.floor(clamped * 100);
-  });
-
-  const updatePillLabel = createMemo(() => {
-    const state = props.updateStatus?.state;
-    if (state === "ready") {
-      return props.anyActiveRuns ? "Update ready" : "Install update";
-    }
-    if (state === "downloading") {
-      const percent = updateDownloadPercent();
-      return percent == null ? "Downloading" : `Downloading ${percent}%`;
-    }
-    return "Update available";
-  });
-
-  const updatePillButtonTone = createMemo(() => {
-    const state = props.updateStatus?.state;
-    if (state === "ready") {
-      return props.anyActiveRuns
-        ? "text-amber-11 hover:text-amber-11 hover:bg-amber-3/30"
-        : "text-green-11 hover:text-green-11 hover:bg-green-3/30";
-    }
-    if (state === "downloading") {
-      return "text-blue-11 hover:text-blue-11 hover:bg-blue-3/30";
-    }
-    return "text-dls-secondary hover:text-emerald-11 hover:bg-emerald-3/25";
-  });
-
-  const updatePillBorderTone = createMemo(() => {
-    const state = props.updateStatus?.state;
-    if (state === "ready") {
-      return props.anyActiveRuns ? "border-amber-7/35" : "border-green-7/35";
-    }
-    if (state === "downloading") {
-      return "border-blue-7/35";
-    }
-    return "border-dls-border";
-  });
-
-  const updatePillDotTone = createMemo(() => {
-    const state = props.updateStatus?.state;
-    if (state === "ready") {
-      return props.anyActiveRuns ? "text-amber-10 fill-amber-10" : "text-green-10 fill-green-10";
-    }
-    if (state === "downloading") {
-      return "text-blue-10";
-    }
-    return "text-emerald-10 fill-emerald-10";
-  });
-
-  const updatePillVersionTone = createMemo(() => {
-    const state = props.updateStatus?.state;
-    if (state === "ready") {
-      return props.anyActiveRuns ? "text-amber-11/75" : "text-green-11/75";
-    }
-    if (state === "downloading") {
-      return "text-blue-11/75";
-    }
-    return "text-dls-secondary";
-  });
-
-  const updatePillTitle = createMemo(() => {
-    const version = props.updateStatus?.version ? `v${props.updateStatus.version}` : "";
-    const state = props.updateStatus?.state;
-    if (state === "ready") {
-      return props.anyActiveRuns
-        ? `Update ready ${version}. Stop active runs to restart.`
-        : `Restart to apply update ${version}`;
-    }
-    if (state === "downloading") return `Downloading update ${version}`;
-    return `Update available ${version}`;
-  });
-
-  const handleUpdatePillClick = () => {
-    const state = props.updateStatus?.state;
-    if (state === "ready" && !props.anyActiveRuns) {
-      props.installUpdateAndRestart();
-      return;
-    }
-    openSettings("advanced");
-  };
 
   const openMcp = () => {
     props.setTab("extensions");
@@ -2495,33 +2390,6 @@ export default function SessionView(props: SessionViewProps) {
     <div class="flex h-screen w-full bg-dls-surface text-dls-text font-sans overflow-hidden">
       <aside class="w-64 hidden md:flex flex-col bg-dls-sidebar border-r border-dls-border p-4">
         <div class="flex-1 overflow-y-auto">
-          <Show when={showUpdatePill()}>
-            <button
-              type="button"
-              class={`group mb-3 w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--dls-accent-rgb),0.2)] ${updatePillButtonTone()}`}
-              onClick={handleUpdatePillClick}
-              title={updatePillTitle()}
-              aria-label={updatePillTitle()}
-            >
-              <Show
-                when={props.updateStatus?.state === "downloading"}
-                fallback={
-                  <Circle
-                    size={8}
-                    class={`${updatePillDotTone()} shrink-0 ${props.updateStatus?.state === "available" ? "group-hover:animate-pulse" : ""}`}
-                  />
-                }
-              >
-                <Loader2 size={13} class={`animate-spin shrink-0 ${updatePillDotTone()}`} />
-              </Show>
-              <span class="flex-1 text-left">{updatePillLabel()}</span>
-              <Show when={props.updateStatus?.version}>
-                {(version) => (
-                  <span class={`ml-auto font-mono text-[10px] ${updatePillVersionTone()}`}>v{version()}</span>
-                )}
-              </Show>
-            </button>
-          </Show>
           <div class="space-y-3 mb-3">
             <For each={props.workspaceSessionGroups}>
               {(group) => {
@@ -2883,34 +2751,6 @@ export default function SessionView(props: SessionViewProps) {
       <main class="flex-1 flex flex-col overflow-hidden bg-dls-surface">
         <header class="h-14 border-b border-dls-border flex items-center justify-between px-6 bg-dls-surface z-10 shrink-0">
           <div class="flex items-center gap-3 min-w-0">
-            <Show when={showUpdatePill()}>
-              <button
-                type="button"
-                class={`md:hidden flex items-center gap-1.5 rounded-full border bg-dls-surface px-2.5 py-1 text-xs font-medium shadow-sm transition-colors active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--dls-accent-rgb),0.2)] ${updatePillBorderTone()} ${updatePillButtonTone()}`}
-                onClick={handleUpdatePillClick}
-                title={updatePillTitle()}
-                aria-label={updatePillTitle()}
-              >
-                <Show
-                  when={props.updateStatus?.state === "downloading"}
-                  fallback={
-                    <Circle
-                      size={8}
-                      class={`${updatePillDotTone()} shrink-0 ${props.updateStatus?.state === "available" ? "animate-pulse" : ""}`}
-                    />
-                  }
-                >
-                  <Loader2 size={13} class={`animate-spin shrink-0 ${updatePillDotTone()}`} />
-                </Show>
-                <span class="text-[11px]">{updatePillLabel()}</span>
-                <Show when={props.updateStatus?.version}>
-                  {(version) => (
-                    <span class={`hidden sm:inline font-mono text-[10px] ${updatePillVersionTone()}`}>v{version()}</span>
-                  )}
-                </Show>
-              </button>
-            </Show>
-
             <h1 class="text-sm font-semibold text-dls-text truncate">{selectedSessionTitle() || "New task"}</h1>
             <Show when={props.developerMode}>
               <span class="text-xs text-dls-secondary">{props.headerStatus}</span>

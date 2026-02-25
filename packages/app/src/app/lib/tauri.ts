@@ -627,16 +627,6 @@ export type OpencodeConfigFile = {
   content: string | null;
 };
 
-export type UpdaterEnvironment = {
-  supported: boolean;
-  reason: string | null;
-  executablePath: string | null;
-  appBundlePath: string | null;
-};
-
-export async function updaterEnvironment(): Promise<UpdaterEnvironment> {
-  return invoke<UpdaterEnvironment>("updater_environment");
-}
 
 export async function readOpencodeConfig(
   scope: "project" | "global",
@@ -699,15 +689,6 @@ export type OpenCodeRouterStatusResult =
   | { ok: true; status: OpenCodeRouterStatus }
   | { ok: false; error: string };
 
-export type OpenCodeRouterInfo = {
-  running: boolean;
-  version: string | null;
-  workspacePath: string | null;
-  opencodeUrl: string | null;
-  pid: number | null;
-  lastStdout: string | null;
-  lastStderr: string | null;
-};
 
 // OpenCodeRouter functions - call Tauri commands that wrap opencodeRouter CLI
 export async function getOpenCodeRouterStatus(): Promise<OpenCodeRouterStatus | null> {
@@ -727,9 +708,6 @@ export async function getOpenCodeRouterStatusDetailed(): Promise<OpenCodeRouterS
   }
 }
 
-export async function opencodeRouterInfo(): Promise<OpenCodeRouterInfo> {
-  return invoke<OpenCodeRouterInfo>("opencodeRouter_info");
-}
 
 export async function getOpenCodeRouterGroupsEnabled(): Promise<boolean | null> {
   try {
@@ -802,8 +780,8 @@ export async function opencodeMcpAuth(
   });
 }
 
-export async function opencodeRouterStop(): Promise<OpenCodeRouterInfo> {
-  return invoke<OpenCodeRouterInfo>("opencodeRouter_stop");
+export async function opencodeRouterStop(): Promise<OpenCodeRouterStatus> {
+  return invoke<OpenCodeRouterStatus>("opencodeRouter_stop");
 }
 
 export async function opencodeRouterStart(options: {
@@ -812,8 +790,8 @@ export async function opencodeRouterStart(options: {
   opencodeUsername?: string;
   opencodePassword?: string;
   healthPort?: number;
-}): Promise<OpenCodeRouterInfo> {
-  return invoke<OpenCodeRouterInfo>("opencodeRouter_start", {
+}): Promise<OpenCodeRouterStatus> {
+  return invoke<OpenCodeRouterStatus>("opencodeRouter_start", {
     workspacePath: options.workspacePath,
     opencodeUrl: options.opencodeUrl ?? null,
     opencodeUsername: options.opencodeUsername ?? null,
@@ -828,7 +806,7 @@ export async function opencodeRouterRestart(options: {
   opencodeUsername?: string;
   opencodePassword?: string;
   healthPort?: number;
-}): Promise<OpenCodeRouterInfo> {
+}): Promise<OpenCodeRouterStatus> {
   await opencodeRouterStop();
   return opencodeRouterStart(options);
 }

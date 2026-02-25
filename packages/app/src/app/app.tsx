@@ -86,7 +86,6 @@ import type {
   ComposerDraft,
   ComposerPart,
   ProviderListItem,
-  UpdateHandle,
   OpencodeConnectStatus,
   ScheduledJob,
 } from "./types";
@@ -128,18 +127,15 @@ import { createExtensionsStore } from "./context/extensions";
 import { useGlobalSync } from "./context/global-sync";
 import { createWorkspaceStore } from "./context/workspace";
 import {
-  updaterEnvironment,
   readOpencodeConfig,
   writeOpencodeConfig,
   schedulerDeleteJob,
   schedulerListJobs,
   openworkServerInfo,
   orchestratorStatus,
-  opencodeRouterInfo,
   setWindowDecorations,
   type OrchestratorStatus,
   type OpenworkServerInfo,
-  type OpenCodeRouterInfo,
 } from "./lib/tauri";
 import {
   parseOpenworkWorkspaceIdFromUrl,
@@ -248,7 +244,7 @@ export default function App() {
     location.pathname.toLowerCase().startsWith("/proto-v1-ux")
   );
 
-  const [tab, setTabState] = createSignal<DashboardTab>("scheduled");
+  const [tab, setTabState] = createSignal<DashboardTab>("sessions");
   const [settingsTab, setSettingsTab] = createSignal<SettingsTab>("general");
 
   const goToDashboard = (nextTab: DashboardTab, options?: { replace?: boolean }) => {
@@ -330,7 +326,6 @@ export default function App() {
   const [openworkServerHostInfo, setOpenworkServerHostInfo] = createSignal<OpenworkServerInfo | null>(null);
   const [openworkServerDiagnostics, setOpenworkServerDiagnostics] = createSignal<OpenworkServerDiagnostics | null>(null);
   const [openworkReconnectBusy, setOpenworkReconnectBusy] = createSignal(false);
-  const [opencodeRouterInfoState, setOpenCodeRouterInfoState] = createSignal<OpenCodeRouterInfo | null>(null);
   const [orchestratorStatusState, setOrchestratorStatusState] = createSignal<OrchestratorStatus | null>(null);
   const [openworkAuditEntries, setOpenworkAuditEntries] = createSignal<OpenworkAuditEntry[]>([]);
   const [openworkAuditStatus, setOpenworkAuditStatus] = createSignal<"idle" | "loading" | "error">("idle");
@@ -576,32 +571,6 @@ export default function App() {
     });
   });
 
-  createEffect(() => {
-    if (!isTauriRuntime()) return;
-    if (!developerMode()) {
-      setOpenCodeRouterInfoState(null);
-      return;
-    }
-    if (!documentVisible()) return;
-
-    let active = true;
-
-    const run = async () => {
-      try {
-        const info = await opencodeRouterInfo();
-        if (active) setOpenCodeRouterInfoState(info);
-      } catch {
-        if (active) setOpenCodeRouterInfoState(null);
-      }
-    };
-
-    run();
-    const interval = window.setInterval(run, 10_000);
-    onCleanup(() => {
-      active = false;
-      window.clearInterval(interval);
-    });
-  });
 
   createEffect(() => {
     if (!isTauriRuntime()) return;
@@ -2705,19 +2674,6 @@ export default function App() {
     dockerCleanupBusy,
     dockerCleanupResult,
     cleanupOpenworkDockerContainers,
-    updateAutoCheck,
-    setUpdateAutoCheck,
-    updateAutoDownload,
-    setUpdateAutoDownload,
-    updateStatus,
-    setUpdateStatus,
-    pendingUpdate,
-    setPendingUpdate,
-    updateEnv,
-    setUpdateEnv,
-    checkForUpdates,
-    downloadUpdate,
-    installUpdateAndRestart,
     resetModalOpen,
     setResetModalOpen,
     resetModalMode,
@@ -2730,20 +2686,6 @@ export default function App() {
     anyActiveRuns,
   } = systemState;
 
-  const UPDATE_AUTO_CHECK_EVERY_MS = 12 * 60 * 60_000;
-  const UPDATE_AUTO_CHECK_POLL_MS = 60_000;
-
-  const getUpdateLastCheckedAt = (state: ReturnType<typeof updateStatus>) => {
-    if (state.state === "checking") return null;
-    return state.lastCheckedAt ?? null;
-  };
-
-  const shouldAutoCheckForUpdates = () => {
-    const state = updateStatus();
-    const lastCheckedAt = getUpdateLastCheckedAt(state);
-    if (!lastCheckedAt) return true;
-    return Date.now() - lastCheckedAt >= UPDATE_AUTO_CHECK_EVERY_MS;
-  };
 
   const workspaceAutoReloadAvailable = createMemo(() =>
     false,
@@ -3118,7 +3060,6 @@ export default function App() {
   const [autoConnectAttempted, setAutoConnectAttempted] = createSignal(false);
 
   const [appVersion, setAppVersion] = createSignal<string | null>(null);
-  const [launchUpdateCheckTriggered, setLaunchUpdateCheckTriggered] = createSignal(false);
 
 
   const busySeconds = createMemo(() => {
@@ -4195,33 +4136,6 @@ export default function App() {
           }
         }
 
-        const storedUpdateAutoCheck = window.localStorage.getItem(
-          "openwork.updateAutoCheck"
-        );
-        if (storedUpdateAutoCheck === "0" || storedUpdateAutoCheck === "1") {
-          setUpdateAutoCheck(storedUpdateAutoCheck === "1");
-        }
-
-        const storedUpdateAutoDownload = window.localStorage.getItem(
-          "openwork.updateAutoDownload"
-        );
-        if (storedUpdateAutoDownload === "0" || storedUpdateAutoDownload === "1") {
-          const enabled = storedUpdateAutoDownload === "1";
-          setUpdateAutoDownload(enabled);
-          if (enabled) {
-            setUpdateAutoCheck(true);
-          }
-        }
-
-        const storedUpdateCheckedAt = window.localStorage.getItem(
-          "openwork.updateLastCheckedAt"
-        );
-        if (storedUpdateCheckedAt) {
-          const parsed = Number(storedUpdateCheckedAt);
-          if (Number.isFinite(parsed) && parsed > 0) {
-            setUpdateStatus({ state: "idle", lastCheckedAt: parsed });
-          }
-        }
 
         const storedNotionStatus = window.localStorage.getItem("openwork.notionStatus");
         if (
@@ -4256,17 +4170,6 @@ export default function App() {
         setAppVersion(await getVersion());
       } catch {
         // ignore
-      }
-
-      try {
-        setUpdateEnv(await updaterEnvironment());
-      } catch {
-        // ignore
-      }
-
-      if (!launchUpdateCheckTriggered()) {
-        setLaunchUpdateCheckTriggered(true);
-        checkForUpdates({ quiet: true }).catch(() => undefined);
       }
 
       try {
@@ -4556,29 +4459,7 @@ export default function App() {
     }
   });
 
-  createEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(
-        "openwork.updateAutoCheck",
-        updateAutoCheck() ? "1" : "0"
-      );
-    } catch {
-      // ignore
-    }
-  });
 
-  createEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(
-        "openwork.updateAutoDownload",
-        updateAutoDownload() ? "1" : "0"
-      );
-    } catch {
-      // ignore
-    }
-  });
 
   createEffect(() => {
     if (typeof window === "undefined") return;
@@ -4623,62 +4504,7 @@ export default function App() {
     }
   });
 
-  createEffect(() => {
-    const state = updateStatus();
-    if (typeof window === "undefined") return;
-    if (state.state === "idle" && state.lastCheckedAt) {
-      try {
-        window.localStorage.setItem(
-          "openwork.updateLastCheckedAt",
-          String(state.lastCheckedAt)
-        );
-      } catch {
-        // ignore
-      }
-    }
-  });
 
-  createEffect(() => {
-    if (booting()) return;
-    if (!isTauriRuntime()) return;
-    if (launchUpdateCheckTriggered()) return;
-
-    const state = updateStatus();
-    if (state.state === "checking" || state.state === "downloading") return;
-
-    setLaunchUpdateCheckTriggered(true);
-    checkForUpdates({ quiet: true }).catch(() => undefined);
-  });
-
-  createEffect(() => {
-    if (booting()) return;
-    if (typeof window === "undefined") return;
-    if (!isTauriRuntime()) return;
-    if (!launchUpdateCheckTriggered()) return;
-    if (!updateAutoCheck()) return;
-
-    const maybeRunAutoUpdateCheck = () => {
-      if (!updateAutoCheck()) return;
-      const state = updateStatus();
-      if (state.state === "checking" || state.state === "downloading") return;
-      if (!shouldAutoCheckForUpdates()) return;
-      checkForUpdates({ quiet: true }).catch(() => undefined);
-    };
-
-    const interval = window.setInterval(maybeRunAutoUpdateCheck, UPDATE_AUTO_CHECK_POLL_MS);
-    onCleanup(() => window.clearInterval(interval));
-  });
-
-  createEffect(() => {
-    if (!isTauriRuntime()) return;
-    if (!updateAutoDownload()) return;
-
-    const state = updateStatus();
-    if (state.state !== "available") return;
-    if (!pendingUpdate()) return;
-
-    downloadUpdate().catch(() => undefined);
-  });
 
   const headerConnectedVersion = createMemo(() => {
     const fallbackVersion = connectedVersion()?.trim() ?? "";
@@ -4924,7 +4750,6 @@ export default function App() {
       opencodeConnectStatus: opencodeConnectStatus(),
       engineInfo: workspaceStore.engine(),
       orchestratorStatus: orchestratorStatusState(),
-      opencodeRouterInfo: opencodeRouterInfoState(),
       engineDoctorVersion: workspaceStore.engineDoctorResult()?.version ?? null,
       updateOpenworkServerSettings,
       resetOpenworkServerSettings,
@@ -5024,23 +4849,7 @@ export default function App() {
       toggleHideTitlebar: () => setHideTitlebar((v: boolean) => !v),
       modelVariantLabel: formatModelVariantLabel(modelVariant()),
       editModelVariant: handleEditModelVariant,
-      updateAutoCheck: updateAutoCheck(),
-      toggleUpdateAutoCheck: () => setUpdateAutoCheck((v: boolean) => !v),
-      updateAutoDownload: updateAutoDownload(),
-      toggleUpdateAutoDownload: () =>
-        setUpdateAutoDownload((v: boolean) => {
-          const next = !v;
-          if (next) {
-            setUpdateAutoCheck(true);
-          }
-          return next;
-        }),
-      updateStatus: updateStatus(),
-      updateEnv: updateEnv(),
       appVersion: appVersion(),
-      checkForUpdates: () => checkForUpdates(),
-      downloadUpdate: () => downloadUpdate(),
-      installUpdateAndRestart,
       anyActiveRuns: anyActiveRuns(),
       engineSource: engineSource(),
       setEngineSource,
@@ -5155,10 +4964,7 @@ export default function App() {
     stopHost,
     headerStatus: headerStatus(),
     busyHint: busyHint(),
-    updateStatus: updateStatus(),
-    updateEnv: updateEnv(),
     anyActiveRuns: anyActiveRuns(),
-    installUpdateAndRestart,
     selectedSessionModelLabel: selectedSessionModelLabel(),
     openSessionModelPicker: openSessionModelPicker,
     modelVariantLabel: formatModelVariantLabel(modelVariant()),
@@ -5246,6 +5052,7 @@ export default function App() {
   });
 
   const dashboardTabs = new Set<DashboardTab>([
+    "sessions",
     "scheduled",
     "soul",
     "skills",
@@ -5260,7 +5067,7 @@ export default function App() {
     if (dashboardTabs.has(normalized as DashboardTab)) {
       return normalized as DashboardTab;
     }
-    return "scheduled";
+    return "sessions";
   };
 
   const initialRoute = () => {

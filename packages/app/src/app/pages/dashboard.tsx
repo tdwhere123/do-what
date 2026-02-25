@@ -32,7 +32,7 @@ import type {
   OpenworkServerSettings,
   OpenworkServerStatus,
 } from "../lib/openwork-server";
-import type { EngineInfo, OrchestratorStatus, OpenworkServerInfo, OpenCodeRouterInfo, WorkspaceInfo } from "../lib/tauri";
+import type { EngineInfo, OrchestratorStatus, OpenworkServerInfo, WorkspaceInfo } from "../lib/tauri";
 
 import Button from "../components/button";
 import ExtensionsView from "./extensions";
@@ -101,7 +101,6 @@ export type DashboardViewProps = {
   engineInfo: EngineInfo | null;
   engineDoctorVersion: string | null;
   orchestratorStatus: OrchestratorStatus | null;
-  opencodeRouterInfo: OpenCodeRouterInfo | null;
   updateOpenworkServerSettings: (next: OpenworkServerSettings) => void;
   resetOpenworkServerSettings: () => void;
   testOpenworkServerConnection: (next: OpenworkServerSettings) => Promise<boolean>;
@@ -224,27 +223,8 @@ export type DashboardViewProps = {
   toggleHideTitlebar: () => void;
   modelVariantLabel: string;
   editModelVariant: () => void;
-  updateAutoCheck: boolean;
-  toggleUpdateAutoCheck: () => void;
-  updateAutoDownload: boolean;
-  toggleUpdateAutoDownload: () => void;
   themeMode: "light" | "dark" | "system";
   setThemeMode: (value: "light" | "dark" | "system") => void;
-  updateStatus: {
-    state: string;
-    lastCheckedAt?: number | null;
-    version?: string;
-    date?: string;
-    notes?: string;
-    totalBytes?: number | null;
-    downloadedBytes?: number;
-    message?: string;
-  } | null;
-  updateEnv: { supported?: boolean; reason?: string | null } | null;
-  appVersion: string | null;
-  checkForUpdates: () => void;
-  downloadUpdate: () => void;
-  installUpdateAndRestart: () => void;
   anyActiveRuns: boolean;
   engineSource: "path" | "sidecar" | "custom";
   setEngineSource: (value: "path" | "sidecar" | "custom") => void;
@@ -729,131 +709,11 @@ export default function DashboardView(props: DashboardViewProps) {
     return null;
   });
 
-  const showUpdatePill = createMemo(() => {
-    if (!isTauriRuntime()) return false;
-    const state = props.updateStatus?.state;
-    return state === "available" || state === "downloading" || state === "ready";
-  });
-
-  const updateDownloadPercent = createMemo<number | null>(() => {
-    const total = props.updateStatus?.totalBytes;
-    if (total == null || total <= 0) return null;
-    const downloaded = props.updateStatus?.downloadedBytes ?? 0;
-    const clamped = Math.max(0, Math.min(1, downloaded / total));
-    return Math.floor(clamped * 100);
-  });
-
-  const updatePillLabel = createMemo(() => {
-    const state = props.updateStatus?.state;
-    if (state === "ready") {
-      return props.anyActiveRuns ? "Update ready" : "Install update";
-    }
-    if (state === "downloading") {
-      const percent = updateDownloadPercent();
-      return percent == null ? "Downloading" : `Downloading ${percent}%`;
-    }
-    return "Update available";
-  });
-
-  const updatePillButtonTone = createMemo(() => {
-    const state = props.updateStatus?.state;
-    if (state === "ready") {
-      return props.anyActiveRuns
-        ? "text-amber-11 hover:text-amber-11 hover:bg-amber-3/30"
-        : "text-green-11 hover:text-green-11 hover:bg-green-3/30";
-    }
-    if (state === "downloading") {
-      return "text-blue-11 hover:text-blue-11 hover:bg-blue-3/30";
-    }
-    return "text-dls-secondary hover:text-emerald-11 hover:bg-emerald-3/25";
-  });
-
-  const updatePillBorderTone = createMemo(() => {
-    const state = props.updateStatus?.state;
-    if (state === "ready") {
-      return props.anyActiveRuns ? "border-amber-7/35" : "border-green-7/35";
-    }
-    if (state === "downloading") {
-      return "border-blue-7/35";
-    }
-    return "border-dls-border";
-  });
-
-  const updatePillDotTone = createMemo(() => {
-    const state = props.updateStatus?.state;
-    if (state === "ready") {
-      return props.anyActiveRuns ? "text-amber-10 fill-amber-10" : "text-green-10 fill-green-10";
-    }
-    if (state === "downloading") {
-      return "text-blue-10";
-    }
-    return "text-emerald-10 fill-emerald-10";
-  });
-
-  const updatePillVersionTone = createMemo(() => {
-    const state = props.updateStatus?.state;
-    if (state === "ready") {
-      return props.anyActiveRuns ? "text-amber-11/75" : "text-green-11/75";
-    }
-    if (state === "downloading") {
-      return "text-blue-11/75";
-    }
-    return "text-dls-secondary";
-  });
-
-  const updatePillTitle = createMemo(() => {
-    const version = props.updateStatus?.version ? `v${props.updateStatus.version}` : "";
-    const state = props.updateStatus?.state;
-    if (state === "ready") {
-      return props.anyActiveRuns
-        ? `Update ready ${version}. Stop active runs to restart.`
-        : `Restart to apply update ${version}`;
-    }
-    if (state === "downloading") return `Downloading update ${version}`;
-    return `Update available ${version}`;
-  });
-
-  const handleUpdatePillClick = () => {
-    const state = props.updateStatus?.state;
-    if (state === "ready" && !props.anyActiveRuns) {
-      props.installUpdateAndRestart();
-      return;
-    }
-    openSettings("advanced");
-  };
 
   return (
     <div class="flex h-screen w-full bg-dls-surface text-dls-text font-sans overflow-hidden">
       <aside class="w-64 hidden md:flex flex-col bg-dls-sidebar border-r border-dls-border p-4">
         <div class="flex-1 overflow-y-auto">
-          <Show when={showUpdatePill()}>
-            <button
-              type="button"
-              class={`group mb-3 w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--dls-accent-rgb),0.2)] ${updatePillButtonTone()}`}
-              onClick={handleUpdatePillClick}
-              title={updatePillTitle()}
-              aria-label={updatePillTitle()}
-            >
-              <Show
-                when={props.updateStatus?.state === "downloading"}
-                fallback={
-                  <Circle
-                    size={8}
-                    class={`${updatePillDotTone()} shrink-0 ${props.updateStatus?.state === "available" ? "group-hover:animate-pulse" : ""}`}
-                  />
-                }
-              >
-                <Loader2 size={13} class={`animate-spin shrink-0 ${updatePillDotTone()}`} />
-              </Show>
-              <span class="flex-1 text-left">{updatePillLabel()}</span>
-              <Show when={props.updateStatus?.version}>
-                {(version) => (
-                  <span class={`ml-auto font-mono text-[10px] ${updatePillVersionTone()}`}>v{version()}</span>
-                )}
-              </Show>
-            </button>
-          </Show>
-
           <div class="space-y-3 mb-3">
             <For each={props.workspaceSessionGroups}>
               {(group) => {
@@ -1225,33 +1085,6 @@ export default function DashboardView(props: DashboardViewProps) {
         <div class="flex-1 overflow-y-auto">
         <header class="h-14 flex items-center justify-between px-6 md:px-10 border-b border-dls-border sticky top-0 bg-dls-surface z-10">
           <div class="flex items-center gap-3">
-            <Show when={showUpdatePill()}>
-              <button
-                type="button"
-                class={`md:hidden flex items-center gap-1.5 rounded-full border bg-dls-surface px-2.5 py-1 text-xs font-medium shadow-sm transition-colors active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--dls-accent-rgb),0.2)] ${updatePillBorderTone()} ${updatePillButtonTone()}`}
-                onClick={handleUpdatePillClick}
-                title={updatePillTitle()}
-                aria-label={updatePillTitle()}
-              >
-                <Show
-                  when={props.updateStatus?.state === "downloading"}
-                  fallback={
-                    <Circle
-                      size={8}
-                      class={`${updatePillDotTone()} shrink-0 ${props.updateStatus?.state === "available" ? "animate-pulse" : ""}`}
-                    />
-                  }
-                >
-                  <Loader2 size={13} class={`animate-spin shrink-0 ${updatePillDotTone()}`} />
-                </Show>
-                <span class="text-[11px]">{updatePillLabel()}</span>
-                <Show when={props.updateStatus?.version}>
-                  {(version) => (
-                    <span class={`hidden sm:inline font-mono text-[10px] ${updatePillVersionTone()}`}>v{version()}</span>
-                  )}
-                </Show>
-              </button>
-            </Show>
             <div class="px-3 py-1.5 rounded-xl bg-dls-hover text-xs text-dls-secondary font-medium">
               {props.activeWorkspaceDisplay.name}
             </div>
@@ -1274,6 +1107,11 @@ export default function DashboardView(props: DashboardViewProps) {
 
         <div class="p-6 md:p-10 max-w-5xl mx-auto space-y-10">
           <Switch>
+                        <Match when={props.tab === "sessions"}>
+              <div class="flex flex-col gap-2 p-4">
+                <p class="text-sm text-gray-10">Sessions will appear here.</p>
+              </div>
+            </Match>
             <Match when={props.tab === "scheduled"}>
               <ScheduledTasksView
                 jobs={props.scheduledJobs}
@@ -1414,7 +1252,6 @@ export default function DashboardView(props: DashboardViewProps) {
                   opencodeConnectStatus={props.opencodeConnectStatus}
                   engineInfo={props.engineInfo}
                   orchestratorStatus={props.orchestratorStatus}
-                  opencodeRouterInfo={props.opencodeRouterInfo}
                   engineDoctorVersion={props.engineDoctorVersion}
                   developerMode={props.developerMode}
                   toggleDeveloperMode={props.toggleDeveloperMode}
@@ -1435,18 +1272,8 @@ export default function DashboardView(props: DashboardViewProps) {
                   toggleHideTitlebar={props.toggleHideTitlebar}
                   modelVariantLabel={props.modelVariantLabel}
                   editModelVariant={props.editModelVariant}
-                  updateAutoCheck={props.updateAutoCheck}
-                  toggleUpdateAutoCheck={props.toggleUpdateAutoCheck}
-                  updateAutoDownload={props.updateAutoDownload}
-                  toggleUpdateAutoDownload={props.toggleUpdateAutoDownload}
                   themeMode={props.themeMode}
                   setThemeMode={props.setThemeMode}
-                  updateStatus={props.updateStatus}
-                  updateEnv={props.updateEnv}
-                  appVersion={props.appVersion}
-                  checkForUpdates={props.checkForUpdates}
-                  downloadUpdate={props.downloadUpdate}
-                  installUpdateAndRestart={props.installUpdateAndRestart}
                   anyActiveRuns={props.anyActiveRuns}
                   onResetStartupPreference={props.onResetStartupPreference}
                   openResetModal={props.openResetModal}
@@ -1558,7 +1385,16 @@ export default function DashboardView(props: DashboardViewProps) {
           mcpStatuses={props.mcpStatuses}
         />
         <nav class="md:hidden border-t border-dls-border bg-dls-surface">
-          <div class={`mx-auto max-w-5xl px-4 py-3 grid gap-2 grid-cols-5`}>
+          <div class={`mx-auto max-w-5xl px-4 py-3 grid gap-2 grid-cols-6`}>
+                        <button
+              class={`flex flex-col items-center gap-1 text-xs ${
+                props.tab === "sessions" ? "text-gray-12" : "text-gray-10"
+              }`}
+              onClick={() => props.setTab("sessions")}
+            >
+              <History size={18} />
+              Sessions
+            </button>
             <button
               class={`flex flex-col items-center gap-1 text-xs ${
                 props.tab === "scheduled" ? "text-gray-12" : "text-gray-10"
@@ -1610,6 +1446,7 @@ export default function DashboardView(props: DashboardViewProps) {
 
       <aside class="w-56 hidden md:flex flex-col bg-dls-sidebar border-l border-dls-border p-4">
         <div class="space-y-1 pt-2">
+          {navItem("sessions", "Sessions", <History size={18} />)}
           {navItem("scheduled", "Automations", <History size={18} />)}
           {navItem("soul", "Soul", <HeartPulse size={18} class={soulNavIconClass()} />)}
           {navItem("skills", "Skills", <Zap size={18} />)}
