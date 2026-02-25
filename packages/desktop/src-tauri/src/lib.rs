@@ -14,6 +14,7 @@ mod workspace;
 
 pub use types::*;
 
+use commands::agent_run::{agent_run_abort, agent_run_start, check_runtime_available, RunMap};
 use commands::command_files::{
     opencode_command_delete, opencode_command_list, opencode_command_write,
 };
@@ -64,6 +65,7 @@ pub fn run() {
         .manage(OrchestratorManager::default())
         .manage(OpenworkServerManager::default())
         .manage(WorkspaceWatchState::default())
+        .manage(RunMap::default())
         .invoke_handler(tauri::generate_handler![
             engine_start,
             engine_stop,
@@ -109,7 +111,10 @@ pub fn run() {
             opencode_mcp_auth,
             scheduler_list_jobs,
             scheduler_delete_job,
-            set_window_decorations
+            set_window_decorations,
+            agent_run_start,
+            agent_run_abort,
+            check_runtime_available
         ])
         .build(tauri::generate_context!())
         .expect("error while building OpenWork");

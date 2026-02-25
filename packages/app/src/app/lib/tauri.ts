@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { isTauriRuntime } from "../utils";
 import { validateMcpServerName } from "../mcp";
+import type { AgentRunConfig, AgentRuntime } from "../state/sessions";
 
 export type EngineInfo = {
   running: boolean;
@@ -818,4 +819,32 @@ export async function opencodeRouterRestart(options: {
  */
 export async function setWindowDecorations(decorations: boolean): Promise<void> {
   return invoke<void>("set_window_decorations", { decorations });
+}
+
+
+export async function agentRunStart(params: {
+  runId: string;
+  runtime: AgentRuntime;
+  prompt: string;
+  workdir?: string;
+  config: AgentRunConfig;
+}): Promise<void> {
+  return invoke("agent_run_start", {
+    runId: params.runId,
+    runtime: params.runtime,
+    prompt: params.prompt,
+    workdir: params.workdir ?? null,
+    config: {
+      mcpConfigPath: params.config.mcpConfigPath ?? null,
+      rulesPrefix: params.config.rulesPrefix ?? null,
+    },
+  });
+}
+
+export async function agentRunAbort(runId: string): Promise<void> {
+  return invoke("agent_run_abort", { runId });
+}
+
+export async function checkRuntimeAvailable(runtime: "claude-code" | "codex"): Promise<string> {
+  return invoke("check_runtime_available", { runtime });
 }

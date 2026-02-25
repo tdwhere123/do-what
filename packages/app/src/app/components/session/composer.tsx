@@ -477,6 +477,7 @@ export default function Composer(props: ComposerProps) {
   const [historyIndex, setHistoryIndex] = createSignal({ prompt: -1, shell: -1 });
   const [history, setHistory] = createSignal({ prompt: [] as ComposerDraft[], shell: [] as ComposerDraft[] });
   const [variantMenuOpen, setVariantMenuOpen] = createSignal(false);
+  const [selectedRuntime, setSelectedRuntime] = createSignal<"opencode" | "claude-code" | "codex">("opencode");
   const [showInboxUploadAction, setShowInboxUploadAction] = createSignal(false);
   const activeVariant = createMemo(() => props.modelVariant ?? "none");
   const attachmentsDisabled = createMemo(() => !props.attachmentsEnabled);
@@ -1867,6 +1868,17 @@ export default function Composer(props: ComposerProps) {
                           </Show>
                         </div>
 
+
+                        <select
+                          value={selectedRuntime()}
+                          onChange={(event) => setSelectedRuntime(event.currentTarget.value as "opencode" | "claude-code" | "codex")}
+                          class="text-xs border rounded px-1 py-0.5 bg-transparent"
+                          disabled={props.busy}
+                        >
+                          <option value="opencode">OpenCode</option>
+                          <option value="claude-code">Claude Code</option>
+                          <option value="codex">Codex</option>
+                        </select>
                         <button
                           type="button"
                           class="flex items-center gap-1.5 px-2 py-1 hover:bg-dls-hover rounded-md text-xs font-medium text-dls-secondary hover:text-dls-text"
