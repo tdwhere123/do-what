@@ -5,12 +5,8 @@
   "scripts": {
     "dev": "pnpm --filter @different-ai/openwork dev",
     "dev:ui": "pnpm --filter @different-ai/openwork-ui dev",
-    "dev:web": "pnpm --filter @different-ai/openwork-ui dev",
-    "dev:headless-web": "bun scripts/dev-headless-web.ts",
     "build": "node scripts/build.mjs",
     "build:ui": "pnpm --filter @different-ai/openwork-ui build",
-    "build:web": "pnpm --filter @different-ai/openwork-ui build",
-    "preview": "pnpm --filter @different-ai/openwork-ui preview",
     "typecheck": "pnpm --filter @different-ai/openwork-ui typecheck",
     "test:health": "pnpm --filter @different-ai/openwork-ui test:health",
     "test:sessions": "pnpm --filter @different-ai/openwork-ui test:sessions",
@@ -26,11 +22,6 @@
     "bump:minor": "pnpm --filter @different-ai/openwork-ui bump:minor",
     "bump:major": "pnpm --filter @different-ai/openwork-ui bump:major",
     "bump:set": "pnpm --filter @different-ai/openwork-ui bump:set",
-    "release:review": "node scripts/release/review.mjs",
-    "release:prepare": "node scripts/release/prepare.mjs",
-    "release:prepare:dry": "node scripts/release/prepare.mjs --dry-run",
-    "release:ship": "node scripts/release/ship.mjs",
-    "release:ship:watch": "node scripts/release/ship.mjs --watch",
     "tauri": "pnpm --filter @different-ai/openwork exec tauri"
   },
   "pnpm": {
