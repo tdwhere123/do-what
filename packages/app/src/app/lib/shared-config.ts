@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
+import { buildSystemMemoryPrefix } from "./memory";
+
 export type McpEntry = {
   name: string;
   command: string[];
@@ -54,7 +56,14 @@ export async function writeRulesContent(content: string): Promise<void> {
 }
 
 export async function buildPromptPrefix(): Promise<string> {
-  const rules = (await readRulesContent()).trim();
-  if (!rules) return "";
-  return `System rules:\n${rules}\n\n`;
+  const [rules, systemMemory] = await Promise.all([readRulesContent(), buildSystemMemoryPrefix()]);
+
+  const parts: string[] = [];
+  if (systemMemory.trim()) {
+    parts.push(`<system_memory>\n${systemMemory.trim()}\n</system_memory>`);
+  }
+  if (rules.trim()) {
+    parts.push(`<rules>\n${rules.trim()}\n</rules>`);
+  }
+  return parts.length ? parts.join("\n\n") + "\n\n" : "";
 }

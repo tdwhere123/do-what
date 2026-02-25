@@ -1147,6 +1147,8 @@ export default function DashboardView(props: DashboardViewProps) {
                 newTaskDisabled={props.newTaskDisabled}
                 refresh={props.refreshSoulData}
                 runSoulPrompt={props.runSoulPrompt}
+                workspaces={props.workspaces}
+                activeWorkspaceId={props.activeWorkspaceId}
               />
             </Match>
             <Match when={props.tab === "skills"}>
