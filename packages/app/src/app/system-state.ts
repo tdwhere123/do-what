@@ -16,7 +16,6 @@ import type {
 } from "./types";
 import { addOpencodeCacheHint, isTauriRuntime, safeStringify } from "./utils";
 import { mapConfigProvidersToList } from "./utils/providers";
-import { createUpdaterState } from "./context/updater";
 import {
   resetOpenworkState,
   resetOpencodeCache,
@@ -61,19 +60,11 @@ export function createSystemState(options: {
   const [dockerCleanupBusy, setDockerCleanupBusy] = createSignal(false);
   const [dockerCleanupResult, setDockerCleanupResult] = createSignal<string | null>(null);
 
-  const updater = createUpdaterState();
-  const {
-    updateAutoCheck,
-    setUpdateAutoCheck,
-    updateAutoDownload,
-    setUpdateAutoDownload,
-    updateStatus,
-    setUpdateStatus,
-    pendingUpdate,
-    setPendingUpdate,
-    updateEnv,
-    setUpdateEnv,
-  } = updater;
+  const [updateAutoCheck, setUpdateAutoCheck] = createSignal(true);
+  const [updateAutoDownload, setUpdateAutoDownload] = createSignal(false);
+  const [updateStatus, setUpdateStatus] = createSignal<any>({ state: "idle", lastCheckedAt: null });
+  const [pendingUpdate, setPendingUpdate] = createSignal<{ update: UpdateHandle; version: string; notes?: string } | null>(null);
+  const [updateEnv, setUpdateEnv] = createSignal<{ supported?: boolean; reason?: string | null } | null>(null);
 
   const [resetModalOpen, setResetModalOpen] = createSignal(false);
   const [resetModalMode, setResetModalMode] = createSignal<ResetOpenworkMode>("onboarding");
@@ -507,7 +498,7 @@ export function createSystemState(options: {
         }
         lastPublishedAt = now;
         lastPublishedBytes = downloadedBytes;
-        setUpdateStatus((current) => {
+        setUpdateStatus((current: any) => {
           if (current.state !== "downloading") return current;
           return {
             ...current,

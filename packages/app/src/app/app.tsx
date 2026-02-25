@@ -2655,7 +2655,8 @@ export default function App() {
       setEditRemoteWorkspaceOpen(true);
       return;
     }
-    setTab("config");
+    setTab("settings");
+    setSettingsTab("workspace");
     setView("dashboard");
   };
 
@@ -5018,16 +5019,16 @@ export default function App() {
       defaultModelRef: formatModelRef(defaultModel()),
       openDefaultModelPicker,
       showThinking: showThinking(),
-      toggleShowThinking: () => setShowThinking((v) => !v),
+      toggleShowThinking: () => setShowThinking((v: boolean) => !v),
       hideTitlebar: hideTitlebar(),
-      toggleHideTitlebar: () => setHideTitlebar((v) => !v),
+      toggleHideTitlebar: () => setHideTitlebar((v: boolean) => !v),
       modelVariantLabel: formatModelVariantLabel(modelVariant()),
       editModelVariant: handleEditModelVariant,
       updateAutoCheck: updateAutoCheck(),
-      toggleUpdateAutoCheck: () => setUpdateAutoCheck((v) => !v),
+      toggleUpdateAutoCheck: () => setUpdateAutoCheck((v: boolean) => !v),
       updateAutoDownload: updateAutoDownload(),
       toggleUpdateAutoDownload: () =>
-        setUpdateAutoDownload((v) => {
+        setUpdateAutoDownload((v: boolean) => {
           const next = !v;
           if (next) {
             setUpdateAutoCheck(true);
@@ -5248,15 +5249,14 @@ export default function App() {
     "scheduled",
     "soul",
     "skills",
-    "plugins",
-    "mcp",
-    "identities",
-    "config",
+    "extensions",
     "settings",
   ]);
 
   const resolveDashboardTab = (value?: string | null) => {
     const normalized = value?.trim().toLowerCase() ?? "";
+    if (normalized === "plugins" || normalized === "mcp") return "extensions";
+    if (normalized === "config" || normalized === "identities") return "settings";
     if (dashboardTabs.has(normalized as DashboardTab)) {
       return normalized as DashboardTab;
     }

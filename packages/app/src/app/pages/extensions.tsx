@@ -12,7 +12,6 @@ export type ExtensionsViewProps = McpViewProps &
   PluginsViewProps & {
     refreshMcpServers: () => void;
     initialSection?: ExtensionsSection;
-    setDashboardTab?: (tab: "mcp" | "plugins") => void;
   };
 
 export default function ExtensionsView(props: ExtensionsViewProps) {
@@ -45,9 +44,6 @@ export default function ExtensionsView(props: ExtensionsViewProps) {
 
   const selectSection = (nextSection: ExtensionsSection) => {
     setSection(nextSection);
-    if (nextSection === "mcp" || nextSection === "plugins") {
-      props.setDashboardTab?.(nextSection);
-    }
   };
 
   const pillClass = (active: boolean) =>
