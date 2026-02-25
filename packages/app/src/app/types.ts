@@ -109,6 +109,9 @@ export type ComposerDraft = {
   resolvedText?: string;
   /** When set, draft is a slash command invocation */
   command?: { name: string; arguments: string } | undefined;
+  runtime?: "opencode" | "claude-code" | "codex";
+  projectId?: string | null;
+  parentSessionIds?: string[];
 };
 
 export type ArtifactItem = {
