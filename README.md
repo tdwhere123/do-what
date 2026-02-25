@@ -1,4 +1,4 @@
-# OpenWork（桌面定制版骨架）
+# do-what（桌面定制版骨架）
 
 这个仓库已收敛为**桌面完整体验优先**的改造基线：
 - 保留桌面端完整链路（UI + Tauri + Orchestrator + Server）。
