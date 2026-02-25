@@ -278,7 +278,7 @@ export default function SessionSidebar(props: SidebarProps) {
   });
 
   return (
-    <div class="flex flex-col h-full overflow-hidden">
+    <div class="flex flex-col h-full overflow-hidden bg-[var(--color-bg-sidebar)] border-r border-[var(--color-border-subtle)]">
       <div class="px-4 pt-4 shrink-0">
         <button
           class="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gray-12 text-gray-1 text-sm font-medium shadow-lg shadow-gray-12/10 hover:bg-gray-11 transition-colors"

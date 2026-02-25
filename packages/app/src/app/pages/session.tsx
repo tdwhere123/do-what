@@ -83,6 +83,8 @@ import QuestionModal from "../components/question-modal";
 import ArtifactsPanel from "../components/session/artifacts-panel";
 import InboxPanel from "../components/session/inbox-panel";
 import ArtifactMarkdownEditor from "../components/session/artifact-markdown-editor";
+import SessionDagWidget from "../components/session-dag";
+import { useProjects } from "../state/sessions";
 
 export type SessionViewProps = {
   selectedSessionId: string | null;
@@ -258,6 +260,12 @@ export default function SessionView(props: SessionViewProps) {
   const [deleteSessionBusy, setDeleteSessionBusy] = createSignal(false);
   const [agentPickerOpen, setAgentPickerOpen] = createSignal(false);
   const [agentPickerBusy, setAgentPickerBusy] = createSignal(false);
+
+  const { projects } = useProjects();
+  const activeProjectId = createMemo(() =>
+    projects.find((project) => props.selectedSessionId && project.sessionIds.includes(props.selectedSessionId))?.id ?? null,
+  );
+
   const [agentPickerReady, setAgentPickerReady] = createSignal(false);
   const [agentPickerError, setAgentPickerError] = createSignal<string | null>(null);
   const [agentOptions, setAgentOptions] = createSignal<Agent[]>([]);
@@ -2748,7 +2756,11 @@ export default function SessionView(props: SessionViewProps) {
 
       </aside>
 
-      <main class="flex-1 flex flex-col overflow-hidden bg-dls-surface">
+      <main class="relative flex-1 flex flex-col overflow-hidden bg-dls-surface">
+        <SessionDagWidget
+          projectId={activeProjectId()}
+          onSelectSession={(id) => void props.selectSession(id)}
+        />
         <header class="h-14 border-b border-dls-border flex items-center justify-between px-6 bg-dls-surface z-10 shrink-0">
           <div class="flex items-center gap-3 min-w-0">
             <h1 class="text-sm font-semibold text-dls-text truncate">{selectedSessionTitle() || "New task"}</h1>

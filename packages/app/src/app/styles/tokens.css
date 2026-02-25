@@ -1,0 +1,68 @@
+:root {
+  /* ---- Color: Background ---- */
+  --color-bg-base: #faf8f5;
+  --color-bg-sidebar: #f2efe9;
+  --color-bg-elevated: #ffffff;
+  --color-bg-overlay: rgba(0, 0, 0, 0.04);
+
+  /* ---- Color: Border ---- */
+  --color-border-subtle: #e5e0d8;
+  --color-border-default: #d4cfc6;
+  --color-border-strong: #b8b2a8;
+
+  /* ---- Color: Text ---- */
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #5c5750;
+  --color-text-tertiary: #8c887f;
+  --color-text-disabled: #b8b2a8;
+  --color-text-inverse: #ffffff;
+
+  /* ---- Color: Accent ---- */
+  --color-accent-primary: #1a1a1a;
+  --color-accent-secondary: #3d3a35;
+
+  /* ---- Color: Status ---- */
+  --color-status-success: var(--green-9);
+  --color-status-warning: var(--amber-9);
+  --color-status-error: var(--red-9);
+  --color-status-info: var(--blue-9);
+
+  /* ---- Color: Runtime Badge ---- */
+  --color-runtime-cc-bg: #fff3e0;
+  --color-runtime-cc-text: #e65100;
+  --color-runtime-cx-bg: #e8f5e9;
+  --color-runtime-cx-text: #1b5e20;
+  --color-runtime-oc-bg: #ede7f6;
+  --color-runtime-oc-text: #4527a0;
+
+  /* ---- Spacing ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* ---- Radius ---- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ---- Typography ---- */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+
+  /* ---- Shadow ---- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
