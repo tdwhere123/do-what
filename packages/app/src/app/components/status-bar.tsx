@@ -26,7 +26,7 @@ export default function StatusBar(props: StatusBarProps) {
 
   const opencodeStatusMeta = createMemo(() => ({
     dot: props.clientConnected ? "bg-green-9" : "bg-gray-6",
-    text: props.clientConnected ? "text-green-11" : "text-gray-10",
+    text: props.clientConnected ? "text-green-11" : "text-[var(--color-text-tertiary)]",
     label: props.clientConnected ? "Connected" : "Not connected",
   }));
 
@@ -37,14 +37,14 @@ export default function StatusBar(props: StatusBarProps) {
       case "limited":
         return { dot: "bg-amber-9", text: "text-amber-11", label: "Limited access" };
       default:
-        return { dot: "bg-gray-6", text: "text-gray-10", label: "Unavailable" };
+        return { dot: "bg-gray-6", text: "text-[var(--color-text-tertiary)]", label: "Unavailable" };
     }
   });
 
   const messagingMeta = createMemo(() => {
     const status = opencodeRouterStatus();
     if (!status) {
-      return { dot: "bg-gray-6", text: "text-gray-10", label: "Messaging bridge unavailable" };
+      return { dot: "bg-gray-6", text: "text-[var(--color-text-tertiary)]", label: "Messaging bridge unavailable" };
     }
     const telegramConfigured = (status.telegram.items?.length ?? 0) > 0;
     const slackConfigured = (status.slack.items?.length ?? 0) > 0;
@@ -55,7 +55,7 @@ export default function StatusBar(props: StatusBarProps) {
     if (configuredCount > 0 || status.running) {
       return { dot: "bg-amber-9", text: "text-amber-11", label: "Messaging bridge setup" };
     }
-    return { dot: "bg-gray-6", text: "text-gray-10", label: "Messaging bridge offline" };
+    return { dot: "bg-gray-6", text: "text-[var(--color-text-tertiary)]", label: "Messaging bridge offline" };
   });
 
   type ProTip = {
@@ -77,24 +77,6 @@ export default function StatusBar(props: StatusBarProps) {
   };
 
   const proTips = createMemo<ProTip[]>(() => [
-    {
-      id: "slack",
-      label: "Connect Slack",
-      enabled: () => {
-        const status = opencodeRouterStatus();
-        return Boolean(status && (status.slack.items?.length ?? 0) === 0);
-      },
-      action: () => runAction(props.onOpenMessaging),
-    },
-    {
-      id: "telegram",
-      label: "Connect Telegram",
-      enabled: () => {
-        const status = opencodeRouterStatus();
-        return Boolean(status && (status.telegram.items?.length ?? 0) === 0);
-      },
-      action: () => runAction(props.onOpenMessaging),
-    },
     {
       id: "notion",
       label: "Connect Notion MCP",
@@ -188,28 +170,28 @@ export default function StatusBar(props: StatusBarProps) {
   });
 
   return (
-    <div class="border-t border-gray-6 bg-gray-1/90 backdrop-blur-md">
+    <div class="border-t border-[var(--color-border-subtle)] bg-[var(--color-bg-base)]/90 backdrop-blur-md">
       <div class="px-4 py-2 flex flex-wrap items-center gap-3 text-xs">
         <div
           class="flex items-center gap-2"
-          title={`OpenCode Engine: ${opencodeStatusMeta().label}`}
+          title={`Engine: ${opencodeStatusMeta().label}`}
         >
           <span class={`w-2 h-2 rounded-full ${opencodeStatusMeta().dot}`} />
-          <Cpu class="w-4 h-4 text-gray-11" />
+          <Cpu class="w-4 h-4 text-[var(--color-text-secondary)]" />
           <Show when={props.developerMode || !props.clientConnected}>
-            <span class="text-gray-11 font-medium">OpenCode</span>
+            <span class="text-[var(--color-text-secondary)] font-medium">Engine</span>
             <span class={opencodeStatusMeta().text}>{opencodeStatusMeta().label}</span>
           </Show>
         </div>
-        <div class="w-px h-4 bg-gray-6/70" />
+        <div class="w-px h-4 bg-[var(--color-border-subtle)]/70" />
         <div
           class="flex items-center gap-2"
-          title={`OpenWork Server: ${openworkStatusMeta().label}`}
+          title={`do-what Server: ${openworkStatusMeta().label}`}
         >
           <span class={`w-2 h-2 rounded-full ${openworkStatusMeta().dot}`} />
-          <Server class="w-4 h-4 text-gray-11" />
+          <Server class="w-4 h-4 text-[var(--color-text-secondary)]" />
           <Show when={props.developerMode || props.openworkServerStatus !== "connected"}>
-            <span class="text-gray-11 font-medium">OpenWork</span>
+            <span class="text-[var(--color-text-secondary)] font-medium">do-what</span>
             <span class={openworkStatusMeta().text}>{openworkStatusMeta().label}</span>
           </Show>
         </div>
@@ -217,13 +199,13 @@ export default function StatusBar(props: StatusBarProps) {
           <Show when={tipVisible() && activeTip()}>
             <button
               type="button"
-              class="flex h-7 items-center gap-2 rounded-full border border-gray-6/70 bg-gray-2/40 px-3 text-xs text-gray-10 transition-colors hover:bg-gray-2/60"
+              class="flex h-7 items-center gap-2 rounded-full border border-[var(--color-border-subtle)]/70 bg-[var(--color-bg-elevated)]/40 px-3 text-xs text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-bg-elevated)]/60"
               onClick={() => runAction(activeTip()?.action)}
               title={activeTip()?.label}
               aria-label={activeTip()?.label}
             >
-              <span class="uppercase tracking-[0.2em] text-[10px] text-gray-8">Tip</span>
-              <span class="text-gray-11 font-medium">{activeTip()?.label}</span>
+              <span class="uppercase tracking-[0.2em] text-[10px] text-[var(--color-text-tertiary)]">Tip</span>
+              <span class="text-[var(--color-text-secondary)] font-medium">{activeTip()?.label}</span>
             </button>
           </Show>
           <Button
@@ -234,7 +216,7 @@ export default function StatusBar(props: StatusBarProps) {
           >
             <Settings class="w-4 h-4" />
             <Show when={props.developerMode}>
-              <span class="text-gray-11 font-medium">Settings</span>
+              <span class="text-[var(--color-text-secondary)] font-medium">Settings</span>
             </Show>
           </Button>
         </div>

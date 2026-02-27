@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "OpenWork",
+  "productName": "do-what",
   "version": "0.11.121",
   "identifier": "com.differentai.openwork",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "OpenWork",
+        "title": "do-what",
         "width": 1180,
         "height": 820,
         "resizable": true

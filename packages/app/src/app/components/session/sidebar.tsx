@@ -293,13 +293,14 @@ export default function SessionSidebar(props: SidebarProps) {
       <div class="flex-1 overflow-y-auto px-4 py-4 space-y-6">
         <div>
           <div class="flex items-center justify-between px-2 mb-2">
-            <div class="text-xs text-gray-10 font-semibold uppercase tracking-wider">Workspaces</div>
+            <div class="text-xs text-[var(--color-text-tertiary)] font-semibold uppercase tracking-wider">Workspaces</div>
           </div>
           <div class="space-y-4">
             <Show
               when={props.workspaceGroups.length > 0}
               fallback={
-                <div class="px-3 py-2 rounded-lg border border-dashed border-gray-6 text-xs text-gray-9">
+                <div class="px-3 py-4 flex flex-col items-center gap-3 rounded-lg border border-dashed border-[var(--color-border-subtle)] text-xs text-[var(--color-text-tertiary)]">
+                  <img src="/svg/organic/shape/leaves/Elements-organic-shape-leaves-nature-fan.svg" class="w-10 h-10 opacity-35" alt="" aria-hidden="true" />
                   No workspaces in this session yet. Add one to get started.
                 </div>
               }
@@ -487,7 +488,8 @@ export default function SessionSidebar(props: SidebarProps) {
                           <Show
                             when={sessions().length > 0}
                             fallback={
-                              <div class="px-3 py-2 rounded-lg border border-dashed border-gray-6 text-xs text-gray-9">
+                              <div class="px-3 py-4 flex flex-col items-center gap-3 rounded-lg border border-dashed border-[var(--color-border-subtle)] text-xs text-[var(--color-text-tertiary)]">
+                                <img src="/svg/organic/shape/leaves/Elements-organic-shape-leaves-nature-fan.svg" class="w-8 h-8 opacity-35" alt="" aria-hidden="true" />
                                 No sessions yet.
                               </div>
                             }
@@ -532,7 +534,7 @@ export default function SessionSidebar(props: SidebarProps) {
                               )}
                             </For>
 
-                            <div class="px-2 pt-1 text-[10px] uppercase tracking-wide text-gray-8">Quick Chats</div>
+                            <div class="px-2 pt-1 text-[10px] uppercase tracking-wide text-[var(--color-text-tertiary)]">Quick Chats</div>
                             <For each={quickChats()}>
                               {(session) => (
                                 <button
@@ -668,6 +670,15 @@ export default function SessionSidebar(props: SidebarProps) {
             </div>
           </Show>
         </div>
+      </div>
+
+      <div class="flex justify-center py-2 border-t border-[var(--color-border-subtle)]/50">
+        <img
+          src="/svg/organic/shape/leaves/Elements-organic-shape-leaves-nature-vine.svg"
+          class="w-10 h-10 opacity-20"
+          alt=""
+          aria-hidden="true"
+        />
       </div>
 
       <Show when={contextMenu()}>
