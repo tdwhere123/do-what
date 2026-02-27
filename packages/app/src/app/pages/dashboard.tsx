@@ -44,17 +44,13 @@ import StatusBar from "../components/status-bar";
 import ProviderAuthModal, { type ProviderOAuthStartResult } from "../components/provider-auth-modal";
 import ShareWorkspaceModal from "../components/share-workspace-modal";
 import {
-  Box,
   ChevronDown,
   ChevronRight,
   Circle,
-  History,
   HeartPulse,
   Loader2,
   MoreHorizontal,
   Plus,
-  Settings,
-  Zap,
 } from "lucide-solid";
 
 export type DashboardViewProps = {
@@ -1390,70 +1386,140 @@ export default function DashboardView(props: DashboardViewProps) {
           <div class={`mx-auto max-w-5xl px-4 py-3 grid gap-2 grid-cols-6`}>
                         <button
               class={`flex flex-col items-center gap-1 text-xs ${
-                props.tab === "sessions" ? "text-gray-12" : "text-gray-10"
+                props.tab === "sessions" ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-tertiary)]"
               }`}
               onClick={() => props.setTab("sessions")}
             >
-              <History size={18} />
-              Sessions
+              <img src="/svg/organic/shape/bubble/Elements-organic-shape-bubble.svg" class="w-5 h-5 opacity-70" alt="" aria-hidden="true" />
+              会话
             </button>
             <button
               class={`flex flex-col items-center gap-1 text-xs ${
-                props.tab === "scheduled" ? "text-gray-12" : "text-gray-10"
+                props.tab === "scheduled" ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-tertiary)]"
               }`}
               onClick={() => props.setTab("scheduled")}
             >
-              <History size={18} />
-              Automations
+              <img src="/svg/organic/shape/spiral/Elements-organic-shape-spiral.svg" class="w-5 h-5 opacity-70" alt="" aria-hidden="true" />
+              自动化
             </button>
             <button
               class={`flex flex-col items-center gap-1 text-xs ${
-                props.tab === "soul" ? "text-gray-12" : "text-gray-10"
+                props.tab === "soul" ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-tertiary)]"
               }`}
               onClick={() => props.setTab("soul")}
             >
-              <HeartPulse size={18} class={soulNavIconClass()} />
-              Soul
+              <img src="/svg/organic/shape/heart/Elements-organic-shape-heart.svg" class="w-5 h-5 opacity-70" alt="" aria-hidden="true" />
+              记忆
             </button>
             <button
               class={`flex flex-col items-center gap-1 text-xs ${
-                props.tab === "skills" ? "text-gray-12" : "text-gray-10"
+                props.tab === "skills" ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-tertiary)]"
               }`}
               onClick={() => props.setTab("skills")}
             >
-              <Zap size={18} />
-              Skills
+              <img src="/svg/organic/shape/flash/Elements-organic-shape-flash.svg" class="w-5 h-5 opacity-70" alt="" aria-hidden="true" />
+              技能
             </button>
             <button
               class={`flex flex-col items-center gap-1 text-xs ${
-                props.tab === "extensions" ? "text-gray-12" : "text-gray-10"
+                props.tab === "extensions" ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-tertiary)]"
               }`}
               onClick={() => props.setTab("extensions")}
             >
-              <Box size={18} />
-              Extensions
+              <img src="/svg/organic/shape/tree/Elements-organic-shape-tree-body-nuture.svg" class="w-5 h-5 opacity-70" alt="" aria-hidden="true" />
+              扩展
             </button>
             <button
               class={`flex flex-col items-center gap-1 text-xs ${
-                props.tab === "settings" ? "text-gray-12" : "text-gray-10"
+                props.tab === "settings" ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-tertiary)]"
               }`}
               onClick={() => props.setTab("settings")}
             >
-              <Settings size={18} />
-              Settings
+              <img src="/svg/organic/shape/sun/Elements-organic-shape-sun.svg" class="w-5 h-5 opacity-70" alt="" aria-hidden="true" />
+              设置
             </button>
           </div>
         </nav>
       </main>
 
-      <aside class="w-56 hidden md:flex flex-col bg-dls-sidebar border-l border-dls-border p-4">
-        <div class="space-y-1 pt-2">
-          {navItem("sessions", "Sessions", <History size={18} />)}
-          {navItem("scheduled", "Automations", <History size={18} />)}
-          {navItem("soul", "Soul", <HeartPulse size={18} class={soulNavIconClass()} />)}
-          {navItem("skills", "Skills", <Zap size={18} />)}
-          {navItem("extensions", "Extensions", <Box size={18} />)}
-          {navItem("settings", "Settings", <Settings size={18} />)}
+      <aside class="w-16 hidden md:flex flex-col bg-dls-sidebar border-l border-dls-border pt-2 pb-3 items-center gap-1">
+        {/* 顶部微动态装饰 */}
+        <div class="mb-2 flex items-center justify-center" style="animation: float-gentle 3.5s ease-in-out infinite">
+          <img src="/svg/organic/shape/star/Elements-organic-shape-star-wink.svg" class="w-7 h-7 opacity-45" alt="" aria-hidden="true" />
+        </div>
+
+        {/* 组 1：核心工作 */}
+        <button
+          type="button"
+          title="会话"
+          class={`w-12 h-12 flex items-center justify-center rounded-lg transition-colors ${
+            props.tab === "sessions" ? "bg-dls-active text-dls-text" : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
+          }`}
+          onClick={() => props.setTab("sessions")}
+        >
+          <img src="/svg/organic/shape/bubble/Elements-organic-shape-bubble.svg" class="w-6 h-6 opacity-70" alt="" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          title="自动化"
+          class={`w-12 h-12 flex items-center justify-center rounded-lg transition-colors ${
+            props.tab === "scheduled" ? "bg-dls-active text-dls-text" : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
+          }`}
+          onClick={() => props.setTab("scheduled")}
+        >
+          <img src="/svg/organic/shape/spiral/Elements-organic-shape-spiral.svg" class="w-6 h-6 opacity-70" alt="" aria-hidden="true" />
+        </button>
+
+        <div class="w-8 h-px bg-[var(--color-border-subtle)] my-1.5" />
+
+        {/* 组 2：能力 */}
+        <button
+          type="button"
+          title="记忆"
+          class={`w-12 h-12 flex items-center justify-center rounded-lg transition-colors ${
+            props.tab === "soul" ? "bg-dls-active text-dls-text" : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
+          }`}
+          onClick={() => props.setTab("soul")}
+        >
+          <img src="/svg/organic/shape/heart/Elements-organic-shape-heart.svg" class="w-6 h-6 opacity-70" alt="" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          title="技能"
+          class={`w-12 h-12 flex items-center justify-center rounded-lg transition-colors ${
+            props.tab === "skills" ? "bg-dls-active text-dls-text" : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
+          }`}
+          onClick={() => props.setTab("skills")}
+        >
+          <img src="/svg/organic/shape/flash/Elements-organic-shape-flash.svg" class="w-6 h-6 opacity-70" alt="" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          title="扩展"
+          class={`w-12 h-12 flex items-center justify-center rounded-lg transition-colors ${
+            props.tab === "extensions" ? "bg-dls-active text-dls-text" : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
+          }`}
+          onClick={() => props.setTab("extensions")}
+        >
+          <img src="/svg/organic/shape/tree/Elements-organic-shape-tree-body-nuture.svg" class="w-6 h-6 opacity-70" alt="" aria-hidden="true" />
+        </button>
+
+        <div class="w-8 h-px bg-[var(--color-border-subtle)] my-1.5" />
+
+        {/* 组 3：配置 */}
+        <button
+          type="button"
+          title="设置"
+          class={`w-12 h-12 flex items-center justify-center rounded-lg transition-colors ${
+            props.tab === "settings" ? "bg-dls-active text-dls-text" : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
+          }`}
+          onClick={() => props.setTab("settings")}
+        >
+          <img src="/svg/organic/shape/sun/Elements-organic-shape-sun.svg" class="w-6 h-6 opacity-70" alt="" aria-hidden="true" />
+        </button>
+
+        <div class="mt-auto pb-1">
+          <img src="/svg/organic/shape/leaves/Elements-organic-shape-leaves-nature-vine.svg" class="w-10 h-10 opacity-20" alt="" aria-hidden="true" />
         </div>
       </aside>
     </div>

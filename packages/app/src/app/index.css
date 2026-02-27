@@ -190,3 +190,9 @@ select:disabled {
     filter: none;
   }
 }
+
+/* 右侧栏顶部装饰：轻浮动 + 微旋转 */
+@keyframes float-gentle {
+  0%, 100% { transform: translateY(0px) rotate(-5deg); }
+  50%       { transform: translateY(-5px) rotate(5deg); }
+}

@@ -23,7 +23,6 @@ import type {
 import type { EngineInfo, OpenworkServerInfo, WorkspaceInfo } from "../lib/tauri";
 
 import {
-  Box,
   Check,
   ChevronDown,
   ChevronRight,
@@ -31,10 +30,8 @@ import {
   Cpu,
   HeartPulse,
   HardDrive,
-  History,
   ListTodo,
   Loader2,
-  MessageCircle,
   Maximize2,
   Minimize2,
   MoreHorizontal,
@@ -43,10 +40,8 @@ import {
   Search,
   Settings,
   Shield,
-  SlidersHorizontal,
   Undo2,
   X,
-  Zap,
 } from "lucide-solid";
 
 import Button from "../components/button";
@@ -80,8 +75,6 @@ import Composer from "../components/session/composer";
 import type { SidebarSectionState } from "../components/session/sidebar";
 import FlyoutItem from "../components/flyout-item";
 import QuestionModal from "../components/question-modal";
-import ArtifactsPanel from "../components/session/artifacts-panel";
-import InboxPanel from "../components/session/inbox-panel";
 import ArtifactMarkdownEditor from "../components/session/artifact-markdown-editor";
 import SessionDagWidget from "../components/session-dag";
 import { useProjects } from "../state/sessions";
@@ -2969,9 +2962,12 @@ export default function SessionView(props: SessionViewProps) {
              <div class="max-w-5xl mx-auto w-full">
            <Show when={props.messages.length === 0}>
              <div class="text-center py-16 px-6 space-y-6">
-               <div class="w-16 h-16 bg-dls-hover rounded-3xl mx-auto flex items-center justify-center border border-dls-border">
-                 <Zap class="text-dls-secondary" />
-               </div>
+               <img
+                 src="/svg/organic/shape/flower/Elements-organic-shape-flower-nature-splash.svg"
+                 class="w-24 h-24 mx-auto opacity-85"
+                 alt=""
+                 aria-hidden="true"
+               />
               <div class="space-y-2">
                 <h3 class="text-xl font-medium">What do you want to do?</h3>
                 <p class="text-dls-secondary text-sm max-w-sm mx-auto">
@@ -2981,19 +2977,19 @@ export default function SessionView(props: SessionViewProps) {
               <div class="grid gap-3 sm:grid-cols-2 max-w-2xl mx-auto text-left">
                 <button
                   type="button"
-                  class="rounded-2xl border border-dls-border bg-dls-hover p-4 transition-all hover:bg-dls-active hover:border-gray-7"
+                  class="rounded-2xl border border-dls-border bg-dls-hover p-4 transition-all hover:bg-dls-active hover:border-[var(--color-border-default)]"
                   onClick={() => {
                     void handleBrowserAutomationQuickstart();
                   }}
                 >
                   <div class="text-sm font-semibold text-dls-text">Automate your browser</div>
                   <div class="mt-1 text-xs text-dls-secondary leading-relaxed">
-                    Set up browser actions and run reliable web tasks from OpenWork.
+                    Set up browser actions and run reliable web tasks from do-what.
                   </div>
                 </button>
                 <button
                   type="button"
-                  class="rounded-2xl border border-dls-border bg-dls-hover p-4 transition-all hover:bg-dls-active hover:border-gray-7"
+                  class="rounded-2xl border border-dls-border bg-dls-hover p-4 transition-all hover:bg-dls-active hover:border-[var(--color-border-default)]"
                   onClick={() => {
                     void handleSoulQuickstart();
                   }}
@@ -3215,117 +3211,108 @@ export default function SessionView(props: SessionViewProps) {
         />
       </main>
 
-      <aside class="w-56 hidden md:flex flex-col bg-dls-sidebar border-l border-dls-border p-4">
-        <div class="flex-1 overflow-y-auto space-y-3 pt-2">
-          <div class="space-y-1">
-          <button
-            type="button"
-            class={`w-full h-10 flex items-center gap-3 px-3 rounded-lg text-sm font-medium transition-colors ${
-              showRightSidebarSelection() && props.tab === "scheduled"
-                ? "bg-dls-active text-dls-text"
-                : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
-            }`}
-            onClick={() => {
-              props.setTab("scheduled");
-              props.setView("dashboard");
-            }}
-          >
-            <History size={18} />
-            Automations
-          </button>
-          <button
-            type="button"
-            class={`w-full h-10 flex items-center gap-3 px-3 rounded-lg text-sm font-medium transition-colors ${
-              showRightSidebarSelection() && props.tab === "soul"
-                ? "bg-dls-active text-dls-text"
-                : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
-            }`}
-            onClick={() => openSoul()}
-          >
-            <HeartPulse size={18} class={soulNavIconClass()} />
-            Soul
-          </button>
-          <button
-            type="button"
-            class={`w-full h-10 flex items-center gap-3 px-3 rounded-lg text-sm font-medium transition-colors ${
-              showRightSidebarSelection() && props.tab === "skills"
-                ? "bg-dls-active text-dls-text"
-                : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
-            }`}
-            onClick={() => {
-              props.setTab("skills");
-              props.setView("dashboard");
-            }}
-          >
-            <Zap size={18} />
-            Skills
-          </button>
-          <button
-            type="button"
-            class={`w-full h-10 flex items-center gap-3 px-3 rounded-lg text-sm font-medium transition-colors ${
-              showRightSidebarSelection() && props.tab === "extensions"
-                ? "bg-dls-active text-dls-text"
-                : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
-            }`}
-            onClick={() => {
-              props.setTab("extensions");
-              props.setView("dashboard");
-            }}
-          >
-            <Box size={18} />
-            Extensions
-          </button>
-          <button
-            type="button"
-            class={`w-full h-10 flex items-center gap-3 px-3 rounded-lg text-sm font-medium transition-colors ${
-              false
-                ? "bg-dls-active text-dls-text"
-                : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
-            }`}
-            onClick={() => {
-              props.setSettingsTab("workspace");
-              props.setTab("settings");
-              props.setView("dashboard");
-            }}
-          >
-            <MessageCircle size={18} />
-            Messaging
-          </button>
-          <Show when={props.developerMode}>
-            <button
-              type="button"
-              class={`w-full h-10 flex items-center gap-3 px-3 rounded-lg text-sm font-medium transition-colors ${
-                props.tab === "settings"
-                  ? "bg-dls-active text-dls-text"
-                  : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
-              }`}
-              onClick={openConfig}
-            >
-              <SlidersHorizontal size={18} />
-              Advanced
-            </button>
-          </Show>
-          </div>
+      <aside class="w-16 hidden md:flex flex-col bg-dls-sidebar border-l border-dls-border pt-2 pb-3 items-center gap-1">
+        {/* 顶部微动态装饰 */}
+        <div class="mb-2 flex items-center justify-center" style="animation: float-gentle 3.5s ease-in-out infinite">
+          <img src="/svg/organic/shape/star/Elements-organic-shape-star-wink.svg" class="w-7 h-7 opacity-45" alt="" aria-hidden="true" />
+        </div>
 
-          <InboxPanel
-            id="sidebar-inbox"
-            client={props.openworkServerClient}
-            workspaceId={props.openworkServerWorkspaceId}
-            onToast={(message) => setToastMessage(message)}
-          />
+        {/* 组 1：核心工作 */}
+        <button
+          type="button"
+          title="自动化"
+          class={`w-12 h-12 flex items-center justify-center rounded-lg transition-colors ${
+            showRightSidebarSelection() && props.tab === "scheduled"
+              ? "bg-dls-active text-dls-text"
+              : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
+          }`}
+          onClick={() => {
+            props.setTab("scheduled");
+            props.setView("dashboard");
+          }}
+        >
+          <img src="/svg/organic/shape/spiral/Elements-organic-shape-spiral.svg" class="w-6 h-6 opacity-70" alt="" aria-hidden="true" />
+        </button>
 
-          <ArtifactsPanel
-            id="sidebar-artifacts"
-            files={touchedFiles()}
-            workspaceRoot={props.activeWorkspaceRoot}
-            onOpenMarkdown={openMarkdownEditor}
+        <div class="w-8 h-px bg-[var(--color-border-subtle)] my-1.5" />
+
+        {/* 组 2：能力 */}
+        <button
+          type="button"
+          title="记忆"
+          class={`w-12 h-12 flex items-center justify-center rounded-lg transition-colors ${
+            showRightSidebarSelection() && props.tab === "soul"
+              ? "bg-dls-active text-dls-text"
+              : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
+          }`}
+          onClick={() => openSoul()}
+        >
+          <img src="/svg/organic/shape/heart/Elements-organic-shape-heart.svg" class="w-6 h-6 opacity-70" alt="" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          title="技能"
+          class={`w-12 h-12 flex items-center justify-center rounded-lg transition-colors ${
+            showRightSidebarSelection() && props.tab === "skills"
+              ? "bg-dls-active text-dls-text"
+              : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
+          }`}
+          onClick={() => {
+            props.setTab("skills");
+            props.setView("dashboard");
+          }}
+        >
+          <img src="/svg/organic/shape/flash/Elements-organic-shape-flash.svg" class="w-6 h-6 opacity-70" alt="" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          title="扩展"
+          class={`w-12 h-12 flex items-center justify-center rounded-lg transition-colors ${
+            showRightSidebarSelection() && props.tab === "extensions"
+              ? "bg-dls-active text-dls-text"
+              : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
+          }`}
+          onClick={() => {
+            props.setTab("extensions");
+            props.setView("dashboard");
+          }}
+        >
+          <img src="/svg/organic/shape/tree/Elements-organic-shape-tree-body-nuture.svg" class="w-6 h-6 opacity-70" alt="" aria-hidden="true" />
+        </button>
+
+        <div class="w-8 h-px bg-[var(--color-border-subtle)] my-1.5" />
+
+        {/* 组 3：配置 */}
+        <button
+          type="button"
+          title="设置"
+          class={`w-12 h-12 flex items-center justify-center rounded-lg transition-colors ${
+            false
+              ? "bg-dls-active text-dls-text"
+              : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
+          }`}
+          onClick={() => {
+            props.setSettingsTab("workspace");
+            props.setTab("settings");
+            props.setView("dashboard");
+          }}
+        >
+          <img src="/svg/organic/shape/sun/Elements-organic-shape-sun.svg" class="w-6 h-6 opacity-70" alt="" aria-hidden="true" />
+        </button>
+
+        <div class="mt-auto pb-1">
+          <img
+            src="/svg/organic/shape/leaves/Elements-organic-shape-leaves-nature-vine.svg"
+            class="w-10 h-10 opacity-20"
+            alt=""
+            aria-hidden="true"
           />
         </div>
       </aside>
 
       <Show when={commandPaletteOpen()}>
         <div
-          class="fixed inset-0 z-50 bg-gray-1/60 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto"
+          class="fixed inset-0 z-50 bg-[var(--color-bg-base)]/60 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto"
           onClick={closeCommandPalette}
         >
           <div
@@ -3477,7 +3464,7 @@ export default function SessionView(props: SessionViewProps) {
       />
 
       <Show when={props.activePermission}>
-        <div class="absolute inset-0 z-50 bg-gray-1/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="absolute inset-0 z-50 bg-[var(--color-bg-base)]/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div class="bg-gray-2 border border-amber-7/30 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
             <div class="p-6">
               <div class="flex items-start gap-4 mb-4">
