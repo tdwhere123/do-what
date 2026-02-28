@@ -335,11 +335,10 @@ export default function MessageList(props: MessageListProps) {
         {/* Status dot */}
         <div class={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDotClass(status())}`} />
         {/* Tool icon */}
-        <div class={`shrink-0 ${
-          summary().isSkill 
-            ? "text-purple-10" 
+        <div class={`shrink-0 ${summary().isSkill
+            ? "text-purple-10"
             : "text-gray-9"
-        }`}>
+          }`}>
           <ToolIcon category={category()} size={13} />
         </div>
         {/* Title */}
@@ -553,11 +552,10 @@ export default function MessageList(props: MessageListProps) {
       <div class={containerProps.isInline ? (containerProps.isUser ? "mt-2" : "mt-3 pt-3") : ""}>
         {/* Toggle button - clean, compact */}
         <button
-          class={`flex items-center gap-2 py-1.5 text-[13px] transition-colors ${
-            containerProps.isUser
+          class={`flex items-center gap-2 py-1.5 text-[13px] transition-colors ${containerProps.isUser
               ? "text-gray-10 hover:text-gray-11"
               : "text-gray-10 hover:text-gray-12"
-          }`}
+            }`}
           onClick={() => toggleSteps(containerProps.id, relatedIds())}
         >
           <ChevronRight
@@ -583,11 +581,10 @@ export default function MessageList(props: MessageListProps) {
         {/* Expanded content */}
         <Show when={expanded()}>
           <div
-            class={`mt-1 ml-1 pl-3 border-l-2 max-h-[480px] overflow-y-auto ${
-              containerProps.isUser
+            class={`mt-1 ml-1 pl-3 border-l-2 max-h-[480px] overflow-y-auto ${containerProps.isUser
                 ? "border-gray-6"
                 : "border-gray-6/60"
-            }`}
+              }`}
           >
             <For each={containerProps.partsGroups}>
               {(parts, index) => (
@@ -630,11 +627,10 @@ export default function MessageList(props: MessageListProps) {
                 style={blockPerfStyle(blockIndex())}
               >
                 <div
-                  class={`w-full relative ${
-                    block.isUser
-                      ? "max-w-2xl px-6 py-4 rounded-[24px] bg-gray-3 text-gray-12 text-[15px] leading-relaxed"
-                      : "max-w-[68ch] text-[15px] leading-7 text-gray-12 group pl-2"
-                  } ${searchOutlineClass}`}
+                  class={`w-full relative ${block.isUser
+                      ? "max-w-[640px] px-[18px] py-[12px] rounded-[20px] rounded-br-[4px] border border-dls-border bg-dls-surface shadow-sm text-dls-text text-[15px] leading-relaxed"
+                      : "max-w-[720px] text-[15px] leading-7 text-dls-text group pl-2"
+                    } ${searchOutlineClass}`}
                 >
                   <StepsContainer
                     id={block.id}
@@ -656,11 +652,10 @@ export default function MessageList(props: MessageListProps) {
               style={blockPerfStyle(blockIndex())}
             >
               <div
-                class={`w-full relative ${
-                  block.isUser
-                    ? "max-w-2xl px-6 py-4 rounded-[24px] bg-gray-3 text-gray-12 text-[15px] leading-relaxed"
-                    : "max-w-[68ch] text-[15px] leading-7 text-gray-12 group pl-2"
-                } ${searchOutlineClass}`}
+                class={`w-full relative ${block.isUser
+                    ? "max-w-[640px] px-[18px] py-[12px] rounded-[20px] rounded-br-[4px] border border-dls-border bg-dls-surface shadow-sm text-dls-text text-[15px] leading-relaxed"
+                    : "max-w-[720px] text-[15px] leading-7 text-dls-text group pl-2"
+                  } ${searchOutlineClass}`}
               >
                 <Show when={attachmentsForMessage(block.message).length > 0}>
                   <div class={block.isUser ? "mb-3 flex flex-wrap gap-2" : "mb-4 flex flex-wrap gap-2"}>

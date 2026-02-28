@@ -93,3 +93,24 @@
 - 回填 `plans/v0.6.md` 与 `plans/v0.6-slimming-spec.md` 的收口记录。
 - 执行仓库可运行校验（typecheck/lint/test，按脚本可用性执行）。
 - 产出最终迁移报告：`plans/execution/99-final-report.md`。
+
+## v0.6 本次增量（2026-02-28，v0.7 Track 2 对齐）
+
+- 新增桌面端多助手状态命令：
+  - `check_assistant_statuses`
+  - `check_opencode_status`
+  - `check_claude_code_status`
+  - `check_codex_status`
+- Settings 运行时页改为统一状态模型展示，支持并列渲染 `opencode/claude-code/codex` 安装与登录状态。
+- 修复本地 runtime 生命周期问题：
+  - 应用退出时清理 active run 子进程
+  - run 完成事件上报真实退出码（不再固定 0）
+- Desktop/orchestrator 启动链路环境变量改为 `DOWHAT_*` 优先并兼容 `OPENWORK_*`，开发数据目录默认切换到 `.do-what/*`。
+- 验证通过：
+  - `pnpm.cmd --filter @do-what/desktop exec cargo check --manifest-path src-tauri/Cargo.toml`
+  - `pnpm.cmd --filter @do-what/ui typecheck`
+- README 联动更新：
+  - `packages/desktop/README.md`
+  - `packages/app/README.md`
+  - `packages/orchestrator/README.md`
+  - `packages/server/README.md`

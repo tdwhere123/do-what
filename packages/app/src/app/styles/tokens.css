@@ -1,14 +1,15 @@
 :root {
   /* ---- Color: Background ---- */
-  --color-bg-base: #faf8f5;
-  --color-bg-sidebar: #f2efe9;
-  --color-bg-elevated: #ffffff;
-  --color-bg-overlay: rgba(0, 0, 0, 0.04);
+  --color-bg-base: #f5eedf;
+  --color-bg-sidebar: #ede2cc;
+  --color-bg-elevated: #fdfaf5;
+  --color-bg-overlay: rgba(180, 155, 110, 0.12);
+  --color-bg-active: rgba(180, 155, 110, 0.22);
 
   /* ---- Color: Border ---- */
-  --color-border-subtle: #e5e0d8;
-  --color-border-default: #d4cfc6;
-  --color-border-strong: #b8b2a8;
+  --color-border-subtle: #d6cdb8;
+  --color-border-default: #c4baa5;
+  --color-border-strong: #a89f8d;
 
   /* ---- Color: Text ---- */
   --color-text-primary: #1a1a1a;
@@ -18,8 +19,8 @@
   --color-text-inverse: #ffffff;
 
   /* ---- Color: Accent ---- */
-  --color-accent-primary: #1a1a1a;
-  --color-accent-secondary: #3d3a35;
+  --color-accent-primary: #c96a35;
+  --color-accent-secondary: #bd5926;
 
   /* ---- Color: Status ---- */
   --color-status-success: var(--green-9);
@@ -55,6 +56,7 @@
   /* ---- Typography ---- */
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+  --font-handwriting: 'Kalam', 'Caveat', cursive;
   --text-xs: 11px;
   --text-sm: 13px;
   --text-base: 14px;

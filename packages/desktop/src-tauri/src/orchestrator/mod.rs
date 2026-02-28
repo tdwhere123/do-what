@@ -76,23 +76,29 @@ pub struct OrchestratorSpawnOptions {
 }
 
 pub fn resolve_orchestrator_data_dir() -> String {
-    let env_dir = env::var("OPENWORK_DATA_DIR")
+    let env_dir = env::var("DOWHAT_DATA_DIR")
         .ok()
-        .filter(|value| !value.trim().is_empty());
+        .filter(|value| !value.trim().is_empty())
+        .or_else(|| {
+            env::var("OPENWORK_DATA_DIR")
+                .ok()
+                .filter(|value| !value.trim().is_empty())
+        });
 
     if let Some(dir) = env_dir {
         return dir;
     }
 
     if let Some(home) = home_dir() {
-        return home
-            .join(".openwork")
-            .join("openwork-orchestrator")
-            .to_string_lossy()
-            .to_string();
+        let dowhat_path = home.join(".do-what").join("do-what-orchestrator");
+        let openwork_path = home.join(".openwork").join("openwork-orchestrator");
+        if openwork_path.exists() && !dowhat_path.exists() {
+            return openwork_path.to_string_lossy().to_string();
+        }
+        return dowhat_path.to_string_lossy().to_string();
     }
 
-    ".openwork/openwork-orchestrator".to_string()
+    ".do-what/do-what-orchestrator".to_string()
 }
 
 fn orchestrator_state_path(data_dir: &str) -> PathBuf {

@@ -2394,7 +2394,7 @@ export default function SessionView(props: SessionViewProps) {
 
   return (
     <div class="flex h-screen w-full bg-dls-surface text-dls-text font-sans overflow-hidden">
-      <aside class="w-64 hidden md:flex flex-col bg-dls-sidebar border-r border-dls-border p-4">
+      <aside class="w-[220px] shrink-0 hidden md:flex flex-col bg-dls-sidebar border-r border-dls-border py-4 px-3">
         <div class="flex-1 overflow-y-auto">
           <div class="space-y-3 mb-3">
             <For each={props.workspaceSessionGroups}>
@@ -2409,69 +2409,68 @@ export default function SessionView(props: SessionViewProps) {
                 return (
                   <div class="space-y-1">
                     <div class="relative group">
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          class="w-full flex items-center justify-between h-10 px-3 rounded-lg text-left transition-colors text-dls-text hover:bg-dls-hover"
-                          onClick={() => {
-                            expandWorkspace(workspace().id);
-                            props.activateWorkspace(workspace().id);
-                          }}
-                          onKeyDown={(event) => {
-                            if (event.key !== "Enter" && event.key !== " ") return;
-                            if (event.isComposing || event.keyCode === 229) return;
-                            event.preventDefault();
-                            expandWorkspace(workspace().id);
-                            props.activateWorkspace(workspace().id);
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        class="w-full flex items-center justify-between h-10 px-3 rounded-lg text-left transition-colors text-dls-text hover:bg-dls-hover"
+                        onClick={() => {
+                          expandWorkspace(workspace().id);
+                          props.activateWorkspace(workspace().id);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key !== "Enter" && event.key !== " ") return;
+                          if (event.isComposing || event.keyCode === 229) return;
+                          event.preventDefault();
+                          expandWorkspace(workspace().id);
+                          props.activateWorkspace(workspace().id);
+                        }}
+                      >
+                        <button
+                          type="button"
+                          class="mr-2 -ml-1 p-1 rounded-md text-dls-secondary hover:text-dls-text hover:bg-dls-active"
+                          aria-label={isWorkspaceExpanded(workspace().id) ? "Collapse" : "Expand"}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            toggleWorkspaceExpanded(workspace().id);
                           }}
                         >
-                          <button
-                            type="button"
-                            class="mr-2 -ml-1 p-1 rounded-md text-dls-secondary hover:text-dls-text hover:bg-dls-active"
-                            aria-label={isWorkspaceExpanded(workspace().id) ? "Collapse" : "Expand"}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              toggleWorkspaceExpanded(workspace().id);
-                            }}
+                          <Show
+                            when={isWorkspaceExpanded(workspace().id)}
+                            fallback={<ChevronRight size={14} />}
                           >
-                            <Show
-                              when={isWorkspaceExpanded(workspace().id)}
-                              fallback={<ChevronRight size={14} />}
-                            >
-                              <ChevronDown size={14} />
+                            <ChevronDown size={14} />
+                          </Show>
+                        </button>
+                        <div class="min-w-0 flex-1">
+                          <div class="text-sm font-medium truncate">{workspaceLabel(workspace())}</div>
+                          <div class="text-[11px] text-dls-secondary flex items-center gap-1.5">
+                            <span>{workspaceKindLabel(workspace())}</span>
+                            <Show when={soulEnabled()}>
+                              <span class="inline-flex items-center gap-1 rounded-full border border-rose-7/40 bg-rose-3/40 px-1.5 py-0.5 text-[10px] text-rose-11">
+                                <img src="/icons/soul.svg" class="w-2.5 h-2.5 opacity-70" alt="" aria-hidden="true" />
+                                记忆(Soul)
+                              </span>
                             </Show>
-                          </button>
-                          <div class="min-w-0 flex-1">
-                            <div class="text-sm font-medium truncate">{workspaceLabel(workspace())}</div>
-                            <div class="text-[11px] text-dls-secondary flex items-center gap-1.5">
-                              <span>{workspaceKindLabel(workspace())}</span>
-                              <Show when={soulEnabled()}>
-                                <span class="inline-flex items-center gap-1 rounded-full border border-rose-7/40 bg-rose-3/40 px-1.5 py-0.5 text-[10px] text-rose-11">
-                                  <HeartPulse size={10} />
-                                  Soul
-                                </span>
-                              </Show>
-                            </div>
                           </div>
-                          <Show when={group.status === "loading"}>
-                            <Loader2 size={14} class="animate-spin text-dls-secondary mr-1" />
-                          </Show>
-                          <Show when={group.status === "error"}>
-                            <span
-                              class={`text-[10px] px-2 py-0.5 rounded-full border ${
-                                taskLoadError().tone === "offline"
-                                  ? "border-amber-7/50 text-amber-11 bg-amber-3/30"
-                                  : "border-red-7/50 text-red-11 bg-red-3/30"
-                              }`}
-                              title={taskLoadError().title}
-                            >
-                              {taskLoadError().label}
-                            </span>
-                          </Show>
-                          <Show when={isConnecting()}>
-                            <Loader2 size={14} class="animate-spin text-dls-secondary" />
-                          </Show>
                         </div>
+                        <Show when={group.status === "loading"}>
+                          <Loader2 size={14} class="animate-spin text-dls-secondary mr-1" />
+                        </Show>
+                        <Show when={group.status === "error"}>
+                          <span
+                            class={`text-[10px] px-2 py-0.5 rounded-full border ${taskLoadError().tone === "offline"
+                              ? "border-amber-7/50 text-amber-11 bg-amber-3/30"
+                              : "border-red-7/50 text-red-11 bg-red-3/30"
+                              }`}
+                            title={taskLoadError().title}
+                          >
+                            {taskLoadError().label}
+                          </span>
+                        </Show>
+                        <Show when={isConnecting()}>
+                          <Loader2 size={14} class="animate-spin text-dls-secondary" />
+                        </Show>
+                      </div>
                       <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           type="button"
@@ -2513,7 +2512,7 @@ export default function SessionView(props: SessionViewProps) {
                               setWorkspaceMenuId(null);
                             }}
                           >
-                            Edit name
+                            修改名称
                           </button>
                           <button
                             type="button"
@@ -2523,7 +2522,7 @@ export default function SessionView(props: SessionViewProps) {
                               setWorkspaceMenuId(null);
                             }}
                           >
-                            Share...
+                            分享...
                           </button>
                           <button
                             type="button"
@@ -2533,7 +2532,7 @@ export default function SessionView(props: SessionViewProps) {
                               setWorkspaceMenuId(null);
                             }}
                           >
-                            {soulEnabled() ? "Soul settings" : "Enable soul"}
+                            {soulEnabled() ? "记忆设置" : "启用记忆"}
                           </button>
                           <Show when={workspace().workspaceType === "remote"}>
                             <button
@@ -2545,7 +2544,7 @@ export default function SessionView(props: SessionViewProps) {
                               }}
                               disabled={isConnecting()}
                             >
-                              Test connection
+                              测试连接
                             </button>
                             <button
                               type="button"
@@ -2585,11 +2584,10 @@ export default function SessionView(props: SessionViewProps) {
                                   <div
                                     role="button"
                                     tabIndex={0}
-                                    class={`group flex items-center justify-between h-8 px-3 rounded-lg cursor-pointer relative overflow-hidden ml-2 w-[calc(100%-0.5rem)] ${
-                                      isSelected()
-                                        ? "bg-dls-active text-dls-text"
-                                        : "hover:bg-dls-hover"
-                                    }`}
+                                    class={`group flex items-center justify-between py-2 px-2.5 min-h-[34px] rounded-lg cursor-pointer relative overflow-hidden ml-2 w-[calc(100%-0.5rem)] ${isSelected()
+                                      ? "bg-[rgba(0,0,0,0.07)] text-dls-text"
+                                      : "hover:bg-[rgba(180,155,110,0.12)]"
+                                      }`}
                                     onClick={() => openSessionFromList(workspace().id, session.id)}
                                     onKeyDown={(event) => {
                                       if (event.key !== "Enter" && event.key !== " ") return;
@@ -2598,7 +2596,7 @@ export default function SessionView(props: SessionViewProps) {
                                       openSessionFromList(workspace().id, session.id);
                                     }}
                                   >
-                                    <span class="text-sm text-dls-text truncate mr-2 font-medium">
+                                    <span class="text-xs text-dls-text truncate mr-2 font-medium">
                                       {session.title}
                                     </span>
                                     <Show when={session.time?.updated}>
@@ -2621,11 +2619,10 @@ export default function SessionView(props: SessionViewProps) {
                               fallback={
                                 <Show when={group.status === "error"}>
                                   <div
-                                    class={`w-full px-3 py-2 text-xs ml-2 text-left rounded-lg border ${
-                                      taskLoadError().tone === "offline"
-                                        ? "text-amber-11 bg-amber-3/20 border-amber-7/40"
-                                        : "text-red-11 bg-red-3/20 border-red-7/40"
-                                    }`}
+                                    class={`w-full px-3 py-2 text-xs ml-2 text-left rounded-lg border ${taskLoadError().tone === "offline"
+                                      ? "text-amber-11 bg-amber-3/20 border-amber-7/40"
+                                      : "text-red-11 bg-red-3/20 border-red-7/40"
+                                      }`}
                                     title={taskLoadError().title}
                                   >
                                     {taskLoadError().message}
@@ -2640,11 +2637,10 @@ export default function SessionView(props: SessionViewProps) {
                                     <div
                                       role="button"
                                       tabIndex={0}
-                                      class={`group flex items-center justify-between h-8 px-3 rounded-lg cursor-pointer relative overflow-hidden ml-2 w-[calc(100%-0.5rem)] ${
-                                        isSelected()
-                                          ? "bg-dls-active text-dls-text"
-                                          : "hover:bg-dls-hover"
-                                      }`}
+                                      class={`group flex items-center justify-between py-2 px-2.5 min-h-[34px] rounded-lg cursor-pointer relative overflow-hidden ml-2 w-[calc(100%-0.5rem)] ${isSelected()
+                                        ? "bg-[rgba(0,0,0,0.07)] text-dls-text"
+                                        : "hover:bg-[rgba(180,155,110,0.12)]"
+                                        }`}
                                       onClick={() => openSessionFromList(workspace().id, session.id)}
                                       onKeyDown={(event) => {
                                         if (event.key !== "Enter" && event.key !== " ") return;
@@ -2653,7 +2649,7 @@ export default function SessionView(props: SessionViewProps) {
                                         openSessionFromList(workspace().id, session.id);
                                       }}
                                     >
-                                      <span class="text-sm text-dls-text truncate mr-2 font-medium">
+                                      <span class="text-xs text-dls-text truncate mr-2 font-medium">
                                         {session.title}
                                       </span>
                                       <Show when={session.time?.updated}>
@@ -2702,6 +2698,7 @@ export default function SessionView(props: SessionViewProps) {
             </For>
           </div>
 
+
           <div class="relative" ref={(el) => (addWorkspaceMenuRef = el)}>
             <button
               type="button"
@@ -2709,7 +2706,7 @@ export default function SessionView(props: SessionViewProps) {
               onClick={() => setAddWorkspaceMenuOpen((prev) => !prev)}
             >
               <Plus size={14} />
-              Add a worker
+              添加工作区
             </button>
             <Show when={addWorkspaceMenuOpen()}>
               <div class="absolute left-0 right-0 top-full mt-2 rounded-lg border border-dls-border bg-dls-surface shadow-xl overflow-hidden z-20">
@@ -2722,7 +2719,7 @@ export default function SessionView(props: SessionViewProps) {
                   }}
                 >
                   <Plus size={12} />
-                  New worker
+                  添加工作区
                 </button>
                 <button
                   type="button"
@@ -2761,7 +2758,7 @@ export default function SessionView(props: SessionViewProps) {
         />
         <header class="h-14 border-b border-dls-border flex items-center justify-between px-6 bg-dls-surface z-10 shrink-0">
           <div class="flex items-center gap-3 min-w-0">
-            <h1 class="text-sm font-semibold text-dls-text truncate">{selectedSessionTitle() || "New task"}</h1>
+            <h1 class="text-sm font-semibold text-dls-text truncate">{selectedSessionTitle() || "新任务"}</h1>
             <Show when={props.developerMode}>
               <span class="text-xs text-dls-secondary">{props.headerStatus}</span>
             </Show>
@@ -2773,11 +2770,10 @@ export default function SessionView(props: SessionViewProps) {
           <div class="flex items-center gap-2">
             <button
               type="button"
-              class={`h-9 px-2.5 flex items-center justify-center rounded-lg text-[11px] font-mono transition-colors ${
-                commandPaletteOpen()
-                  ? "bg-dls-active text-dls-text"
-                  : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
-              }`}
+              class={`h-9 px-2.5 flex items-center justify-center rounded-lg text-[11px] font-mono transition-colors ${commandPaletteOpen()
+                ? "bg-dls-active text-dls-text"
+                : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
+                }`}
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -2787,18 +2783,17 @@ export default function SessionView(props: SessionViewProps) {
                 }
                 window.setTimeout(() => openCommandPalette(), 0);
               }}
-              title="Quick actions (Ctrl/Cmd+K)"
-              aria-label="Quick actions"
+              title="快捷操作 (Ctrl/Cmd+K)"
+              aria-label="快捷操作"
             >
               Cmd+K
             </button>
             <button
               type="button"
-              class={`h-9 w-9 flex items-center justify-center rounded-lg transition-colors ${
-                searchOpen()
-                  ? "bg-dls-active text-dls-text"
-                  : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
-              }`}
+              class={`h-9 w-9 flex items-center justify-center rounded-lg transition-colors ${searchOpen()
+                ? "bg-dls-active text-dls-text"
+                : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
+                }`}
               onClick={() => {
                 if (searchOpen()) {
                   closeSearch();
@@ -2877,21 +2872,21 @@ export default function SessionView(props: SessionViewProps) {
                     }}
                     disabled={!canCompactSession() || historyActionBusy() !== null}
                   >
-                    Compact session context
+                    精简会话上下文
                   </button>
                   <button
                     type="button"
                     class="w-full text-left px-2 py-1.5 text-sm rounded-md hover:bg-dls-hover"
                     onClick={openRenameModal}
                   >
-                    Rename session
+                    重命名会话
                   </button>
                   <button
                     type="button"
                     class="w-full text-left px-2 py-1.5 text-sm rounded-md hover:bg-dls-hover text-red-11"
                     onClick={openDeleteSessionModal}
                   >
-                    Delete session
+                    删除会话
                   </button>
                 </div>
               </Show>
@@ -2923,8 +2918,8 @@ export default function SessionView(props: SessionViewProps) {
                   }
                 }}
                 class="min-w-0 flex-1 bg-transparent text-sm text-dls-text placeholder:text-dls-secondary focus:outline-none"
-                placeholder="Search in this chat"
-                aria-label="Search in this chat"
+                placeholder="在此会话中搜索"
+                aria-label="在此会话中搜索"
               />
               <span class="text-[11px] text-dls-secondary tabular-nums">{activeSearchPositionLabel()}</span>
               <button
@@ -2934,7 +2929,7 @@ export default function SessionView(props: SessionViewProps) {
                 onClick={() => moveSearchHit(-1)}
                 aria-label="Previous match"
               >
-                Prev
+                上一项
               </button>
               <button
                 type="button"
@@ -2943,7 +2938,7 @@ export default function SessionView(props: SessionViewProps) {
                 onClick={() => moveSearchHit(1)}
                 aria-label="Next match"
               >
-                Next
+                下一项
               </button>
               <button
                 type="button"
@@ -2957,128 +2952,127 @@ export default function SessionView(props: SessionViewProps) {
           </div>
         </Show>
 
-       <div class="flex-1 flex overflow-hidden">
-         <div class="flex-1 min-w-0 relative overflow-hidden">
-           <div
-             class="h-full overflow-y-auto px-12 py-10 scroll-smooth bg-dls-surface"
-             style={{ contain: "layout paint style" }}
-             ref={(el) => (chatContainerEl = el)}
-           >
-             <div class="max-w-5xl mx-auto w-full">
-           <Show when={props.messages.length === 0 && !selectedAgentRun()}>
-             <div class="text-center py-16 px-6 space-y-6">
-               <img
-                 src="/svg/organic/shape/flower/Elements-organic-shape-flower-nature-splash.svg"
-                 class="w-24 h-24 mx-auto opacity-85"
-                 alt=""
-                 aria-hidden="true"
-               />
-              <div class="space-y-2">
-                <h3 class="text-xl font-medium">What do you want to do?</h3>
-                <p class="text-dls-secondary text-sm max-w-sm mx-auto">
-                  Pick a starting point or just type below.
-                </p>
-              </div>
-              <div class="grid gap-3 sm:grid-cols-2 max-w-2xl mx-auto text-left">
-                <button
-                  type="button"
-                  class="rounded-2xl border border-dls-border bg-dls-hover p-4 transition-all hover:bg-dls-active hover:border-[var(--color-border-default)]"
-                  onClick={() => {
-                    void handleBrowserAutomationQuickstart();
-                  }}
-                >
-                  <div class="text-sm font-semibold text-dls-text">Automate your browser</div>
-                  <div class="mt-1 text-xs text-dls-secondary leading-relaxed">
-                    Set up browser actions and run reliable web tasks from do-what.
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  class="rounded-2xl border border-dls-border bg-dls-hover p-4 transition-all hover:bg-dls-active hover:border-[var(--color-border-default)]"
-                  onClick={() => {
-                    void handleSoulQuickstart();
-                  }}
-                >
-                  <div class="text-sm font-semibold text-dls-text">Give me a soul</div>
-                  <div class="mt-1 text-xs text-dls-secondary leading-relaxed">
-                    Keep your goals and preferences across sessions with light scheduled check-ins.
-                    Tradeoff: more autonomy can create extra background runs, but revert is one command.
-                    Audit setup and heartbeat evidence from the Soul section.
-                  </div>
-                </button>
-              </div>
-            </div>
-          </Show>
-
-          <Show when={hiddenMessageCount() > 0}>
-            <div class="mb-4 flex justify-center">
-              <button
-                type="button"
-                class="rounded-full border border-dls-border bg-dls-hover/70 px-3 py-1 text-xs text-dls-secondary transition-colors hover:bg-dls-active hover:text-dls-text"
-                onClick={revealEarlierMessages}
-              >
-                Show {nextRevealCount().toLocaleString()} earlier message
-                {nextRevealCount() === 1 ? "" : "s"}
-              </button>
-            </div>
-          </Show>
-
-          <MessageList
-            messages={batchedRenderedMessages()}
-            isStreaming={showRunIndicator()}
-            developerMode={props.developerMode}
-            showThinking={props.showThinking}
-            workspaceRoot={props.activeWorkspaceRoot}
-            expandedStepIds={props.expandedStepIds}
-            setExpandedStepIds={props.setExpandedStepIds}
-            searchMatchMessageIds={searchMatchMessageIds()}
-            activeSearchMessageId={activeSearchHit()?.messageId ?? null}
-            searchHighlightQuery={searchQueryDebounced().trim()}
-            footer={
-              showRunIndicator() ? (
-                <div class="flex justify-start pl-2">
-                  <div class="w-full max-w-[68ch]">
-                    <div
-                      class={`flex items-center gap-2 text-xs py-1 ${runPhase() === "error" ? "text-red-11" : "text-gray-9"}`}
-                      role="status"
-                      aria-live="polite"
-                    >
-                      <span
-                        class={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                          runPhase() === "error" ? "bg-red-9" : "bg-gray-8 animate-pulse"
-                        }`}
-                      />
-                      <span class="truncate">{thinkingStatus() || runLabel()}</span>
-                      <Show when={props.developerMode}>
-                        <span class="text-[10px] text-gray-8 ml-auto shrink-0">{runElapsedLabel()}</span>
-                      </Show>
+        <div class="flex-1 flex overflow-hidden">
+          <div class="flex-1 min-w-0 relative overflow-hidden">
+            <div
+              class="h-full overflow-y-auto px-12 py-10 scroll-smooth bg-dls-surface"
+              style={{ contain: "layout paint style" }}
+              ref={(el) => (chatContainerEl = el)}
+            >
+              <div class="max-w-5xl mx-auto w-full">
+                <Show when={props.messages.length === 0 && !selectedAgentRun()}>
+                  <div class="text-center py-16 px-6 space-y-6">
+                    <img
+                      src="/svg/organic/shape/flower/Elements-organic-shape-flower-nature-splash.svg"
+                      class="w-24 h-24 mx-auto opacity-85"
+                      alt=""
+                      aria-hidden="true"
+                    />
+                    <div class="space-y-2">
+                      <h3 class="text-xl font-medium">您想做些什么？</h3>
+                      <p class="text-dls-secondary text-sm max-w-sm mx-auto">
+                        选择一个起点，或者直接在下方输入。
+                      </p>
+                    </div>
+                    <div class="grid gap-3 sm:grid-cols-2 max-w-2xl mx-auto text-left">
+                      <button
+                        type="button"
+                        class="rounded-2xl border border-dls-border bg-dls-hover p-4 transition-all hover:bg-dls-active hover:border-[var(--color-border-default)]"
+                        onClick={() => {
+                          void handleBrowserAutomationQuickstart();
+                        }}
+                      >
+                        <div class="text-sm font-semibold text-dls-text">自动化您的浏览器</div>
+                        <div class="mt-1 text-xs text-dls-secondary leading-relaxed">
+                          配置浏览器操作并从 do-what 运行可靠的网络任务。
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        class="rounded-2xl border border-dls-border bg-dls-hover p-4 transition-all hover:bg-dls-active hover:border-[var(--color-border-default)]"
+                        onClick={() => {
+                          void handleSoulQuickstart();
+                        }}
+                      >
+                        <div class="text-sm font-semibold text-dls-text">赋我予魂 (Soul)</div>
+                        <div class="mt-1 text-xs text-dls-secondary leading-relaxed">
+                          通过轻量级的定期检查，在不同会话中保持您的目标和偏好。<br />
+                          权衡：更高的自主性会带来额外的后台运行，但还原仅需一条命令。
+                          在记忆(Soul)区域审核设置和心跳证据。
+                        </div>
+                      </button>
                     </div>
                   </div>
-                </div>
-              ) : undefined
-            }
-          />
+                </Show>
 
-          <Show when={selectedAgentRun()}>
-            {(run) => (
-              <div class="mt-6 rounded-xl border border-dls-border bg-dls-surface overflow-hidden">
-                <div class="flex items-center justify-between border-b border-dls-border px-4 py-2 text-xs text-dls-secondary">
-                  <span>Local Runtime Output</span>
-                  <span class="uppercase tracking-wide">{run().runtime}</span>
-                </div>
-                <AgentRunView events={run().events} status={run().status} />
+                <Show when={hiddenMessageCount() > 0}>
+                  <div class="mb-4 flex justify-center">
+                    <button
+                      type="button"
+                      class="rounded-full border border-dls-border bg-dls-hover/70 px-3 py-1 text-xs text-dls-secondary transition-colors hover:bg-dls-active hover:text-dls-text"
+                      onClick={revealEarlierMessages}
+                    >
+                      Show {nextRevealCount().toLocaleString()} earlier message
+                      {nextRevealCount() === 1 ? "" : "s"}
+                    </button>
+                  </div>
+                </Show>
+
+                <MessageList
+                  messages={batchedRenderedMessages()}
+                  isStreaming={showRunIndicator()}
+                  developerMode={props.developerMode}
+                  showThinking={props.showThinking}
+                  workspaceRoot={props.activeWorkspaceRoot}
+                  expandedStepIds={props.expandedStepIds}
+                  setExpandedStepIds={props.setExpandedStepIds}
+                  searchMatchMessageIds={searchMatchMessageIds()}
+                  activeSearchMessageId={activeSearchHit()?.messageId ?? null}
+                  searchHighlightQuery={searchQueryDebounced().trim()}
+                  footer={
+                    showRunIndicator() ? (
+                      <div class="flex justify-start pl-2">
+                        <div class="w-full max-w-[720px]">
+                          <div
+                            class={`flex items-center gap-2 text-xs py-1 ${runPhase() === "error" ? "text-red-11" : "text-gray-9"}`}
+                            role="status"
+                            aria-live="polite"
+                          >
+                            <span
+                              class={`h-1.5 w-1.5 rounded-full shrink-0 ${runPhase() === "error" ? "bg-red-9" : "bg-gray-8 animate-pulse"
+                                }`}
+                            />
+                            <span class="truncate">{thinkingStatus() || runLabel()}</span>
+                            <Show when={props.developerMode}>
+                              <span class="text-[10px] text-gray-8 ml-auto shrink-0">{runElapsedLabel()}</span>
+                            </Show>
+                          </div>
+                        </div>
+                      </div>
+                    ) : undefined
+                  }
+                />
+
+                <Show when={selectedAgentRun()}>
+                  {(run) => (
+                    <div class="mt-6 rounded-xl border border-dls-border bg-dls-surface overflow-hidden">
+                      <div class="flex items-center justify-between border-b border-dls-border px-4 py-2 text-xs text-dls-secondary">
+                        <span>本地运行环境输出</span>
+                        <span class="uppercase tracking-wide">{run().runtime}</span>
+                      </div>
+                      <AgentRunView events={run().events} status={run().status} />
+                    </div>
+                  )}
+                </Show>
+
+                <div
+                  ref={(el) => {
+                    messagesEndEl = el;
+                    bottomVisibilityEl = el;
+                  }}
+                />
               </div>
-            )}
-          </Show>
-
-           <div
-             ref={(el) => {
-               messagesEndEl = el;
-               bottomVisibilityEl = el;
-             }}
-           />
-           </div>
-           </div>
+            </div>
 
             <Show when={props.messages.length > 0 && !nearBottom()}>
               <div class="absolute bottom-4 left-0 right-0 z-20 flex justify-center pointer-events-none">
@@ -3088,12 +3082,12 @@ export default function SessionView(props: SessionViewProps) {
                     class="rounded-full px-3 py-1.5 text-xs text-gray-11 hover:bg-gray-2 transition-colors"
                     onClick={() => jumpToLatest("smooth")}
                   >
-                    Jump to latest
+                    跳转至最新
                   </button>
                 </div>
               </div>
             </Show>
-         </div>
+          </div>
 
           <Show when={markdownEditorOpen()}>
             <aside class="hidden lg:flex w-[520px] shrink-0 border-l border-dls-border bg-dls-sidebar">
@@ -3109,111 +3103,109 @@ export default function SessionView(props: SessionViewProps) {
           </Show>
         </div>
 
-      <Show when={todoCount() > 0}>
-        <div class="mx-auto w-full max-w-[68ch] px-4">
-          <div class="rounded-t-xl border border-b-0 border-gray-6/70 bg-gray-1/70 shadow-sm shadow-gray-12/5">
-            <button
-              type="button"
-              class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-gray-9 hover:bg-gray-2/50 transition-colors rounded-t-xl"
-              onClick={() => setTodoExpanded((prev) => !prev)}
-            >
-              <div class="flex items-center gap-2">
-                <ListTodo size={14} class="text-gray-8" />
-                <span class="text-gray-11 font-medium">{todoLabel()}</span>
-              </div>
-              <Minimize2
-                size={12}
-                class={`text-gray-8 transition-transform ${todoExpanded() ? "" : "rotate-180"}`}
-              />
-            </button>
-            <Show when={todoExpanded()}>
-              <div class="px-4 pb-3 space-y-2.5 max-h-60 overflow-auto border-t border-gray-6/50">
-                <For each={todoList()}>
-                  {(todo, index) => {
-                    const done = () => todo.status === "completed";
-                    const cancelled = () => todo.status === "cancelled";
-                    const active = () => todo.status === "in_progress";
-                    return (
-                      <div class="flex items-start gap-2.5 pt-2.5 first:pt-2.5">
-                        <div class="flex items-center gap-1.5 pt-0.5">
-                          <div
-                            class={`h-4.5 w-4.5 rounded-full border flex items-center justify-center ${
-                              done()
+        <Show when={todoCount() > 0}>
+          <div class="mx-auto w-full max-w-[720px] px-4">
+            <div class="rounded-t-xl border border-b-0 border-gray-6/70 bg-gray-1/70 shadow-sm shadow-gray-12/5">
+              <button
+                type="button"
+                class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-gray-9 hover:bg-gray-2/50 transition-colors rounded-t-xl"
+                onClick={() => setTodoExpanded((prev) => !prev)}
+              >
+                <div class="flex items-center gap-2">
+                  <ListTodo size={14} class="text-gray-8" />
+                  <span class="text-gray-11 font-medium">{todoLabel()}</span>
+                </div>
+                <Minimize2
+                  size={12}
+                  class={`text-gray-8 transition-transform ${todoExpanded() ? "" : "rotate-180"}`}
+                />
+              </button>
+              <Show when={todoExpanded()}>
+                <div class="px-4 pb-3 space-y-2.5 max-h-60 overflow-auto border-t border-gray-6/50">
+                  <For each={todoList()}>
+                    {(todo, index) => {
+                      const done = () => todo.status === "completed";
+                      const cancelled = () => todo.status === "cancelled";
+                      const active = () => todo.status === "in_progress";
+                      return (
+                        <div class="flex items-start gap-2.5 pt-2.5 first:pt-2.5">
+                          <div class="flex items-center gap-1.5 pt-0.5">
+                            <div
+                              class={`h-4.5 w-4.5 rounded-full border flex items-center justify-center ${done()
                                 ? "border-green-6 bg-green-2 text-green-11"
                                 : active()
                                   ? "border-amber-6 bg-amber-2 text-amber-11"
                                   : cancelled()
                                     ? "border-gray-6 bg-gray-2 text-gray-8"
                                     : "border-gray-6 bg-gray-1 text-gray-8"
-                            }`}
+                                }`}
+                            >
+                              <Show when={done()}>
+                                <Check size={10} />
+                              </Show>
+                              <Show when={!done() && active()}>
+                                <span class="h-1.5 w-1.5 rounded-full bg-amber-9" />
+                              </Show>
+                            </div>
+                          </div>
+                          <div
+                            class={`flex-1 text-sm leading-relaxed ${cancelled() ? "text-gray-9 line-through" : "text-gray-12"
+                              }`}
                           >
-                            <Show when={done()}>
-                              <Check size={10} />
-                            </Show>
-                            <Show when={!done() && active()}>
-                              <span class="h-1.5 w-1.5 rounded-full bg-amber-9" />
-                            </Show>
+                            <span class="text-gray-9 mr-1.5">{index() + 1}.</span>
+                            {todo.content}
                           </div>
                         </div>
-                        <div
-                          class={`flex-1 text-sm leading-relaxed ${
-                            cancelled() ? "text-gray-9 line-through" : "text-gray-12"
-                          }`}
-                        >
-                          <span class="text-gray-9 mr-1.5">{index() + 1}.</span>
-                          {todo.content}
-                        </div>
-                      </div>
-                    );
-                  }}
-                </For>
-              </div>
-            </Show>
+                      );
+                    }}
+                  </For>
+                </div>
+              </Show>
+            </div>
           </div>
-        </div>
-      </Show>
+        </Show>
 
-      <Composer
-        prompt={props.prompt}
-        developerMode={props.developerMode}
-        busy={props.busy}
-        isStreaming={showRunIndicator()}
-        onSend={handleSendPrompt}
-        onStop={cancelRun}
-        onDraftChange={handleDraftChange}
-        selectedModelLabel={props.selectedSessionModelLabel || "Model"}
-        onModelClick={props.openSessionModelPicker}
-        modelVariantLabel={props.modelVariantLabel}
-        modelVariant={props.modelVariant}
-        onModelVariantChange={props.setModelVariant}
-        agentLabel={agentLabel()}
-        selectedAgent={props.selectedSessionAgent}
-        agentPickerOpen={agentPickerOpen()}
-        agentPickerBusy={agentPickerBusy()}
-        agentPickerError={agentPickerError()}
-        agentOptions={agentOptions()}
-        onToggleAgentPicker={openAgentPicker}
-        onSelectAgent={(agent) => {
-          applySessionAgent(agent);
-          setAgentPickerOpen(false);
-        }}
-        setAgentPickerRef={(el) => {
-          agentPickerRef = el;
-        }}
-        showNotionBanner={props.showTryNotionPrompt}
-        onNotionBannerClick={props.onTryNotionPrompt}
-        toast={toastMessage()}
-        onToast={(message) => setToastMessage(message)}
-        listAgents={props.listAgents}
-        recentFiles={props.workingFiles}
-        searchFiles={props.searchFiles}
-        listCommands={props.listCommands}
-        isRemoteWorkspace={props.activeWorkspaceDisplay.workspaceType === "remote"}
-        isSandboxWorkspace={isSandboxWorkspace()}
-        onUploadInboxFiles={uploadInboxFiles}
-        attachmentsEnabled={attachmentsEnabled()}
-        attachmentsDisabledReason={attachmentsDisabledReason()}
-      />
+        <Composer
+          prompt={props.prompt}
+          developerMode={props.developerMode}
+          busy={props.busy}
+          isStreaming={showRunIndicator()}
+          onSend={handleSendPrompt}
+          onStop={cancelRun}
+          onDraftChange={handleDraftChange}
+          selectedModelLabel={props.selectedSessionModelLabel || "Model"}
+          onModelClick={props.openSessionModelPicker}
+          modelVariantLabel={props.modelVariantLabel}
+          modelVariant={props.modelVariant}
+          onModelVariantChange={props.setModelVariant}
+          agentLabel={agentLabel()}
+          selectedAgent={props.selectedSessionAgent}
+          agentPickerOpen={agentPickerOpen()}
+          agentPickerBusy={agentPickerBusy()}
+          agentPickerError={agentPickerError()}
+          agentOptions={agentOptions()}
+          onToggleAgentPicker={openAgentPicker}
+          onSelectAgent={(agent) => {
+            applySessionAgent(agent);
+            setAgentPickerOpen(false);
+          }}
+          setAgentPickerRef={(el) => {
+            agentPickerRef = el;
+          }}
+          showNotionBanner={props.showTryNotionPrompt}
+          onNotionBannerClick={props.onTryNotionPrompt}
+          toast={toastMessage()}
+          onToast={(message) => setToastMessage(message)}
+          listAgents={props.listAgents}
+          recentFiles={props.workingFiles}
+          searchFiles={props.searchFiles}
+          listCommands={props.listCommands}
+          isRemoteWorkspace={props.activeWorkspaceDisplay.workspaceType === "remote"}
+          isSandboxWorkspace={isSandboxWorkspace()}
+          onUploadInboxFiles={uploadInboxFiles}
+          attachmentsEnabled={attachmentsEnabled()}
+          attachmentsDisabledReason={attachmentsDisabledReason()}
+        />
 
         <StatusBar
           clientConnected={props.clientConnected}
@@ -3228,99 +3220,83 @@ export default function SessionView(props: SessionViewProps) {
         />
       </main>
 
-      <aside class="w-16 hidden md:flex flex-col bg-dls-sidebar border-l border-dls-border pt-2 pb-3 items-center gap-1">
-        {/* 顶部微动态装饰 */}
-        <div class="mb-2 flex items-center justify-center" style="animation: float-gentle 3.5s ease-in-out infinite">
-          <img src="/svg/organic/shape/star/Elements-organic-shape-star-wink.svg" class="w-7 h-7 opacity-45" alt="" aria-hidden="true" />
+      <aside class="w-44 hidden md:flex flex-col bg-dls-sidebar border-l border-dls-border py-3 px-2 gap-0.5 shrink-0">
+        {/* 顶部闪烁星星装饰 */}
+        <div class="flex justify-center pb-2.5 pt-1.5">
+          <img src="/svg/organic/shape/star/Elements-organic-shape-star-wink.svg" class="w-[22px] h-[22px] animate-star-twinkle" alt="" aria-hidden="true" />
         </div>
 
         {/* 组 1：核心工作 */}
         <button
           type="button"
-          title="自动化"
-          class={`w-12 h-12 flex items-center justify-center rounded-lg transition-colors ${
-            showRightSidebarSelection() && props.tab === "scheduled"
-              ? "bg-dls-active text-dls-text"
-              : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
-          }`}
+          title="自动化 (Automations)"
+          class={`w-full flex items-center gap-2.5 px-2.5 py-[9px] rounded-lg transition-colors text-left border-none group ${showRightSidebarSelection() && props.tab === "scheduled"
+            ? "bg-[rgba(180,155,110,0.22)] text-dls-text"
+            : "text-dls-secondary hover:text-dls-text hover:bg-[rgba(180,155,110,0.12)] bg-transparent"
+            }`}
           onClick={() => {
             props.setTab("scheduled");
             props.setView("dashboard");
           }}
         >
-          <img src="/svg/organic/shape/spiral/Elements-organic-shape-spiral.svg" class="w-6 h-6 opacity-70" alt="" aria-hidden="true" />
+          <img src="/svg/organic/shape/spiral/Elements-organic-shape-spiral.svg" class={`w-[18px] h-[18px] shrink-0 transition-opacity ${showRightSidebarSelection() && props.tab === "scheduled" ? "opacity-90" : "opacity-65 group-hover:opacity-90"}`} alt="" aria-hidden="true" />
+          <span class="font-[Kalam,Caveat,cursive] text-sm tracking-wide leading-none">Automations</span>
         </button>
 
-        <div class="w-8 h-px bg-[var(--color-border-subtle)] my-1.5" />
+        <div class="w-full h-px bg-[var(--color-border-subtle)] my-1" />
 
         {/* 组 2：能力 */}
         <button
           type="button"
-          title="记忆"
-          class={`w-12 h-12 flex items-center justify-center rounded-lg transition-colors ${
-            showRightSidebarSelection() && props.tab === "soul"
-              ? "bg-dls-active text-dls-text"
-              : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
-          }`}
+          title="记忆 (Soul)"
+          class={`w-full flex items-center gap-2.5 px-2.5 py-[9px] rounded-lg transition-colors text-left border-none group ${showRightSidebarSelection() && props.tab === "soul"
+            ? "bg-[rgba(180,155,110,0.22)] text-dls-text"
+            : "text-dls-secondary hover:text-dls-text hover:bg-[rgba(180,155,110,0.12)] bg-transparent"
+            }`}
           onClick={() => openSoul()}
         >
-          <img src="/svg/organic/shape/heart/Elements-organic-shape-heart.svg" class="w-6 h-6 opacity-70" alt="" aria-hidden="true" />
+          <img src="/svg/organic/shape/heart/Elements-organic-shape-heart.svg" class={`w-[18px] h-[18px] shrink-0 transition-opacity ${showRightSidebarSelection() && props.tab === "soul" ? "opacity-90" : "opacity-65 group-hover:opacity-90"}`} alt="" aria-hidden="true" />
+          <span class="font-[Kalam,Caveat,cursive] text-sm tracking-wide leading-none">Soul</span>
         </button>
         <button
           type="button"
-          title="技能"
-          class={`w-12 h-12 flex items-center justify-center rounded-lg transition-colors ${
-            showRightSidebarSelection() && props.tab === "skills"
-              ? "bg-dls-active text-dls-text"
-              : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
-          }`}
+          title="技能 (Skills)"
+          class={`w-full flex items-center gap-2.5 px-2.5 py-[9px] rounded-lg transition-colors text-left border-none group ${showRightSidebarSelection() && props.tab === "skills"
+            ? "bg-[rgba(180,155,110,0.22)] text-dls-text"
+            : "text-dls-secondary hover:text-dls-text hover:bg-[rgba(180,155,110,0.12)] bg-transparent"
+            }`}
           onClick={() => {
             props.setTab("skills");
             props.setView("dashboard");
           }}
         >
-          <img src="/svg/organic/shape/flash/Elements-organic-shape-flash.svg" class="w-6 h-6 opacity-70" alt="" aria-hidden="true" />
+          <img src="/svg/organic/shape/flash/Elements-organic-shape-flash.svg" class={`w-[18px] h-[18px] shrink-0 transition-opacity ${showRightSidebarSelection() && props.tab === "skills" ? "opacity-90" : "opacity-65 group-hover:opacity-90"}`} alt="" aria-hidden="true" />
+          <span class="font-[Kalam,Caveat,cursive] text-sm tracking-wide leading-none">Skills</span>
         </button>
+
+        <div class="w-full h-px bg-[var(--color-border-subtle)] my-1" />
+
+        {/* 组 3：扩展 */}
         <button
           type="button"
-          title="扩展"
-          class={`w-12 h-12 flex items-center justify-center rounded-lg transition-colors ${
-            showRightSidebarSelection() && props.tab === "extensions"
-              ? "bg-dls-active text-dls-text"
-              : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
-          }`}
+          title="扩展 (Extensions)"
+          class={`w-full flex items-center gap-2.5 px-2.5 py-[9px] rounded-lg transition-colors text-left border-none group ${showRightSidebarSelection() && props.tab === "extensions"
+            ? "bg-[rgba(180,155,110,0.22)] text-dls-text"
+            : "text-dls-secondary hover:text-dls-text hover:bg-[rgba(180,155,110,0.12)] bg-transparent"
+            }`}
           onClick={() => {
             props.setTab("extensions");
             props.setView("dashboard");
           }}
         >
-          <img src="/svg/organic/shape/tree/Elements-organic-shape-tree-body-nuture.svg" class="w-6 h-6 opacity-70" alt="" aria-hidden="true" />
+          <img src="/svg/organic/shape/tree/Elements-organic-shape-tree-body-nuture.svg" class={`w-[18px] h-[18px] shrink-0 transition-opacity ${showRightSidebarSelection() && props.tab === "extensions" ? "opacity-90" : "opacity-65 group-hover:opacity-90"}`} alt="" aria-hidden="true" />
+          <span class="font-[Kalam,Caveat,cursive] text-sm tracking-wide leading-none">Extensions</span>
         </button>
 
-        <div class="w-8 h-px bg-[var(--color-border-subtle)] my-1.5" />
-
-        {/* 组 3：配置 */}
-        <button
-          type="button"
-          title="设置"
-          class={`w-12 h-12 flex items-center justify-center rounded-lg transition-colors ${
-            false
-              ? "bg-dls-active text-dls-text"
-              : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
-          }`}
-          onClick={() => {
-            props.setSettingsTab("workspace");
-            props.setTab("settings");
-            props.setView("dashboard");
-          }}
-        >
-          <img src="/svg/organic/shape/sun/Elements-organic-shape-sun.svg" class="w-6 h-6 opacity-70" alt="" aria-hidden="true" />
-        </button>
-
-        <div class="mt-auto pb-1">
+        <div class="mt-auto border-t border-[var(--color-border-subtle)] pt-3 flex justify-center w-full">
           <img
             src="/svg/organic/shape/leaves/Elements-organic-shape-leaves-nature-vine.svg"
-            class="w-10 h-10 opacity-20"
+            class="w-9 h-9 opacity-20"
             alt=""
             aria-hidden="true"
           />
@@ -3387,11 +3363,10 @@ export default function SessionView(props: SessionViewProps) {
                           commandPaletteOptionRefs[idx()] = el;
                         }}
                         type="button"
-                        class={`w-full text-left rounded-xl px-3 py-2.5 transition-colors ${
-                          idx() === commandPaletteActiveIndex()
-                            ? "bg-dls-active text-dls-text"
-                            : "text-dls-text hover:bg-dls-hover"
-                        }`}
+                        class={`w-full text-left rounded-xl px-3 py-2.5 transition-colors ${idx() === commandPaletteActiveIndex()
+                          ? "bg-dls-active text-dls-text"
+                          : "text-dls-text hover:bg-dls-hover"
+                          }`}
                         onMouseEnter={() => setCommandPaletteActiveIndex(idx())}
                         onClick={item.action}
                       >

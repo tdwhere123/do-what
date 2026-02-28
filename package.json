@@ -23,7 +23,7 @@
     "test:session-switch": "pnpm --filter @do-what/ui test:session-switch",
     "test:fs-engine": "pnpm --filter @do-what/ui test:fs-engine",
     "test:e2e": "pnpm --filter @do-what/ui test:e2e",
-    "test:orchestrator": "pnpm --filter @do-what/orchestrator test:router",
+    "test:orchestrator": "pnpm --filter @do-what/orchestrator typecheck",
     "bump:patch": "pnpm --filter @do-what/ui bump:patch",
     "bump:minor": "pnpm --filter @do-what/ui bump:minor",
     "bump:major": "pnpm --filter @do-what/ui bump:major",

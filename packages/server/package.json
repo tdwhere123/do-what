@@ -1,7 +1,7 @@
 {
   "name": "@do-what/server",
   "version": "0.11.121",
-  "description": "Filesystem-backed API for OpenWork remote clients",
+  "description": "Filesystem-backed API for do-what remote clients",
   "type": "module",
   "bin": {
     "openwork-server": "dist/bin/openwork-server"
@@ -30,7 +30,7 @@
     "url": "https://github.com/different-ai/openwork/issues"
   },
   "keywords": [
-    "openwork",
+    "do-what",
     "server",
     "opencode",
     "headless",

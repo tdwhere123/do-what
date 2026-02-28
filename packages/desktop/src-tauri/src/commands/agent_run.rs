@@ -28,6 +28,36 @@ pub struct AgentRunChunk {
 
 pub type RunMap = Arc<Mutex<std::collections::HashMap<String, u32>>>;
 
+fn terminate_pid(pid: u32) {
+    #[cfg(unix)]
+    {
+        let _ = Command::new("kill")
+            .args(["-TERM", &pid.to_string()])
+            .status();
+    }
+    #[cfg(windows)]
+    {
+        let _ = Command::new("taskkill")
+            .args(["/PID", &pid.to_string(), "/T", "/F"])
+            .status();
+    }
+}
+
+pub fn abort_all_runs(run_map: &RunMap) {
+    let pids = match run_map.lock() {
+        Ok(mut map) => {
+            let values = map.values().copied().collect::<Vec<u32>>();
+            map.clear();
+            values
+        }
+        Err(_) => return,
+    };
+
+    for pid in pids {
+        terminate_pid(pid);
+    }
+}
+
 #[tauri::command]
 pub async fn agent_run_start(
     app: AppHandle,
@@ -93,11 +123,15 @@ pub async fn agent_run_start(
             );
         }
 
-        let _ = child.wait();
+        let exit_code = child
+            .wait()
+            .ok()
+            .and_then(|status| status.code())
+            .unwrap_or(-1);
         let _ = app_clone.emit(
             &event_name,
             AgentRunChunk {
-                chunk: r#"{"type":"done","exitCode":0}"#.to_string(),
+                chunk: format!(r#"{{"type":"done","exitCode":{exit_code}}}"#),
                 timestamp: 0,
             },
         );
@@ -118,16 +152,7 @@ pub async fn agent_run_abort(run_id: String, run_map: State<'_, RunMap>) -> Resu
     };
 
     if let Some(pid) = pid {
-        #[cfg(unix)]
-        {
-            let _ = Command::new("kill").args(["-TERM", &pid.to_string()]).status();
-        }
-        #[cfg(windows)]
-        {
-            let _ = Command::new("taskkill")
-                .args(["/PID", &pid.to_string(), "/T", "/F"])
-                .status();
-        }
+        terminate_pid(pid);
     }
 
     Ok(())

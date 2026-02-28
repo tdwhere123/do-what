@@ -47,9 +47,9 @@ const routerRequested =
       readCompatEnv("OPENWORK_ROUTER_ENABLED"),
     false
   );
-let routerEnabled = routerRequested;
+let routerEnabled = false;
 if (routerRequested) {
-  console.log("OpenCodeRouter build requested via explicit switch (DOWHAT_ROUTER_ENABLED/--with-router).");
+  console.log("OpenCodeRouter optional connection support has been removed from do-what mainline. Router request ignored.");
 }
 const sidecarOverride = readCompatEnv("OPENWORK_SIDECAR_DIR")?.trim() || readArg("--outdir");
 const sidecarDir = sidecarOverride ? resolve(sidecarOverride) : join(__dirname, "..", "src-tauri", "sidecars");
@@ -648,7 +648,7 @@ if (routerEnabled) {
       // ignore
     }
   }
-  console.log("OpenCodeRouter sidecar is disabled (set DOWHAT_ROUTER_ENABLED=1 to enable).");
+  console.log("OpenCodeRouter sidecar is permanently disabled in do-what mainline.");
 }
 
 // Build orchestrator sidecar

@@ -14,7 +14,9 @@ mod workspace;
 
 pub use types::*;
 
-use commands::agent_run::{agent_run_abort, agent_run_start, check_runtime_available, RunMap};
+use commands::agent_run::{
+    abort_all_runs, agent_run_abort, agent_run_start, check_runtime_available, RunMap,
+};
 use commands::command_files::{
     opencode_command_delete, opencode_command_list, opencode_command_write,
 };
@@ -32,6 +34,9 @@ use commands::orchestrator::{
     sandbox_stop,
 };
 use commands::scheduler::{scheduler_delete_job, scheduler_list_jobs};
+use commands::runtimes::{
+    check_assistant_statuses, check_claude_code_status, check_codex_status, check_opencode_status,
+};
 use commands::skills::{
     install_skill_template, list_local_skills, read_local_skill, uninstall_skill, write_local_skill,
 };
@@ -119,10 +124,14 @@ pub fn run() {
             set_window_decorations,
             agent_run_start,
             agent_run_abort,
-            check_runtime_available
+            check_runtime_available,
+            check_assistant_statuses,
+            check_opencode_status,
+            check_claude_code_status,
+            check_codex_status
         ])
         .build(tauri::generate_context!())
-        .expect("error while building OpenWork");
+        .expect("error while building do-what");
 
     // Best-effort cleanup on app exit. Without this, background sidecars can keep
     // running after the UI quits (especially during dev), leading to multiple
@@ -143,6 +152,8 @@ pub fn run() {
             {
                 OpenworkServerManager::stop_locked(&mut openwork_server);
             }
+            let run_map = app_handle.state::<RunMap>();
+            abort_all_runs(run_map.inner());
         }
     });
 }

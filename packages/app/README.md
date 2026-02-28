@@ -5,7 +5,7 @@
 ## 默认开发
 
 ```bash
-pnpm --filter @different-ai/openwork-ui dev
+pnpm --filter @do-what/ui dev
 ```
 
 根命令 `pnpm dev` 会调用这里的开发服务。
@@ -29,4 +29,5 @@ pnpm --filter @different-ai/openwork-ui dev
 ## 注意事项
 
 - 本包是业务主链路入口，不依赖 router 才能运行。
-- router 属于 extensions 范畴的可选能力。
+- router 连接链路已从主线禁用，不作为前端能力入口。
+- Settings 的 `Runtimes` 分页会调用桌面端统一状态接口并展示 `opencode/claude-code/codex` 的安装与登录状态。

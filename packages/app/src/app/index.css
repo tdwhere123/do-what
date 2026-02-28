@@ -103,11 +103,13 @@ select:disabled {
 }
 
 @keyframes soft-pulse {
+
   0%,
   100% {
     transform: scale(1);
     opacity: 0.4;
   }
+
   50% {
     transform: scale(1.15);
     opacity: 1;
@@ -124,10 +126,12 @@ select:disabled {
     box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.6);
     border-color: rgba(99, 102, 241, 0.8);
   }
+
   50% {
     box-shadow: 0 0 0 8px rgba(99, 102, 241, 0);
     border-color: rgba(99, 102, 241, 0.4);
   }
+
   100% {
     box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
     border-color: rgba(255, 255, 255, 0.08);
@@ -143,6 +147,7 @@ select:disabled {
   0% {
     transform: translateX(-100%);
   }
+
   100% {
     transform: translateX(200%);
   }
@@ -153,6 +158,7 @@ select:disabled {
 }
 
 @keyframes soul-nav-pulse {
+
   0%,
   100% {
     transform: scale(1);
@@ -191,8 +197,51 @@ select:disabled {
   }
 }
 
-/* 右侧栏顶部装饰：轻浮动 + 微旋转 */
-@keyframes float-gentle {
-  0%, 100% { transform: translateY(0px) rotate(-5deg); }
-  50%       { transform: translateY(-5px) rotate(5deg); }
+/* 右侧栏顶部装饰：新版星星闪烁 */
+@keyframes star-twinkle {
+  0% {
+    opacity: 0.15;
+    transform: scale(0.75);
+    filter: none;
+  }
+
+  12% {
+    opacity: 0.92;
+    transform: scale(1.22);
+    filter: drop-shadow(0 0 6px rgba(201, 106, 53, 0.75));
+  }
+
+  25% {
+    opacity: 0.18;
+    transform: scale(0.80);
+    filter: none;
+  }
+
+  45% {
+    opacity: 0.88;
+    transform: scale(1.18);
+    filter: drop-shadow(0 0 5px rgba(201, 106, 53, 0.60));
+  }
+
+  60% {
+    opacity: 0.20;
+    transform: scale(0.78);
+    filter: none;
+  }
+
+  78% {
+    opacity: 0.72;
+    transform: scale(1.10);
+    filter: drop-shadow(0 0 4px rgba(201, 106, 53, 0.45));
+  }
+
+  100% {
+    opacity: 0.15;
+    transform: scale(0.75);
+    filter: none;
+  }
+}
+
+@utility animate-star-twinkle {
+  animation: star-twinkle 2.8s ease-in-out infinite;
 }

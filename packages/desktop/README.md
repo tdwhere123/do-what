@@ -5,7 +5,7 @@
 ## 启动命令
 
 ```bash
-pnpm --filter @different-ai/openwork dev
+pnpm --filter @do-what/desktop dev
 ```
 
 根命令对应为：`pnpm run dev:desktop`。
@@ -26,17 +26,26 @@ pnpm run setup:windows
 
 ## 关键脚本
 
-桌面默认链路不构建 router。仅当显式启用 `DOWHAT_ROUTER_ENABLED=1` 或 `--with-router` 时才尝试构建；若缺少 `packages/opencode-router` 或构建失败，会记录 warning 并继续主链路。
+桌面主线已禁用 router 连接链路。历史开关（如 `DOWHAT_ROUTER_ENABLED`、`--with-router`）会被忽略。
 
+## 多助手状态接口（Track 2）
+
+桌面端通过 Tauri 暴露统一运行时状态接口：
+
+- `check_assistant_statuses`：一次返回 `opencode` / `claude-code` / `codex` 的安装与登录状态
+- `check_opencode_status`
+- `check_claude_code_status`
+- `check_codex_status`
+
+返回结构统一包含：`installed`、`loggedIn`、`version`、`details`，用于 Settings 页并列渲染。
 
 ## 5. 环境变量兼容（v0.6）
 
 - 新变量前缀：`DOWHAT_*`（优先读取）
 - 兼容前缀：`OPENWORK_*`（兼容期保留）
 - 使用旧变量时会打印一次 deprecated 提示（不会阻塞脚本）
+- 开发脚本默认注入 `DOWHAT_DATA_DIR`，并同时写入 `OPENWORK_DATA_DIR` 以保持兼容
 
 ## 5. 常用命令
 
-- `opencode-router` 是可选能力。
-- v0.6 默认主链路不以 router 作为启动前提。
-- 任何 router 相关失败不应阻塞业务/桌面主链路验收。
+- `opencode-router` 不再属于 do-what 主线能力。

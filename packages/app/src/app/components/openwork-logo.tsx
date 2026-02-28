@@ -9,7 +9,7 @@ export default function OpenWorkLogo(props: Props): JSX.Element {
   const size = props.size ?? 24;
   return (
     <img
-      src="/openwork-logo.svg"
+      src="/svg/organic/shape/spiral/Elements-organic-shape-spiral.svg"
       alt="do-what"
       width={size}
       height={size}

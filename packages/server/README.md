@@ -5,10 +5,10 @@
 ## 常用命令
 
 ```bash
-pnpm --filter openwork-server dev
-pnpm --filter openwork-server build
-pnpm --filter openwork-server test
-pnpm --filter openwork-server typecheck
+pnpm --filter @do-what/server dev
+pnpm --filter @do-what/server build
+pnpm --filter @do-what/server test
+pnpm --filter @do-what/server typecheck
 ```
 
 ## 模块职责
@@ -37,4 +37,4 @@ pnpm --filter openwork-server typecheck
 - `DOWHAT_OPENCODE_PASSWORD` / `OPENWORK_OPENCODE_PASSWORD`
 
 - 保持 local-first，不把云端作为必需依赖。
-- router 不属于本包主链路硬依赖。
+- router 连接链路已从主线禁用，本包不再将其作为能力入口。

@@ -10,7 +10,6 @@ fn main() {
     emit_build_info();
     ensure_opencode_sidecar();
     ensure_openwork_server_sidecar();
-    ensure_opencode_router_sidecar();
     ensure_orchestrator_sidecar();
     ensure_chrome_devtools_mcp_sidecar();
     ensure_versions_manifest();
@@ -424,6 +423,7 @@ fn ensure_openwork_server_sidecar() {
     }
 }
 
+#[allow(dead_code)]
 fn ensure_opencode_router_sidecar() {
     let target = env::var("CARGO_CFG_TARGET_TRIPLE")
         .or_else(|_| env::var("TARGET"))

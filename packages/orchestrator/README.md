@@ -5,22 +5,20 @@
 ## 常用命令
 
 ```bash
-pnpm --filter openwork-orchestrator dev
-pnpm --filter openwork-orchestrator build
-pnpm --filter openwork-orchestrator typecheck
-pnpm --filter openwork-orchestrator test:router
+pnpm --filter @do-what/orchestrator dev
+pnpm --filter @do-what/orchestrator build
+pnpm --filter @do-what/orchestrator typecheck
+pnpm --filter @do-what/orchestrator test:router
 ```
 
 ## 运行时定位
 
 主线 runtime：
 
-do-what 默认桌面链路不启用 router。可通过 `--opencode-router`（或环境变量 `DOWHAT_ROUTER_ENABLED=1`）显式启用。
-若 router 二进制缺失且未设置 `--opencode-router-required`，orchestrator 会给出 warning 并继续主链路。
+do-what 主线已禁用 router 连接链路。历史 router 开关参数会被忽略。
 
 可选 runtime 扩展：
-
-- opencode-router（默认不作为主链路依赖）
+- N/A（router 已从主线移除）
 
 
 ## 环境变量兼容（v0.6）
@@ -28,6 +26,7 @@ do-what 默认桌面链路不启用 router。可通过 `--opencode-router`（或
 - 新变量前缀：`DOWHAT_*`（优先）
 - 兼容前缀：`OPENWORK_*`（兼容期保留）
 - 使用 `OPENWORK_*` 时会打印一次 deprecated 提示（非阻塞）
+- 数据目录可通过 `DOWHAT_DATA_DIR`（兼容 `OPENWORK_DATA_DIR`）显式指定
 
 ## 开发命令
 

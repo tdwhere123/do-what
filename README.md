@@ -6,7 +6,7 @@
 - `claude-code`
 - `codex`
 
-`opencode-router` 在 v0.6 中是 **可选能力**，默认不参与安装与启动主链路。
+`opencode-router` 已从 do-what 主线移除，不参与安装与启动主链路。
 
 - `packages/app`（`@do-what/ui`）：桌面 UI（SolidJS + Tailwind）
 - `packages/desktop`（`@do-what/desktop`）：Tauri 壳 + 系统桥接命令
@@ -63,13 +63,11 @@ pnpm typecheck
 - `scheduled`：调度任务管理
 - `soul`：长期记忆/上下文资产
 - `skills`：本地技能管理与安装
-- `extensions`：扩展与 MCP 配置（含可选 router）
+- `extensions`：扩展与 MCP 配置
 
 详见：`docs/CORE_LOGIC_AND_MODULES.md`。
 
-router 已从默认桌面链路下线，不再作为当前版本运行前提。
-需要时可显式启用：`DOWHAT_ROUTER_ENABLED=1`（或 sidecar 预构建命令加 `--with-router`）。
-即使 router 包/sidecar 缺失，系统也会降级为“无 router”继续启动主链路。
+router 连接链路已从主线彻底禁用；即使传入历史开关参数也会被忽略。
 
 - Windows 安装：`docs/INSTALL_WINDOWS.md`
 - 启动链路：`docs/STARTUP_GUIDE.md`

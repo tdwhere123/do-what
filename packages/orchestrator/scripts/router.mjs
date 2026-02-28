@@ -48,6 +48,7 @@ async function runCli(args, dataDir) {
   const child = spawn("node", [cliPath, ...args], {
     env: {
       ...process.env,
+      DOWHAT_DATA_DIR: dataDir,
       OPENWORK_DATA_DIR: dataDir,
     },
     stdio: ["ignore", "pipe", "pipe"],
@@ -101,6 +102,7 @@ const daemon = spawn(
   {
     env: {
       ...process.env,
+      DOWHAT_DATA_DIR: dataDir,
       OPENWORK_DATA_DIR: dataDir,
     },
     stdio: ["ignore", "pipe", "pipe"],

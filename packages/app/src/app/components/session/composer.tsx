@@ -1576,9 +1576,9 @@ export default function Composer(props: ComposerProps) {
 
   return (
     <div class="px-4 pb-4 pt-0 bg-dls-surface sticky bottom-0 z-20" style={{ contain: "layout style" }}>
-      <div class="max-w-3xl mx-auto">
+      <div class="max-w-[720px] mx-auto">
         <div
-          class={`bg-dls-surface border border-dls-border rounded-2xl overflow-visible transition-all relative group/input ${mentionOpen() || slashOpen() ? "rounded-t-none border-t-transparent shadow-none" : "shadow-xl"
+          class={`bg-dls-surface border border-dls-border rounded-[20px] overflow-visible transition-all relative group/input ${mentionOpen() || slashOpen() ? "rounded-t-none border-t-transparent shadow-none" : "shadow-[0_8px_32px_rgba(0,0,0,0.06)]"
             }`}
           onDrop={handleDrop}
           onDragOver={(event: DragEvent) => {
@@ -1592,7 +1592,7 @@ export default function Composer(props: ComposerProps) {
                 <div class="p-2 bg-dls-surface max-h-64 overflow-y-auto" onMouseDown={(event: MouseEvent) => event.preventDefault()}>
                   <Show
                     when={mentionVisible().length}
-                    fallback={<div class="px-3 py-2 text-xs text-dls-secondary">No matches found.</div>}
+                    fallback={<div class="px-3 py-2 text-xs text-dls-secondary">未找到匹配项。</div>}
                   >
                     <For each={mentionVisible()}>
                       {(option: MentionOption) => {
@@ -1655,7 +1655,7 @@ export default function Composer(props: ComposerProps) {
                     when={slashFiltered().length}
                     fallback={
                       <div class="px-3 py-2 text-xs text-dls-secondary">
-                        {slashLoaded() ? "No commands found." : "Loading commands..."}
+                        {slashLoaded() ? "未找到命令。" : "正在加载命令..."}
                       </div>
                     }
                   >
@@ -1702,8 +1702,8 @@ export default function Composer(props: ComposerProps) {
                 class="w-full mb-2 flex items-center justify-between gap-3 rounded-xl border border-green-7/20 bg-green-7/10 px-3 py-2 text-left text-sm text-green-12 transition-colors hover:bg-green-7/15"
                 onClick={props.onNotionBannerClick}
               >
-                <span>Try it now: set up my CRM in Notion</span>
-                <span class="text-xs text-green-12 font-medium">Insert prompt</span>
+                <span>立即体验：在 Notion 中建立我的 CRM</span>
+                <span class="text-xs text-green-12 font-medium">插入提词</span>
               </button>
             </Show>
 
@@ -1723,7 +1723,7 @@ export default function Composer(props: ComposerProps) {
                       <div class="max-w-[160px]">
                         <div class="truncate text-dls-text">{attachment.name}</div>
                         <div class="text-[10px] text-dls-secondary">
-                          {attachment.kind === "image" ? "Image" : attachment.mimeType || "File"}
+                          {attachment.kind === "image" ? "图片" : attachment.mimeType || "文件"}
                         </div>
                       </div>
                       <button
@@ -1755,7 +1755,7 @@ export default function Composer(props: ComposerProps) {
                         class="shrink-0 rounded-md border border-dls-border bg-dls-hover px-2 py-1 text-[10px] text-dls-text hover:bg-dls-active"
                         onClick={() => inboxFileInputRef?.click()}
                       >
-                        Upload to inbox
+                        上传至收件箱
                       </button>
                     </Show>
                   </div>
@@ -1771,7 +1771,7 @@ export default function Composer(props: ComposerProps) {
                   <div class="relative">
                     <Show when={!hasDraftContent()}>
                       <div class="absolute left-0 top-0 text-dls-secondary text-sm leading-relaxed pointer-events-none">
-                        Ask OpenWork...
+                        询问 OpenWork...
                       </div>
                     </Show>
                     <div
@@ -1827,8 +1827,8 @@ export default function Composer(props: ComposerProps) {
                           disabled={attachmentsDisabled()}
                           title={
                             attachmentsDisabled()
-                              ? props.attachmentsDisabledReason ?? "Attachments are unavailable."
-                              : "Attach files"
+                              ? props.attachmentsDisabledReason ?? "附件不可用。"
+                              : "添加附件"
                           }
                         >
                           <Paperclip size={16} />
@@ -1851,14 +1851,14 @@ export default function Composer(props: ComposerProps) {
                           <Show when={props.agentPickerOpen}>
                             <div class="absolute left-0 bottom-full mb-2 w-64 rounded-xl border border-dls-border bg-dls-surface shadow-xl backdrop-blur-md overflow-hidden z-40">
                               <div class="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-dls-secondary border-b border-dls-border">
-                                Agent
+                                智能体 (Agent)
                               </div>
 
                               <div class="p-2 space-y-1 max-h-64 overflow-y-auto" onMouseDown={(event: MouseEvent) => event.preventDefault()}>
                                 <Show
                                   when={!props.agentPickerBusy}
                                   fallback={
-                                    <div class="px-3 py-2 text-xs text-dls-secondary">Loading agents...</div>
+                                    <div class="px-3 py-2 text-xs text-dls-secondary">正在加载智能体...</div>
                                   }
                                 >
                                   <Show when={!props.agentPickerError}>
@@ -1873,7 +1873,7 @@ export default function Composer(props: ComposerProps) {
                                         props.onSelectAgent(null);
                                       }}
                                     >
-                                      <span>Default agent</span>
+                                      <span>默认智能体</span>
                                       <Show when={!props.selectedAgent}>
                                         <Check size={14} class="text-dls-secondary" />
                                       </Show>
@@ -1921,11 +1921,11 @@ export default function Composer(props: ComposerProps) {
                           class="text-xs border rounded px-1 py-0.5 bg-transparent max-w-[11rem]"
                           disabled={props.busy}
                         >
-                          <option value="">No project</option>
+                          <option value="">无工作区</option>
                           <For each={projects}>
                             {(project) => <option value={project.id}>{project.name}</option>}
                           </For>
-                          <option value="__new__">+ New project</option>
+                          <option value="__new__">+ 新建工作区</option>
                         </select>
 
                         <Show when={selectedProject()}>
@@ -1975,14 +1975,14 @@ export default function Composer(props: ComposerProps) {
                             disabled={props.busy}
                             aria-expanded={variantMenuOpen()}
                           >
-                            <span>Thinking</span>
+                            <span>思考深度</span>
                             <span class="font-mono text-dls-text">{props.modelVariantLabel}</span>
                             <ChevronDown size={14} />
                           </button>
                           <Show when={variantMenuOpen()}>
                             <div class="absolute left-0 bottom-full mb-2 w-48 rounded-xl border border-dls-border bg-dls-surface shadow-xl backdrop-blur-md overflow-hidden z-40">
                               <div class="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-dls-secondary border-b border-dls-border">
-                                Thinking effort
+                                思考深度 (Thinking effort)
                               </div>
                               <div class="p-2 space-y-1">
                                 <For each={MODEL_VARIANT_OPTIONS}>

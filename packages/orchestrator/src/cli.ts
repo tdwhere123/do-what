@@ -2477,11 +2477,7 @@ function printHelp(): void {
     "  --cors <origins>          Comma-separated CORS origins or *",
     "  --connect-host <host>     Override LAN host used for pairing URLs",
     "  --openwork-server-bin <p> Path to openwork-server binary (requires --allow-external)",
-    "  --opencode-router               Enable opencodeRouter sidecar (default: disabled)",
-    "  --opencode-router-bin <path>    Path to opencodeRouter binary (requires --allow-external)",
-    "  --opencode-router-health-port <p> Health server port for opencodeRouter (default: random)",
-    "  --no-opencode-router            Disable opencodeRouter sidecar",
-    "  --opencode-router-required       Exit if opencodeRouter stops",
+    "  --opencode-router*              Deprecated/ignored: router connection has been removed in do-what mainline",
     "  --allow-external          Allow external sidecar binaries (dev only, required for custom bins)",
     "  --sidecar-dir <path>      Cache directory for downloaded sidecars",
     "  --sidecar-base-url <url>  Base URL for sidecar downloads",
@@ -4787,21 +4783,18 @@ async function runStart(args: ParsedArgs) {
       }
     }
   }
-  const opencodeRouterDefaultEnabled = readEnvBool(
-    ["DOWHAT_ROUTER_ENABLED", "OPENWORK_ROUTER_ENABLED", "OPENWORK_OPENCODE_ROUTER_ENABLED"],
-    false,
-  );
-  let opencodeRouterEnabled = readBool(
-    args.flags,
-    "opencode-router",
-    opencodeRouterDefaultEnabled,
-  );
-  const opencodeRouterRequired = readBool(
-    args.flags,
-    "opencode-router-required",
-    false,
-    "OPENWORK_OPENCODE_ROUTER_REQUIRED",
-  );
+  const routerRequested =
+    readFlag(args.flags, "opencode-router") !== undefined ||
+    readFlag(args.flags, "opencode-router-required") !== undefined ||
+    readEnvValue("DOWHAT_ROUTER_ENABLED") !== undefined ||
+    readEnvValue("OPENWORK_ROUTER_ENABLED") !== undefined ||
+    readEnvValue("OPENWORK_OPENCODE_ROUTER_ENABLED") !== undefined ||
+    readEnvValue("OPENWORK_OPENCODE_ROUTER_REQUIRED") !== undefined;
+  let opencodeRouterEnabled = false;
+  const opencodeRouterRequired = false;
+  if (routerRequested) {
+    console.warn("OpenCodeRouter optional connection support has been removed from do-what mainline. Router request ignored.");
+  }
   const openworkServerBinary = await resolveOpenworkServerBin({
     explicit: explicitOpenworkServerBin,
     manifest,

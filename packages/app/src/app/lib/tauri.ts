@@ -1,6 +1,4 @@
 import { invoke } from "@tauri-apps/api/core";
-import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
-import { isTauriRuntime } from "../utils";
 import { validateMcpServerName } from "../mcp";
 import type { AgentRunConfig, AgentRuntime } from "../state/sessions";
 
@@ -91,6 +89,23 @@ export type OrchestratorStatus = {
   workspaceCount: number;
   workspaces: OrchestratorWorkspace[];
   lastError: string | null;
+};
+
+export type RuntimeAssistantStatus = {
+  id: "opencode" | "claude-code" | "codex";
+  name: string;
+  binary: string;
+  installed: boolean;
+  installState: "installed" | "not-installed";
+  loggedIn: boolean;
+  loginState: "logged-in" | "logged-out";
+  version: string | null;
+  details: string[];
+};
+
+export type RuntimeAssistantStatusSnapshot = {
+  checkedAt: number;
+  assistants: RuntimeAssistantStatus[];
 };
 
 export type EngineDoctorResult = {
@@ -666,87 +681,6 @@ export async function schedulerDeleteJob(name: string, scopeRoot?: string): Prom
   return invoke<ScheduledJob>("scheduler_delete_job", { name, scopeRoot });
 }
 
-// OpenCodeRouter types
-export type OpenCodeRouterIdentityItem = {
-  id: string;
-  enabled: boolean;
-  running?: boolean;
-};
-
-export type OpenCodeRouterChannelStatus = {
-  items: OpenCodeRouterIdentityItem[];
-};
-
-export type OpenCodeRouterStatus = {
-  running: boolean;
-  config: string;
-  healthPort?: number | null;
-  telegram: OpenCodeRouterChannelStatus;
-  slack: OpenCodeRouterChannelStatus;
-  opencode: { url: string; directory?: string };
-};
-
-export type OpenCodeRouterStatusResult =
-  | { ok: true; status: OpenCodeRouterStatus }
-  | { ok: false; error: string };
-
-
-// OpenCodeRouter functions - call Tauri commands that wrap opencodeRouter CLI
-export async function getOpenCodeRouterStatus(): Promise<OpenCodeRouterStatus | null> {
-  try {
-    return await invoke<OpenCodeRouterStatus>("opencodeRouter_status");
-  } catch {
-    return null;
-  }
-}
-
-export async function getOpenCodeRouterStatusDetailed(): Promise<OpenCodeRouterStatusResult> {
-  try {
-    const status = await invoke<OpenCodeRouterStatus>("opencodeRouter_status");
-    return { ok: true, status };
-  } catch (error) {
-    return { ok: false, error: String(error) };
-  }
-}
-
-
-export async function getOpenCodeRouterGroupsEnabled(): Promise<boolean | null> {
-  try {
-    const status = await getOpenCodeRouterStatus();
-    const healthPort = status?.healthPort ?? 3005;
-    const response = await (isTauriRuntime() ? tauriFetch : fetch)(`http://127.0.0.1:${healthPort}/config/groups`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
-    if (!response.ok) {
-      return null;
-    }
-    const data = await response.json();
-    return data?.groupsEnabled ?? null;
-  } catch {
-    return null;
-  }
-}
-
-export async function setOpenCodeRouterGroupsEnabled(enabled: boolean): Promise<ExecResult> {
-  try {
-    const status = await getOpenCodeRouterStatus();
-    const healthPort = status?.healthPort ?? 3005;
-    const response = await (isTauriRuntime() ? tauriFetch : fetch)(`http://127.0.0.1:${healthPort}/config/groups`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ enabled }),
-    });
-    if (!response.ok) {
-      const message = await response.text();
-      return { ok: false, status: response.status, stdout: "", stderr: message };
-    }
-    return { ok: true, status: 0, stdout: "", stderr: "" };
-  } catch (e) {
-    return { ok: false, status: 1, stdout: "", stderr: String(e) };
-  }
-}
-
 export async function opencodeDbMigrate(input: {
   projectDir: string;
   preferSidecar?: boolean;
@@ -779,37 +713,6 @@ export async function opencodeMcpAuth(
     projectDir: safeProjectDir,
     serverName: safeServerName,
   });
-}
-
-export async function opencodeRouterStop(): Promise<OpenCodeRouterStatus> {
-  return invoke<OpenCodeRouterStatus>("opencodeRouter_stop");
-}
-
-export async function opencodeRouterStart(options: {
-  workspacePath: string;
-  opencodeUrl?: string;
-  opencodeUsername?: string;
-  opencodePassword?: string;
-  healthPort?: number;
-}): Promise<OpenCodeRouterStatus> {
-  return invoke<OpenCodeRouterStatus>("opencodeRouter_start", {
-    workspacePath: options.workspacePath,
-    opencodeUrl: options.opencodeUrl ?? null,
-    opencodeUsername: options.opencodeUsername ?? null,
-    opencodePassword: options.opencodePassword ?? null,
-    healthPort: options.healthPort ?? null,
-  });
-}
-
-export async function opencodeRouterRestart(options: {
-  workspacePath: string;
-  opencodeUrl?: string;
-  opencodeUsername?: string;
-  opencodePassword?: string;
-  healthPort?: number;
-}): Promise<OpenCodeRouterStatus> {
-  await opencodeRouterStop();
-  return opencodeRouterStart(options);
 }
 
 /**
@@ -847,4 +750,20 @@ export async function agentRunAbort(runId: string): Promise<void> {
 
 export async function checkRuntimeAvailable(runtime: "claude-code" | "codex"): Promise<string> {
   return invoke("check_runtime_available", { runtime });
+}
+
+export async function checkOpencodeStatus(): Promise<RuntimeAssistantStatus> {
+  return invoke("check_opencode_status");
+}
+
+export async function checkClaudeCodeStatus(): Promise<RuntimeAssistantStatus> {
+  return invoke("check_claude_code_status");
+}
+
+export async function checkCodexStatus(): Promise<RuntimeAssistantStatus> {
+  return invoke("check_codex_status");
+}
+
+export async function checkAssistantStatuses(): Promise<RuntimeAssistantStatusSnapshot> {
+  return invoke("check_assistant_statuses");
 }

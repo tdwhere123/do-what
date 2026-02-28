@@ -13,7 +13,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const binDir = join(__dirname, "../node_modules/.bin");
 
 const port = process.env.PORT ?? "5173";
-const dataDir = `${homedir()}/.openwork/openwork-orchestrator-dev`;
+const dataDir = `${homedir()}/.do-what/do-what-orchestrator-dev`;
 const devUrl = `http://localhost:${port}`;
 
 // On Windows .bin entries are .CMD shims; on Unix they're plain scripts
@@ -74,6 +74,7 @@ execSync(
     shell: true,
     env: {
       ...process.env,
+      DOWHAT_DATA_DIR: dataDir,
       OPENWORK_DATA_DIR: dataDir,
       ...(linkerPath
         ? { CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER: linkerPath }

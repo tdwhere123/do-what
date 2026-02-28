@@ -1,4 +1,4 @@
-import { For, Match, Switch, createMemo, createSignal, onMount } from "solid-js";
+import { For, Match, Show, Switch, createMemo, createSignal, onMount } from "solid-js";
 
 import Button from "../components/button";
 import type { OpencodeConnectStatus, ProviderListItem, SettingsTab, StartupPreference } from "../types";
@@ -13,8 +13,9 @@ import type {
   EngineInfo,
   OrchestratorStatus,
   OpenworkServerInfo,
+  RuntimeAssistantStatus,
 } from "../lib/tauri";
-import { checkRuntimeAvailable } from "../lib/tauri";
+import { checkAssistantStatuses } from "../lib/tauri";
 import { currentLocale, t } from "../../i18n";
 
 export type SettingsViewProps = {
@@ -108,20 +109,30 @@ export default function SettingsView(props: SettingsViewProps) {
   const tabs: SettingsTab[] = ["general", "workspace", "model", "runtimes", "advanced", "debug"];
   const activeTab = () => props.settingsTab;
   const connectedProviderCount = createMemo(() => props.providerConnectedIds.length);
-  const [claudeVersion, setClaudeVersion] = createSignal("Checking...");
-  const [codexVersion, setCodexVersion] = createSignal("Checking...");
+  const [runtimeMap, setRuntimeMap] = createSignal<Record<string, RuntimeAssistantStatus>>({});
+  const [runtimeRefreshError, setRuntimeRefreshError] = createSignal<string | null>(null);
+
+  const runtimeStatus = (id: "opencode" | "claude-code" | "codex") => runtimeMap()[id];
+  const runtimeInstallText = (status: RuntimeAssistantStatus | undefined) => {
+    if (!status) return "Checking...";
+    return status.installState === "installed" ? "Installed" : "Not Installed";
+  };
+  const runtimeLoginText = (status: RuntimeAssistantStatus | undefined) => {
+    if (!status) return "Checking...";
+    return status.loginState === "logged-in" ? "Logged In" : "Logged Out";
+  };
 
   const refreshRuntimes = async () => {
     try {
-      setClaudeVersion(await checkRuntimeAvailable("claude-code"));
-    } catch {
-      setClaudeVersion("Not found");
-    }
-
-    try {
-      setCodexVersion(await checkRuntimeAvailable("codex"));
-    } catch {
-      setCodexVersion("Using OpenAI API fallback");
+      const snapshot = await checkAssistantStatuses();
+      const next: Record<string, RuntimeAssistantStatus> = {};
+      for (const assistant of snapshot.assistants) {
+        next[assistant.id] = assistant;
+      }
+      setRuntimeMap(next);
+      setRuntimeRefreshError(null);
+    } catch (error) {
+      setRuntimeRefreshError(error instanceof Error ? error.message : "Failed to check runtime statuses");
     }
   };
 
@@ -177,26 +188,45 @@ export default function SettingsView(props: SettingsViewProps) {
 
         <Match when={activeTab() === "runtimes"}>
           <div class="space-y-3 rounded-xl border border-dls-border p-4">
-            <div class="text-sm font-medium">Runtimes</div>
+            <div class="flex items-center justify-between">
+              <div class="text-sm font-medium">Runtimes</div>
+              <Button variant="secondary" onClick={refreshRuntimes}>Refresh</Button>
+            </div>
             <div class="rounded-lg border border-dls-border p-3 space-y-2">
-              <div class="flex items-center justify-between">
-                <div>
-                  <div class="text-sm">Claude Code</div>
-                  <div class="text-xs text-dls-secondary">Requires `claude login` on this machine</div>
-                </div>
-                <Button variant="secondary" onClick={refreshRuntimes}>Check</Button>
+              <div>
+                <div class="text-sm">OpenCode</div>
+                <div class="text-xs text-dls-secondary">Desktop engine runtime availability and local auth signal</div>
               </div>
-              <div class="text-xs text-dls-secondary">Status: {claudeVersion()}</div>
+              <div class="text-xs text-dls-secondary">Install: {runtimeInstallText(runtimeStatus("opencode"))}</div>
+              <div class="text-xs text-dls-secondary">Login: {runtimeLoginText(runtimeStatus("opencode"))}</div>
+              <div class="text-xs text-dls-secondary">Version: {runtimeStatus("opencode")?.version ?? "N/A"}</div>
+            </div>
+            <div class="rounded-lg border border-dls-border p-3 space-y-2">
+              <div>
+                <div class="text-sm">Claude Code</div>
+                <div class="text-xs text-dls-secondary">Requires `claude login` on this machine</div>
+              </div>
+              <div class="text-xs text-dls-secondary">Install: {runtimeInstallText(runtimeStatus("claude-code"))}</div>
+              <div class="text-xs text-dls-secondary">Login: {runtimeLoginText(runtimeStatus("claude-code"))}</div>
+              <div class="text-xs text-dls-secondary">Version: {runtimeStatus("claude-code")?.version ?? "N/A"}</div>
             </div>
             <div class="rounded-lg border border-dls-border p-3 space-y-2">
               <div class="flex items-center justify-between">
-                <div class="text-sm">Codex</div>
-                <div class="flex gap-2">
-                  <Button variant="secondary" onClick={refreshRuntimes}>Check CLI</Button>
-                  <Button variant="outline" onClick={() => props.setSettingsTab("advanced")}>Configure API Key</Button>
+                <div>
+                  <div class="text-sm">Codex</div>
+                  <div class="text-xs text-dls-secondary">Requires Codex CLI and OpenAI auth</div>
                 </div>
+                <Button variant="outline" onClick={() => props.setSettingsTab("advanced")}>Configure API Key</Button>
               </div>
-              <div class="text-xs text-dls-secondary">Status: {codexVersion()}</div>
+              <div class="text-xs text-dls-secondary">Install: {runtimeInstallText(runtimeStatus("codex"))}</div>
+              <div class="text-xs text-dls-secondary">Login: {runtimeLoginText(runtimeStatus("codex"))}</div>
+              <div class="text-xs text-dls-secondary">Version: {runtimeStatus("codex")?.version ?? "N/A"}</div>
+            </div>
+            <Show when={runtimeRefreshError()}>
+              <div class="text-xs text-red-11">{runtimeRefreshError()}</div>
+            </Show>
+            <div class="text-xs text-dls-secondary">
+              Login state is inferred from local env vars or credential files.
             </div>
           </div>
         </Match>
