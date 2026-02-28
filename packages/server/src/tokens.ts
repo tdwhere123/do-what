@@ -4,6 +4,7 @@ import { readFile, writeFile } from "node:fs/promises";
 
 import type { ServerConfig, TokenScope } from "./types.js";
 import { ensureDir, exists, hashToken, shortId } from "./utils.js";
+import { readCompatEnv } from "./env-compat.js";
 
 export type TokenRecord = {
   id: string;
@@ -25,7 +26,7 @@ function normalizeScope(value: unknown): TokenScope | null {
 }
 
 function resolveTokenStorePath(config: ServerConfig): string {
-  const override = (process.env.OPENWORK_TOKEN_STORE ?? "").trim();
+  const override = (readCompatEnv("OPENWORK_TOKEN_STORE") ?? "").trim();
   if (override) return resolve(override);
 
   const configPath = config.configPath?.trim();

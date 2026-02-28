@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
+import { readCompatEnv } from "./env-compat.mjs";
 
 const packageSpec =
-  process.env.OPENWORK_CHROME_DEVTOOLS_MCP_SPEC?.trim() ||
+  readCompatEnv("OPENWORK_CHROME_DEVTOOLS_MCP_SPEC")?.trim() ||
   process.env.CHROME_DEVTOOLS_MCP_SPEC?.trim() ||
   "chrome-devtools-mcp@0.17.0";
 

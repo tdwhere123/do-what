@@ -23,7 +23,18 @@ pnpm --filter openwork-server typecheck
 - `scheduled`：任务配置与落盘支持
 - `soul/skills/extensions`：本地资源与配置存取能力
 
-## 约束
+> v0.6 起优先读取 `DOWHAT_*`，并继续兼容 `OPENWORK_*`。
+> 若使用旧变量（`OPENWORK_*`）会打印一次 deprecated 提示，但不阻塞启动。
+
+- `DOWHAT_HOST` / `OPENWORK_HOST`
+- `DOWHAT_PORT` / `OPENWORK_PORT`
+- `DOWHAT_TOKEN` / `OPENWORK_TOKEN`
+- `DOWHAT_HOST_TOKEN` / `OPENWORK_HOST_TOKEN`
+- `DOWHAT_APPROVAL_MODE` / `OPENWORK_APPROVAL_MODE`
+- `DOWHAT_OPENCODE_BASE_URL` / `OPENWORK_OPENCODE_BASE_URL`
+- `DOWHAT_OPENCODE_DIRECTORY` / `OPENWORK_OPENCODE_DIRECTORY`
+- `DOWHAT_OPENCODE_USERNAME` / `OPENWORK_OPENCODE_USERNAME`
+- `DOWHAT_OPENCODE_PASSWORD` / `OPENWORK_OPENCODE_PASSWORD`
 
 - 保持 local-first，不把云端作为必需依赖。
 - router 不属于本包主链路硬依赖。

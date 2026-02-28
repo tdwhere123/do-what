@@ -17,6 +17,12 @@
 
 ## v0.6 已落地
 
+
+- env 前缀兼容迁移（进行中）：
+  - 新增 `DOWHAT_*` 配置读取，优先级高于 `OPENWORK_*`
+  - `OPENWORK_*` 继续兼容，读取时打印一次 deprecated 提示（非阻塞）
+  - server/orchestrator/desktop 读取层完成首轮迁移
+  - 新增执行记录：`plans/execution/02-env-compat-migration.md`
 - 新增 `scripts/setup/windows/doctor.ps1`
 - 新增 `scripts/setup/windows/install.ps1`
 - 新增 `scripts/setup/windows/bootstrap.ps1`
