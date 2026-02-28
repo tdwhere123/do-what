@@ -46,9 +46,9 @@ const routerRequested =
       process.env.OPENWORK_ROUTER_ENABLED,
     false
   );
-const routerEnabled = false;
+let routerEnabled = routerRequested;
 if (routerRequested) {
-  console.warn("OpenCodeRouter build request ignored: router is removed from the default do-what runtime.");
+  console.log("OpenCodeRouter build requested via explicit switch (DOWHAT_ROUTER_ENABLED/--with-router).");
 }
 const sidecarOverride = process.env.OPENWORK_SIDECAR_DIR?.trim() || readArg("--outdir");
 const sidecarDir = sidecarOverride ? resolve(sidecarOverride) : join(__dirname, "..", "src-tauri", "sidecars");
@@ -547,88 +547,95 @@ if (shouldDownloadOpencode) {
 let expectedOpenCodeRouterVersion = null;
 if (routerEnabled) {
   if (!hasLocalOpenCodeRouterPackage) {
-    console.error(
-      "Router is enabled, but packages/opencode-router is missing. " +
-        "Disable router (DOWHAT_ROUTER_ENABLED=0) or provide the package."
+    console.warn(
+      "OpenCodeRouter was requested but packages/opencode-router is missing. " +
+        "Continuing without router sidecar."
     );
-    process.exit(1);
+    routerEnabled = false;
   }
 
-  const opencodeRouterPkgRaw = readFileSync(resolve(opencodeRouterDir, "package.json"), "utf8");
-  const opencodeRouterPkg = JSON.parse(opencodeRouterPkgRaw);
-  const opencodeRouterPkgVersion = String(opencodeRouterPkg.version ?? "").trim();
-  const normalizedOpenCodeRouterVersion = opencodeRouterVersion?.startsWith("v")
-    ? opencodeRouterVersion.slice(1)
-    : opencodeRouterVersion;
-  expectedOpenCodeRouterVersion = normalizedOpenCodeRouterVersion || opencodeRouterPkgVersion;
+  if (routerEnabled) {
+    try {
+      const opencodeRouterPkgRaw = readFileSync(resolve(opencodeRouterDir, "package.json"), "utf8");
+      const opencodeRouterPkg = JSON.parse(opencodeRouterPkgRaw);
+      const opencodeRouterPkgVersion = String(opencodeRouterPkg.version ?? "").trim();
+      const normalizedOpenCodeRouterVersion = opencodeRouterVersion?.startsWith("v")
+        ? opencodeRouterVersion.slice(1)
+        : opencodeRouterVersion;
+      expectedOpenCodeRouterVersion = normalizedOpenCodeRouterVersion || opencodeRouterPkgVersion;
 
-  if (!expectedOpenCodeRouterVersion) {
-    console.error("OpenCodeRouter version missing. Set opencodeRouterVersion or ensure package.json has version.");
-    process.exit(1);
-  }
-
-  if (
-    normalizedOpenCodeRouterVersion &&
-    opencodeRouterPkgVersion &&
-    normalizedOpenCodeRouterVersion !== opencodeRouterPkgVersion
-  ) {
-    console.error(
-      `OpenCodeRouter version mismatch: desktop=${normalizedOpenCodeRouterVersion}, package=${opencodeRouterPkgVersion}`
-    );
-    process.exit(1);
-  }
-
-  let didBuildOpenCodeRouter = false;
-  const shouldBuildOpenCodeRouter =
-    forceBuild || !existsSync(opencodeRouterBuildPath) || isStubBinary(opencodeRouterBuildPath);
-  if (shouldBuildOpenCodeRouter) {
-    mkdirSync(sidecarDir, { recursive: true });
-    if (existsSync(opencodeRouterBuildPath)) {
-      try {
-        unlinkSync(opencodeRouterBuildPath);
-      } catch {
-        // ignore
+      if (!expectedOpenCodeRouterVersion) {
+        throw new Error("OpenCodeRouter version missing. Set opencodeRouterVersion or ensure package.json has version.");
       }
-    }
-    const opencodeRouterScript = resolveBuildScript(opencodeRouterDir);
-    if (!existsSync(opencodeRouterScript)) {
-      console.error(`OpenCodeRouter build script not found at ${opencodeRouterScript}`);
-      process.exit(1);
-    }
-    const opencodeRouterArgs = [opencodeRouterScript, "--outdir", sidecarDir, "--filename", "opencode-router"];
-    if (bunTarget) {
-      opencodeRouterArgs.push("--target", bunTarget);
-    }
-    const result = spawnSync("bun", opencodeRouterArgs, { cwd: opencodeRouterDir, stdio: "inherit", shell: true });
-    if (result.status !== 0) {
-      process.exit(result.status ?? 1);
-    }
 
-    didBuildOpenCodeRouter = true;
-  }
-
-  if (existsSync(opencodeRouterBuildPath)) {
-    const shouldCopyCanonical = didBuildOpenCodeRouter || !existsSync(opencodeRouterPath) || isStubBinary(opencodeRouterPath);
-    if (shouldCopyCanonical && opencodeRouterBuildPath !== opencodeRouterPath) {
-      try {
-        if (existsSync(opencodeRouterPath)) unlinkSync(opencodeRouterPath);
-      } catch {
-        // ignore
+      if (
+        normalizedOpenCodeRouterVersion &&
+        opencodeRouterPkgVersion &&
+        normalizedOpenCodeRouterVersion !== opencodeRouterPkgVersion
+      ) {
+        throw new Error(
+          `OpenCodeRouter version mismatch: desktop=${normalizedOpenCodeRouterVersion}, package=${opencodeRouterPkgVersion}`
+        );
       }
-      copyFileSync(opencodeRouterBuildPath, opencodeRouterPath);
-    }
 
-    if (opencodeRouterTargetPath) {
-      const shouldCopyTarget =
-        didBuildOpenCodeRouter || !existsSync(opencodeRouterTargetPath) || isStubBinary(opencodeRouterTargetPath);
-      if (shouldCopyTarget && opencodeRouterBuildPath !== opencodeRouterTargetPath) {
-        try {
-          if (existsSync(opencodeRouterTargetPath)) unlinkSync(opencodeRouterTargetPath);
-        } catch {
-          // ignore
+      let didBuildOpenCodeRouter = false;
+      const shouldBuildOpenCodeRouter =
+        forceBuild || !existsSync(opencodeRouterBuildPath) || isStubBinary(opencodeRouterBuildPath);
+      if (shouldBuildOpenCodeRouter) {
+        mkdirSync(sidecarDir, { recursive: true });
+        if (existsSync(opencodeRouterBuildPath)) {
+          try {
+            unlinkSync(opencodeRouterBuildPath);
+          } catch {
+            // ignore
+          }
         }
-        copyFileSync(opencodeRouterBuildPath, opencodeRouterTargetPath);
+        const opencodeRouterScript = resolveBuildScript(opencodeRouterDir);
+        if (!existsSync(opencodeRouterScript)) {
+          throw new Error(`OpenCodeRouter build script not found at ${opencodeRouterScript}`);
+        }
+        const opencodeRouterArgs = [opencodeRouterScript, "--outdir", sidecarDir, "--filename", "opencode-router"];
+        if (bunTarget) {
+          opencodeRouterArgs.push("--target", bunTarget);
+        }
+        const result = spawnSync("bun", opencodeRouterArgs, { cwd: opencodeRouterDir, stdio: "inherit", shell: true });
+        if (result.status !== 0) {
+          throw new Error(`OpenCodeRouter build exited with status ${result.status ?? 1}`);
+        }
+
+        didBuildOpenCodeRouter = true;
       }
+
+      if (existsSync(opencodeRouterBuildPath)) {
+        const shouldCopyCanonical =
+          didBuildOpenCodeRouter || !existsSync(opencodeRouterPath) || isStubBinary(opencodeRouterPath);
+        if (shouldCopyCanonical && opencodeRouterBuildPath !== opencodeRouterPath) {
+          try {
+            if (existsSync(opencodeRouterPath)) unlinkSync(opencodeRouterPath);
+          } catch {
+            // ignore
+          }
+          copyFileSync(opencodeRouterBuildPath, opencodeRouterPath);
+        }
+
+        if (opencodeRouterTargetPath) {
+          const shouldCopyTarget =
+            didBuildOpenCodeRouter || !existsSync(opencodeRouterTargetPath) || isStubBinary(opencodeRouterTargetPath);
+          if (shouldCopyTarget && opencodeRouterBuildPath !== opencodeRouterTargetPath) {
+            try {
+              if (existsSync(opencodeRouterTargetPath)) unlinkSync(opencodeRouterTargetPath);
+            } catch {
+              // ignore
+            }
+            copyFileSync(opencodeRouterBuildPath, opencodeRouterTargetPath);
+          }
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`OpenCodeRouter requested but unavailable: ${message}. Continuing without router sidecar.`);
+      routerEnabled = false;
+      expectedOpenCodeRouterVersion = null;
     }
   }
 } else {

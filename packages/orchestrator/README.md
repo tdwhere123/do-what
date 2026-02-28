@@ -16,7 +16,8 @@ openwork start --workspace /path/to/workspace
 
 ## Router 状态（v0.6）
 
-do-what 默认桌面链路不启用 router。orchestrator 中的 router 参数保留为历史兼容能力，不属于当前主链路验收范围。
+do-what 默认桌面链路不启用 router。可通过 `--opencode-router`（或环境变量 `DOWHAT_ROUTER_ENABLED=1`）显式启用。
+若 router 二进制缺失且未设置 `--opencode-router-required`，orchestrator 会给出 warning 并继续主链路。
 
 ## 常用参数
 
