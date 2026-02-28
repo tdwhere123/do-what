@@ -1,15 +1,25 @@
-# Infrastructure
+# do-what Infrastructure
 
-## 1. 基础原则
+## 1. 基础设施原则
 
-1. CLI first：所有关键能力都要可命令行运行
-2. Local first：默认本地运行，不依赖云端才能用
-3. Optional modules：可选能力不能阻塞核心链路
-4. Explicit config：用环境变量和配置文件明确行为
+1. **CLI-first**：安装、启动、排错都可命令行复现。
+2. **主链路优先**：默认先跑通业务，再扩展桌面与可选能力。
+3. **可选模块不阻塞**：router 等扩展失败不影响主流程。
+4. **文档即操作说明**：文档命令与脚本实现一致。
 
-## 2. 依赖策略
+## 2. 根级脚本（当前事实）
 
-### 2.1 必需依赖（Windows）
+来自根 `package.json`：
+
+- `pnpm dev` -> `pnpm run dev:lite`
+- `pnpm run dev:lite` -> UI 开发服务
+- `pnpm run dev:desktop` -> 桌面链路
+- `pnpm run doctor:windows`
+- `pnpm run setup:windows`
+- `pnpm run bootstrap:windows`
+- `pnpm build` / `pnpm build:ui` / `pnpm typecheck`
+
+## 3. 桌面链路前置（Windows）
 
 - Node.js
 - pnpm
@@ -18,33 +28,36 @@
 - Visual Studio C++ Build Tools
 - WebView2 Runtime
 
-### 2.2 可选依赖
+上述项由 `doctor/install/bootstrap` 脚本负责检测和安装引导。
 
-- opencode-router（二进制或本地包）
+## 4. Sidecar 与运行时
 
-默认策略：
-- `DOWHAT_ROUTER_ENABLED=0`（关闭）
-- 只有显式启用才构建和运行 Router
+- `packages/desktop/scripts/prepare-sidecar.mjs` 负责 sidecar 准备。
+- v0.6 主链路默认不依赖 `opencode-router`。
+- router 仅作为扩展能力保留，不应阻塞安装/启动验收。
 
-## 3. Sidecar 约束
+## 5. 可复现验证命令
 
-- sidecar 由 `packages/desktop/scripts/prepare-sidecar.mjs` 准备
-- `openwork-server`、`openwork-orchestrator`、`opencode` 为主链路
-- `opencode-router` 为可选 sidecar
+建议最小验证序列：
 
-## 4. 环境自动化
+```bash
+pnpm install --frozen-lockfile
+pnpm dev
+pnpm run dev:desktop
+pnpm typecheck
+```
 
-Windows 自动化脚本：
-- `scripts/setup/windows/doctor.ps1`
-- `scripts/setup/windows/install.ps1`
-- `scripts/setup/windows/bootstrap.ps1`
+在 Windows 新机上可替换为：
 
-能力边界：
-- doctor 负责检测
-- install 负责补齐依赖
-- bootstrap 负责完整初始化（含依赖安装与 sidecar 准备）
+```powershell
+pnpm run bootstrap:windows
+pnpm dev
+pnpm run dev:desktop
+```
 
-## 5. 观测与排障
+## 6. 运维与排错入口
 
-- 启动失败优先看：环境、sidecar、runtime 可用性
-- 统一参考 `docs/TROUBLESHOOTING.md`
+- 安装问题：`docs/INSTALL_WINDOWS.md`
+- 启动顺序：`docs/STARTUP_GUIDE.md`
+- 故障定位：`docs/TROUBLESHOOTING.md`
+- 运行时选择：`docs/RUNTIME_MATRIX.md`

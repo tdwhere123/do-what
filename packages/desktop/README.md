@@ -1,29 +1,30 @@
-# @different-ai/openwork (desktop)
+# packages/desktop
 
-`packages/desktop` 是 do-what 的桌面壳（Tauri）与本机命令桥接层。
+`packages/desktop` 提供 do-what 的 Tauri 桌面壳与系统桥接能力。
 
-## 1. 核心职责
+## 启动命令
 
-1. 启动桌面窗口与 WebView
-2. 暴露 Tauri commands（进程编排、文件系统、runtime 执行）
-3. 准备 sidecar 二进制（OpenCode / orchestrator / openwork-server）
+```bash
+pnpm --filter @different-ai/openwork dev
+```
 
-## 2. 关键目录
+根命令对应为：`pnpm run dev:desktop`。
 
-- `src-tauri/src/lib.rs`: 命令注册入口
-- `src-tauri/src/commands/agent_run.rs`: `claude-code` / `codex` 本地运行命令
-- `src-tauri/src/commands/orchestrator.rs`: 工作区与 orchestrator 管理
-- `scripts/prepare-sidecar.mjs`: sidecar 准备脚本
-- `scripts/dev.mjs`: Tauri dev 启动脚本
+## 前置依赖（尤其 Windows）
 
-## 3. 安装与产物位置
+1. Bun
+2. Rust/Cargo
+3. Visual Studio C++ Build Tools
+4. WebView2 Runtime
 
-- Rust 编译产物: `packages/desktop/src-tauri/target`
-- sidecar 产物: `packages/desktop/src-tauri/sidecars`
+建议先运行：
 
-说明：这些目录是构建产物，不是业务源码，已通过根 `.gitignore` 忽略。
+```powershell
+pnpm run doctor:windows
+pnpm run setup:windows
+```
 
-## 4. Router 状态（v0.6）
+## 关键脚本
 
 桌面默认链路不构建 router。仅当显式启用 `DOWHAT_ROUTER_ENABLED=1` 或 `--with-router` 时才尝试构建；若缺少 `packages/opencode-router` 或构建失败，会记录 warning 并继续主链路。
 
@@ -36,8 +37,6 @@
 
 ## 5. 常用命令
 
-```bash
-pnpm --filter @different-ai/openwork run prepare:sidecar
-pnpm --filter @different-ai/openwork dev
-pnpm --filter @different-ai/openwork build
-```
+- `opencode-router` 是可选能力。
+- v0.6 默认主链路不以 router 作为启动前提。
+- 任何 router 相关失败不应阻塞业务/桌面主链路验收。

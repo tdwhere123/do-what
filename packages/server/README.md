@@ -1,32 +1,27 @@
-# openwork-server
+# packages/server
 
-`openwork-server` 提供工作区配置、文件能力、审批、以及对 OpenCode 的代理能力。
+`packages/server` 是 do-what 的本地服务层，负责工作区文件、配置与 API 能力。
 
-## 快速使用
-
-```bash
-pnpm --filter openwork-server dev -- --workspace /path/to/workspace --approval auto
-```
-
-或使用已发布二进制：
+## 常用命令
 
 ```bash
-openwork-server --workspace /path/to/workspace --approval auto
+pnpm --filter openwork-server dev
+pnpm --filter openwork-server build
+pnpm --filter openwork-server test
+pnpm --filter openwork-server typecheck
 ```
 
-## 核心端点
+## 模块职责
 
-- `GET /health`
-- `GET /status`
-- `GET /workspaces`
-- `GET /workspace/:id/config`
-- `PATCH /workspace/:id/config`
-- `POST /workspace/:id/engine/reload`
-- `GET|POST|... /opencode/*`
+- 工作区配置读写
+- 文件系统访问与校验
+- 对上游（app/desktop/orchestrator）提供稳定接口
 
-Router 相关端点仍在代码中保留，但不属于 v0.6 默认运行链路。
+## 与核心区块关系
 
-## 关键环境变量
+- `session/proto`：提供配置和协议承载
+- `scheduled`：任务配置与落盘支持
+- `soul/skills/extensions`：本地资源与配置存取能力
 
 > v0.6 起优先读取 `DOWHAT_*`，并继续兼容 `OPENWORK_*`。
 > 若使用旧变量（`OPENWORK_*`）会打印一次 deprecated 提示，但不阻塞启动。
@@ -41,10 +36,5 @@ Router 相关端点仍在代码中保留，但不属于 v0.6 默认运行链路�
 - `DOWHAT_OPENCODE_USERNAME` / `OPENWORK_OPENCODE_USERNAME`
 - `DOWHAT_OPENCODE_PASSWORD` / `OPENWORK_OPENCODE_PASSWORD`
 
-## 开发命令
-
-```bash
-pnpm --filter openwork-server dev
-pnpm --filter openwork-server test
-pnpm --filter openwork-server typecheck
-```
+- 保持 local-first，不把云端作为必需依赖。
+- router 不属于本包主链路硬依赖。
