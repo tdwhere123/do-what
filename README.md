@@ -8,7 +8,10 @@
 
 `opencode-router` 在 v0.6 中是 **可选能力**，默认不参与安装与启动主链路。
 
-## 默认开发命令
+- `packages/app`（`@do-what/ui`）：桌面 UI（SolidJS + Tailwind）
+- `packages/desktop`（`@do-what/desktop`）：Tauri 壳 + 系统桥接命令
+- `packages/orchestrator`（`@do-what/orchestrator`）：本地编排器（进程管理、健康检查、沙箱）
+- `packages/server`（`@do-what/server`）：工作区配置/文件能力/API 代理
 
 ```bash
 pnpm dev
@@ -38,6 +41,12 @@ Windows 推荐先执行：
 pnpm run doctor:windows
 pnpm run setup:windows
 pnpm run bootstrap:windows
+
+pnpm run dev:business
+pnpm run dev:desktop
+pnpm dev:ui
+pnpm build
+pnpm typecheck
 ```
 
 ## 仓库结构
@@ -58,7 +67,9 @@ pnpm run bootstrap:windows
 
 详见：`docs/CORE_LOGIC_AND_MODULES.md`。
 
-## 安装、启动、排错文档
+router 已从默认桌面链路下线，不再作为当前版本运行前提。
+需要时可显式启用：`DOWHAT_ROUTER_ENABLED=1`（或 sidecar 预构建命令加 `--with-router`）。
+即使 router 包/sidecar 缺失，系统也会降级为“无 router”继续启动主链路。
 
 - Windows 安装：`docs/INSTALL_WINDOWS.md`
 - 启动链路：`docs/STARTUP_GUIDE.md`

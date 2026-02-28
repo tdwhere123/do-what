@@ -26,9 +26,7 @@ pnpm run setup:windows
 
 ## 关键脚本
 
-- `dev`：桌面开发（`scripts/dev.mjs`）
-- `build`：`tauri build`
-- `prepare:sidecar`：准备 sidecar 二进制与依赖
+桌面默认链路不构建 router。仅当显式启用 `DOWHAT_ROUTER_ENABLED=1` 或 `--with-router` 时才尝试构建；若缺少 `packages/opencode-router` 或构建失败，会记录 warning 并继续主链路。
 
 ## Router 说明
 

@@ -54,6 +54,16 @@
 - 新增 package README：
   - `packages/app/README.md`
   - `packages/desktop/README.md`
+- 命名与脚本统一（package/script migration）：
+  - workspace/package 名称改为 `@do-what/*` 体系
+  - 根脚本统一为 `dev:business` / `dev:desktop` / `dev:ui`
+  - `dev:lite` 保留为 deprecated 过渡别名
+
+- Router 可选化收敛（本次）：
+  - `prepare-sidecar` 默认不依赖 router，显式启用时尝试构建
+  - router 包/sidecar 缺失从硬失败改为 warning 降级（不阻塞主链路）
+  - orchestrator 显式启用 router 但缺失 binary 时，未 required 则自动降级继续启动
+  - 新增执行文档：`plans/execution/03-router-optionalization.md`
 
 ## v0.6 待完成
 
@@ -62,10 +72,9 @@
 3. 补齐仓库构建产物清理与 `.gitignore` 完善
 4. 补充更多平台安装文档（macOS / Linux）
 
-## v0.6 增量记录（2026-02-28 / docs-rebuild）
+## v0.6 本次增量（2026-02-28）
 
-- 文档体系全面切换到 do-what 叙事。
-- 明确默认业务启动与桌面启动链路，补充前置依赖说明。
-- 新增 `docs/INSTALL_WINDOWS.md`、`docs/STARTUP_GUIDE.md`、`docs/TROUBLESHOOTING.md`、`docs/CORE_LOGIC_AND_MODULES.md`、`docs/RUNTIME_MATRIX.md`。
-- 同步更新根 README 与 app/desktop/orchestrator/server 模块 README。
-- 新增执行计划记录：`plans/execution/04-docs-rebuild.md`。
+- 新增 rebrand 基线执行文档：`plans/execution/00-rebrand-baseline.md`
+  - 产出旧标识 -> 新标识映射草案
+  - 产出必须保留功能与禁止误删区域清单
+  - 产出 API path/env/package/filter 风险点与后续 ownership 建议
