@@ -1,6 +1,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readCompatEnv } from "./env-compat.mjs";
 
 const pnpmCmd = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 
@@ -9,7 +10,7 @@ const readPort = () => {
   return Number.isFinite(value) && value > 0 ? value : 5173;
 };
 
-const hostOverride = process.env.OPENWORK_DEV_HOST?.trim() || null;
+const hostOverride = readCompatEnv("OPENWORK_DEV_HOST")?.trim() || null;
 const port = readPort();
 const baseUrls = (hostOverride ? [hostOverride] : ["127.0.0.1", "localhost"]).map((host) => `http://${host}:${port}`);
 
@@ -113,7 +114,7 @@ const looksLikeVite = async (baseUrl) => {
 const runPrepareSidecars = () => {
   const prepareScript = resolve(fileURLToPath(new URL("./prepare-sidecar.mjs", import.meta.url)));
   const args = [prepareScript];
-  if (process.env.OPENWORK_SIDECAR_FORCE_BUILD !== "0") {
+  if (readCompatEnv("OPENWORK_SIDECAR_FORCE_BUILD") !== "0") {
     args.push("--force");
   }
   const result = spawnSync(process.execPath, args, {

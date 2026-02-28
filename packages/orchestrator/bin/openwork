@@ -4,6 +4,23 @@ const childProcess = require("child_process")
 const os = require("os")
 const path = require("path")
 
+const warnedLegacyEnvKeys = new Set()
+
+function readCompatEnv(openworkKey) {
+  if (openworkKey.startsWith("OPENWORK_")) {
+    const dowhatKey = `DOWHAT_${openworkKey.slice("OPENWORK_".length)}`
+    const dowhatValue = process.env[dowhatKey]
+    if (dowhatValue !== undefined) return dowhatValue
+    const openworkValue = process.env[openworkKey]
+    if (openworkValue !== undefined && !warnedLegacyEnvKeys.has(openworkKey)) {
+      warnedLegacyEnvKeys.add(openworkKey)
+      process.stderr.write(`[openwork] Deprecated env \"${openworkKey}\" detected; please migrate to \"${dowhatKey}\".\n`)
+    }
+    return openworkValue
+  }
+  return process.env[openworkKey]
+}
+
 function run(target) {
   const result = childProcess.spawnSync(target, process.argv.slice(2), {
     stdio: "inherit",
@@ -16,7 +33,7 @@ function run(target) {
   process.exit(code)
 }
 
-const envPath = process.env.OPENWORK_ORCHESTRATOR_BIN_PATH
+const envPath = readCompatEnv("OPENWORK_ORCHESTRATOR_BIN_PATH")
 if (envPath) {
   run(envPath)
 }

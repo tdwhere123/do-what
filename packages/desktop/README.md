@@ -27,6 +27,13 @@
 
 桌面默认链路不构建 router。仅当显式启用 `DOWHAT_ROUTER_ENABLED=1` 或 `--with-router` 时才尝试构建；若缺少 `packages/opencode-router` 或构建失败，会记录 warning 并继续主链路。
 
+
+## 5. 环境变量兼容（v0.6）
+
+- 新变量前缀：`DOWHAT_*`（优先读取）
+- 兼容前缀：`OPENWORK_*`（兼容期保留）
+- 使用旧变量时会打印一次 deprecated 提示（不会阻塞脚本）
+
 ## 5. 常用命令
 
 ```bash

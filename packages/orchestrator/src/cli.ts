@@ -13,6 +13,7 @@ import { once } from "node:events";
 
 import { createOpencodeClient } from "@opencode-ai/sdk/v2/client";
 import type { TuiHandle } from "./tui/app.js";
+import { readCompatEnv } from "./env-compat.js";
 
 type ApprovalMode = "manual" | "auto";
 
@@ -314,6 +315,13 @@ function readFlag(flags: Map<string, string | boolean>, key: string): string | u
   return value;
 }
 
+function readEnvValue(key: string): string | undefined {
+  if (key.startsWith("OPENWORK_")) {
+    return readCompatEnv(key);
+  }
+  return process.env[key];
+}
+
 function readBool(
   flags: Map<string, string | boolean>,
   key: string,
@@ -328,7 +336,7 @@ function readBool(
     if (["true", "1", "yes"].includes(normalized)) return true;
   }
 
-  const envValue = envKey ? process.env[envKey] : undefined;
+  const envValue = envKey ? readEnvValue(envKey) : undefined;
   if (envValue) {
     const normalized = envValue.toLowerCase();
     if (["false", "0", "no"].includes(normalized)) return false;
@@ -340,7 +348,7 @@ function readBool(
 
 function readEnvBool(keys: string[], fallback: boolean): boolean {
   for (const key of keys) {
-    const raw = process.env[key];
+    const raw = readEnvValue(key);
     if (!raw) continue;
     const normalized = raw.trim().toLowerCase();
     if (["false", "0", "no", "off", "disabled"].includes(normalized)) return false;
@@ -361,7 +369,7 @@ function readNumber(
     if (!Number.isNaN(parsed)) return parsed;
   }
   if (envKey) {
-    const envValue = process.env[envKey];
+    const envValue = readEnvValue(envKey);
     if (envValue) {
       const parsed = Number(envValue);
       if (!Number.isNaN(parsed)) return parsed;
@@ -497,7 +505,7 @@ let cachedSandboxAllowlist: SandboxMountAllowlist | null | undefined;
 let cachedSandboxAllowlistError: string | null = null;
 
 function resolveSandboxAllowlistPath(): string {
-  const override = process.env.OPENWORK_SANDBOX_MOUNT_ALLOWLIST?.trim();
+  const override = readCompatEnv("OPENWORK_SANDBOX_MOUNT_ALLOWLIST")?.trim();
   if (override) return resolve(override);
   return join(homedir(), ".config", "openwork", "sandbox-mount-allowlist.json");
 }
@@ -519,7 +527,7 @@ async function isDir(input: string): Promise<boolean> {
 }
 
 async function resolveHostOpencodeGlobalConfigDir(): Promise<string | null> {
-  const enabled = (process.env.OPENWORK_SANDBOX_MOUNT_OPENCODE_CONFIG ?? "1").trim() !== "0";
+  const enabled = (readCompatEnv("OPENWORK_SANDBOX_MOUNT_OPENCODE_CONFIG") ?? "1").trim() !== "0";
   if (!enabled) return null;
 
   const candidates: string[] = [];
@@ -556,7 +564,7 @@ async function resolveHostOpencodeGlobalConfigDir(): Promise<string | null> {
 }
 
 async function resolveHostOpencodeGlobalDataDir(): Promise<string | null> {
-  const enabled = (process.env.OPENWORK_SANDBOX_MOUNT_OPENCODE_CONFIG ?? "1").trim() !== "0";
+  const enabled = (readCompatEnv("OPENWORK_SANDBOX_MOUNT_OPENCODE_CONFIG") ?? "1").trim() !== "0";
   if (!enabled) return null;
 
   const candidates: string[] = [];
@@ -1112,19 +1120,19 @@ function shQuote(value: string): string {
 }
 
 function resolveSidecarDir(flags: Map<string, string | boolean>): string {
-  const override = readFlag(flags, "sidecar-dir") ?? process.env.OPENWORK_SIDECAR_DIR;
+  const override = readFlag(flags, "sidecar-dir") ?? readCompatEnv("OPENWORK_SIDECAR_DIR");
   if (override && override.trim()) return resolve(override.trim());
   return join(resolveRouterDataDir(flags), "sidecars");
 }
 
 function resolveSidecarBaseUrl(flags: Map<string, string | boolean>, cliVersion: string): string {
-  const override = readFlag(flags, "sidecar-base-url") ?? process.env.OPENWORK_SIDECAR_BASE_URL;
+  const override = readFlag(flags, "sidecar-base-url") ?? readCompatEnv("OPENWORK_SIDECAR_BASE_URL");
   if (override && override.trim()) return override.trim();
   return `https://github.com/different-ai/openwork/releases/download/openwork-orchestrator-v${cliVersion}`;
 }
 
 function resolveSidecarManifestUrl(flags: Map<string, string | boolean>, baseUrl: string): string {
-  const override = readFlag(flags, "sidecar-manifest") ?? process.env.OPENWORK_SIDECAR_MANIFEST_URL;
+  const override = readFlag(flags, "sidecar-manifest") ?? readCompatEnv("OPENWORK_SIDECAR_MANIFEST_URL");
   if (override && override.trim()) return override.trim();
   return `${baseUrl.replace(/\/$/, "")}/openwork-orchestrator-sidecars.json`;
 }
@@ -1294,7 +1302,7 @@ async function resolveOpencodeDownload(sidecar: SidecarConfig, expectedVersion?:
   if (!expectedVersion) return null;
   if (!sidecar.target) return null;
 
-  const assetOverride = process.env.OPENWORK_OPENCODE_ASSET ?? process.env.OPENCODE_ASSET;
+  const assetOverride = readCompatEnv("OPENWORK_OPENCODE_ASSET") ?? process.env.OPENCODE_ASSET;
   const asset = assetOverride?.trim() || resolveOpencodeAsset(sidecar.target);
   if (!asset) return null;
 
@@ -1911,7 +1919,7 @@ async function resolveOpenCodeRouterBin(options: {
 }
 
 function resolveRouterDataDir(flags: Map<string, string | boolean>): string {
-  const override = readFlag(flags, "data-dir") ?? process.env.OPENWORK_DATA_DIR;
+  const override = readFlag(flags, "data-dir") ?? readCompatEnv("OPENWORK_DATA_DIR");
   if (override && override.trim()) {
     return resolve(override.trim());
   }
@@ -3793,28 +3801,28 @@ async function spawnRouterDaemon(args: ParsedArgs, dataDir: string, host: string
     String(port),
   ];
 
-  const opencodeBin = readFlag(args.flags, "opencode-bin") ?? process.env.OPENWORK_OPENCODE_BIN;
-  const opencodeHost = readFlag(args.flags, "opencode-host") ?? process.env.OPENWORK_OPENCODE_HOST;
-  const opencodePort = readFlag(args.flags, "opencode-port") ?? process.env.OPENWORK_OPENCODE_PORT;
-  const opencodeWorkdir = readFlag(args.flags, "opencode-workdir") ?? process.env.OPENWORK_OPENCODE_WORKDIR;
+  const opencodeBin = readFlag(args.flags, "opencode-bin") ?? readCompatEnv("OPENWORK_OPENCODE_BIN");
+  const opencodeHost = readFlag(args.flags, "opencode-host") ?? readCompatEnv("OPENWORK_OPENCODE_HOST");
+  const opencodePort = readFlag(args.flags, "opencode-port") ?? readCompatEnv("OPENWORK_OPENCODE_PORT");
+  const opencodeWorkdir = readFlag(args.flags, "opencode-workdir") ?? readCompatEnv("OPENWORK_OPENCODE_WORKDIR");
   const opencodeHotReload =
     readFlag(args.flags, "opencode-hot-reload") ??
-    process.env.OPENWORK_OPENCODE_HOT_RELOAD;
+    readCompatEnv("OPENWORK_OPENCODE_HOT_RELOAD");
   const opencodeHotReloadDebounceMs =
     readFlag(args.flags, "opencode-hot-reload-debounce-ms") ??
-    process.env.OPENWORK_OPENCODE_HOT_RELOAD_DEBOUNCE_MS;
+    readCompatEnv("OPENWORK_OPENCODE_HOT_RELOAD_DEBOUNCE_MS");
   const opencodeHotReloadCooldownMs =
     readFlag(args.flags, "opencode-hot-reload-cooldown-ms") ??
-    process.env.OPENWORK_OPENCODE_HOT_RELOAD_COOLDOWN_MS;
-  const opencodeUsername = readFlag(args.flags, "opencode-username") ?? process.env.OPENWORK_OPENCODE_USERNAME;
-  const opencodePassword = readFlag(args.flags, "opencode-password") ?? process.env.OPENWORK_OPENCODE_PASSWORD;
-  const corsValue = readFlag(args.flags, "cors") ?? process.env.OPENWORK_OPENCODE_CORS;
+    readCompatEnv("OPENWORK_OPENCODE_HOT_RELOAD_COOLDOWN_MS");
+  const opencodeUsername = readFlag(args.flags, "opencode-username") ?? readCompatEnv("OPENWORK_OPENCODE_USERNAME");
+  const opencodePassword = readFlag(args.flags, "opencode-password") ?? readCompatEnv("OPENWORK_OPENCODE_PASSWORD");
+  const corsValue = readFlag(args.flags, "cors") ?? readCompatEnv("OPENWORK_OPENCODE_CORS");
   const allowExternal = readBool(args.flags, "allow-external", false, "OPENWORK_ALLOW_EXTERNAL");
-  const sidecarSource = readFlag(args.flags, "sidecar-source") ?? process.env.OPENWORK_SIDECAR_SOURCE;
-  const opencodeSource = readFlag(args.flags, "opencode-source") ?? process.env.OPENWORK_OPENCODE_SOURCE;
+  const sidecarSource = readFlag(args.flags, "sidecar-source") ?? readCompatEnv("OPENWORK_SIDECAR_SOURCE");
+  const opencodeSource = readFlag(args.flags, "opencode-source") ?? readCompatEnv("OPENWORK_OPENCODE_SOURCE");
   const verbose = readBool(args.flags, "verbose", false, "OPENWORK_VERBOSE");
-  const logFormat = readFlag(args.flags, "log-format") ?? process.env.OPENWORK_LOG_FORMAT;
-  const runId = readFlag(args.flags, "run-id") ?? process.env.OPENWORK_RUN_ID;
+  const logFormat = readFlag(args.flags, "log-format") ?? readCompatEnv("OPENWORK_LOG_FORMAT");
+  const runId = readFlag(args.flags, "run-id") ?? readCompatEnv("OPENWORK_RUN_ID");
 
   if (opencodeBin) commandArgs.push("--opencode-bin", opencodeBin);
   if (opencodeHost) commandArgs.push("--opencode-host", opencodeHost);
@@ -4005,7 +4013,7 @@ async function runRouterDaemon(args: ParsedArgs) {
   const logFormat = readLogFormat(args.flags, "log-format", "pretty", "OPENWORK_LOG_FORMAT");
   const colorEnabled =
     readBool(args.flags, "color", process.stdout.isTTY, "OPENWORK_COLOR") && !process.env.NO_COLOR;
-  const runId = readFlag(args.flags, "run-id") ?? process.env.OPENWORK_RUN_ID ?? randomUUID();
+  const runId = readFlag(args.flags, "run-id") ?? readCompatEnv("OPENWORK_RUN_ID") ?? randomUUID();
   const cliVersion = await resolveCliVersion();
   const logger = createLogger({
     format: logFormat,
@@ -4030,16 +4038,16 @@ async function runRouterDaemon(args: ParsedArgs) {
     "127.0.0.1",
   );
 
-  const opencodeBin = readFlag(args.flags, "opencode-bin") ?? process.env.OPENWORK_OPENCODE_BIN;
+  const opencodeBin = readFlag(args.flags, "opencode-bin") ?? readCompatEnv("OPENWORK_OPENCODE_BIN");
   const opencodeHost =
-    readFlag(args.flags, "opencode-host") ?? process.env.OPENWORK_OPENCODE_HOST ?? "127.0.0.1";
+    readFlag(args.flags, "opencode-host") ?? readCompatEnv("OPENWORK_OPENCODE_HOST") ?? "127.0.0.1";
   const opencodePassword =
     readFlag(args.flags, "opencode-password") ??
-    process.env.OPENWORK_OPENCODE_PASSWORD ??
+    readCompatEnv("OPENWORK_OPENCODE_PASSWORD") ??
     process.env.OPENCODE_SERVER_PASSWORD;
   const opencodeUsername =
     readFlag(args.flags, "opencode-username") ??
-    process.env.OPENWORK_OPENCODE_USERNAME ??
+    readCompatEnv("OPENWORK_OPENCODE_USERNAME") ??
     process.env.OPENCODE_SERVER_USERNAME ??
     DEFAULT_OPENCODE_USERNAME;
   const authHeaders = opencodePassword
@@ -4065,11 +4073,11 @@ async function runRouterDaemon(args: ParsedArgs) {
   );
   const corsValue =
     readFlag(args.flags, "cors") ??
-    process.env.OPENWORK_OPENCODE_CORS ??
+    readCompatEnv("OPENWORK_OPENCODE_CORS") ??
     "http://localhost:5173,tauri://localhost,http://tauri.localhost";
   const corsOrigins = parseList(corsValue);
   const opencodeWorkdirFlag =
-    readFlag(args.flags, "opencode-workdir") ?? process.env.OPENWORK_OPENCODE_WORKDIR;
+    readFlag(args.flags, "opencode-workdir") ?? readCompatEnv("OPENWORK_OPENCODE_WORKDIR");
   const activeWorkspace = state.workspaces.find((entry) => entry.id === state.activeId && entry.workspaceType === "local");
   const opencodeWorkdir = opencodeWorkdirFlag ?? activeWorkspace?.path ?? process.cwd();
   const resolvedWorkdir = await ensureWorkspace(opencodeWorkdir);
@@ -4451,10 +4459,10 @@ async function runApprovals(args: ParsedArgs) {
 
   const openworkUrl =
     readFlag(args.flags, "openwork-url") ??
-    process.env.OPENWORK_URL ??
-    process.env.OPENWORK_SERVER_URL ??
+    readCompatEnv("OPENWORK_URL") ??
+    readCompatEnv("OPENWORK_SERVER_URL") ??
     "";
-  const hostToken = readFlag(args.flags, "host-token") ?? process.env.OPENWORK_HOST_TOKEN ?? "";
+  const hostToken = readFlag(args.flags, "host-token") ?? readCompatEnv("OPENWORK_HOST_TOKEN") ?? "";
 
   if (!openworkUrl || !hostToken) {
     throw new Error("openwork-url and host-token are required for approvals");
@@ -4500,7 +4508,7 @@ async function runApprovals(args: ParsedArgs) {
 }
 
 async function runStatus(args: ParsedArgs) {
-  const openworkUrl = readFlag(args.flags, "openwork-url") ?? process.env.OPENWORK_URL ?? "";
+  const openworkUrl = readFlag(args.flags, "openwork-url") ?? readCompatEnv("OPENWORK_URL") ?? "";
   const opencodeUrl = readFlag(args.flags, "opencode-url") ?? process.env.OPENCODE_URL ?? "";
   const username = readFlag(args.flags, "opencode-username") ?? process.env.OPENCODE_SERVER_USERNAME;
   const password = readFlag(args.flags, "opencode-password") ?? process.env.OPENCODE_SERVER_PASSWORD;
@@ -4562,7 +4570,7 @@ async function runStart(args: ParsedArgs) {
   let useTui = tuiRequested && !detachRequested && !outputJson && !checkOnly && !checkEvents && logFormat === "pretty";
   const colorPreferred =
     readBool(args.flags, "color", process.stdout.isTTY, "OPENWORK_COLOR") && !process.env.NO_COLOR;
-  const runId = readFlag(args.flags, "run-id") ?? process.env.OPENWORK_RUN_ID ?? randomUUID();
+  const runId = readFlag(args.flags, "run-id") ?? readCompatEnv("OPENWORK_RUN_ID") ?? randomUUID();
   const cliVersion = await resolveCliVersion();
   const compiledBinary = isCompiledBunBinary();
   let tui: TuiHandle | undefined;
@@ -4612,16 +4620,16 @@ async function runStart(args: ParsedArgs) {
   const sidecarSourceInput = readBinarySource(args.flags, "sidecar-source", "auto", "OPENWORK_SIDECAR_SOURCE");
   const opencodeSourceInput = readBinarySource(args.flags, "opencode-source", "auto", "OPENWORK_OPENCODE_SOURCE");
 
-  const workspace = readFlag(args.flags, "workspace") ?? process.env.OPENWORK_WORKSPACE ?? process.cwd();
+  const workspace = readFlag(args.flags, "workspace") ?? readCompatEnv("OPENWORK_WORKSPACE") ?? process.cwd();
   const resolvedWorkspace = await ensureWorkspace(workspace);
   logger.info("Run starting", { workspace: resolvedWorkspace, logFormat, runId }, "openwork-orchestrator");
 
   const sandboxRequested = readSandboxMode(args.flags, "sandbox", "none", "OPENWORK_SANDBOX");
   const sandboxMode = await resolveSandboxMode(sandboxRequested);
   const sandboxImage =
-    readFlag(args.flags, "sandbox-image") ?? process.env.OPENWORK_SANDBOX_IMAGE ?? "debian:bookworm-slim";
+    readFlag(args.flags, "sandbox-image") ?? readCompatEnv("OPENWORK_SANDBOX_IMAGE") ?? "debian:bookworm-slim";
   const sandboxPersistOverride =
-    readFlag(args.flags, "sandbox-persist-dir") ?? process.env.OPENWORK_SANDBOX_PERSIST_DIR;
+    readFlag(args.flags, "sandbox-persist-dir") ?? readCompatEnv("OPENWORK_SANDBOX_PERSIST_DIR");
   const dataDir = resolveRouterDataDir(args.flags);
   const opencodeConfigDir = join(dataDir, "opencode-config", workspaceIdForLocal(resolvedWorkspace));
   await ensureOpencodeManagedTools(opencodeConfigDir);
@@ -4641,17 +4649,17 @@ async function runStart(args: ParsedArgs) {
 
   const sandboxMountValue =
     readFlag(args.flags, "sandbox-mount") ??
-    process.env.OPENWORK_SANDBOX_MOUNT;
+    readCompatEnv("OPENWORK_SANDBOX_MOUNT");
   const sandboxMountSpecs = parseList(sandboxMountValue);
   const sandboxExtraMounts =
     sandboxMode !== "none" && sandboxMountSpecs.length
       ? await resolveSandboxExtraMounts(sandboxMountSpecs, sandboxMode)
       : [];
 
-  const explicitOpencodeBin = readFlag(args.flags, "opencode-bin") ?? process.env.OPENWORK_OPENCODE_BIN;
-  const explicitOpenworkServerBin = readFlag(args.flags, "openwork-server-bin") ?? process.env.OPENWORK_SERVER_BIN;
+  const explicitOpencodeBin = readFlag(args.flags, "opencode-bin") ?? readCompatEnv("OPENWORK_OPENCODE_BIN");
+  const explicitOpenworkServerBin = readFlag(args.flags, "openwork-server-bin") ?? readCompatEnv("OPENWORK_SERVER_BIN");
   const explicitOpenCodeRouterBin = readFlag(args.flags, "opencode-router-bin") ?? process.env.OPENCODE_ROUTER_BIN;
-  const opencodeBindHost = readFlag(args.flags, "opencode-host") ?? process.env.OPENWORK_OPENCODE_BIND_HOST ?? "0.0.0.0";
+  const opencodeBindHost = readFlag(args.flags, "opencode-host") ?? readCompatEnv("OPENWORK_OPENCODE_BIND_HOST") ?? "0.0.0.0";
   const opencodePort =
     sandboxMode !== "none"
       ? SANDBOX_INTERNAL_OPENCODE_PORT
@@ -4674,13 +4682,13 @@ async function runStart(args: ParsedArgs) {
   );
   const opencodeAuth = readBool(args.flags, "opencode-auth", true, "OPENWORK_OPENCODE_AUTH");
   const opencodeUsername = opencodeAuth
-    ? readFlag(args.flags, "opencode-username") ?? process.env.OPENWORK_OPENCODE_USERNAME ?? DEFAULT_OPENCODE_USERNAME
+    ? readFlag(args.flags, "opencode-username") ?? readCompatEnv("OPENWORK_OPENCODE_USERNAME") ?? DEFAULT_OPENCODE_USERNAME
     : undefined;
   const opencodePassword = opencodeAuth
-    ? readFlag(args.flags, "opencode-password") ?? process.env.OPENWORK_OPENCODE_PASSWORD ?? randomUUID()
+    ? readFlag(args.flags, "opencode-password") ?? readCompatEnv("OPENWORK_OPENCODE_PASSWORD") ?? randomUUID()
     : undefined;
 
-  const openworkHost = readFlag(args.flags, "openwork-host") ?? process.env.OPENWORK_HOST ?? "0.0.0.0";
+  const openworkHost = readFlag(args.flags, "openwork-host") ?? readCompatEnv("OPENWORK_HOST") ?? "0.0.0.0";
   const openworkPort = await resolvePort(
     readNumber(args.flags, "openwork-port", undefined, "OPENWORK_PORT"),
     "127.0.0.1",
@@ -4691,11 +4699,11 @@ async function runStart(args: ParsedArgs) {
     readNumber(args.flags, "opencode-router-health-port", undefined, "OPENCODE_ROUTER_HEALTH_PORT"),
     "127.0.0.1",
   );
-  const openworkToken = readFlag(args.flags, "openwork-token") ?? process.env.OPENWORK_TOKEN ?? randomUUID();
-  const openworkHostToken = readFlag(args.flags, "openwork-host-token") ?? process.env.OPENWORK_HOST_TOKEN ?? randomUUID();
+  const openworkToken = readFlag(args.flags, "openwork-token") ?? readCompatEnv("OPENWORK_TOKEN") ?? randomUUID();
+  const openworkHostToken = readFlag(args.flags, "openwork-host-token") ?? readCompatEnv("OPENWORK_HOST_TOKEN") ?? randomUUID();
   const approvalMode =
     (readFlag(args.flags, "approval") as ApprovalMode | undefined) ??
-    (process.env.OPENWORK_APPROVAL_MODE as ApprovalMode | undefined) ??
+    (readCompatEnv("OPENWORK_APPROVAL_MODE") as ApprovalMode | undefined) ??
     "manual";
   const approvalTimeoutMs = readNumber(
     args.flags,
@@ -4704,7 +4712,7 @@ async function runStart(args: ParsedArgs) {
     "OPENWORK_APPROVAL_TIMEOUT_MS",
   ) as number;
   const readOnly = readBool(args.flags, "read-only", false, "OPENWORK_READONLY");
-  const corsValue = readFlag(args.flags, "cors") ?? process.env.OPENWORK_CORS_ORIGINS ?? "*";
+  const corsValue = readFlag(args.flags, "cors") ?? readCompatEnv("OPENWORK_CORS_ORIGINS") ?? "*";
   const corsOrigins = parseList(corsValue);
   const connectHost = readFlag(args.flags, "connect-host");
 
