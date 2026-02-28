@@ -61,3 +61,10 @@
 2. 完成 app/server/orchestrator 的 core/optional 切分
 3. 补齐仓库构建产物清理与 `.gitignore` 完善
 4. 补充更多平台安装文档（macOS / Linux）
+
+## v0.6 本次增量（2026-02-28）
+
+- 新增 rebrand 基线执行文档：`plans/execution/00-rebrand-baseline.md`
+  - 产出旧标识 -> 新标识映射草案
+  - 产出必须保留功能与禁止误删区域清单
+  - 产出 API path/env/package/filter 风险点与后续 ownership 建议
