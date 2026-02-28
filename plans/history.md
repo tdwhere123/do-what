@@ -54,6 +54,10 @@
 - 新增 package README：
   - `packages/app/README.md`
   - `packages/desktop/README.md`
+- 命名与脚本统一（package/script migration）：
+  - workspace/package 名称改为 `@do-what/*` 体系
+  - 根脚本统一为 `dev:business` / `dev:desktop` / `dev:ui`
+  - `dev:lite` 保留为 deprecated 过渡别名
 
 ## v0.6 待完成
 
