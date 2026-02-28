@@ -22,6 +22,14 @@
 3. 受影响模块 README（根 README 或 package README）
 4. 涉及结构瘦身/模块拆分时，必须同步 `plans/v0.6-slimming-spec.md`
 
+
+## Unified Maintenance Rule (Closure)
+
+- 每次改动都必须同时更新 `plans/v0.6.md`、`plans/history.md`，并同步更新受影响模块 README（若无模块行为变化，需在计划/报告中显式标注 `README: N/A`）。
+- 涉及结构瘦身/模块拆分，必须同步 `plans/v0.6-slimming-spec.md`。
+- 任何删除动作必须提供“删除清单 + 删除理由 + 验证命令”。
+- 若删除可行性不确定：先保留，并在计划文档中标注 `TODO(<owner>/<date>)`，不得直接删除。
+
 ## Intake Format
 
 开始执行前的首条进度更新必须包含：

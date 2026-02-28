@@ -84,3 +84,12 @@
   - 产出旧标识 -> 新标识映射草案
   - 产出必须保留功能与禁止误删区域清单
   - 产出 API path/env/package/filter 风险点与后续 ownership 建议
+
+## v0.6 本次增量（2026-02-28，整洁化收口）
+
+- 统一维护规则写入 `AGENTS.md`：
+  - 每次改动必须同步 `plans/v0.6.md`、`plans/history.md` 与受影响 README。
+  - 删除动作必须有清单和理由；不确定项转 TODO 保留。
+- 回填 `plans/v0.6.md` 与 `plans/v0.6-slimming-spec.md` 的收口记录。
+- 执行仓库可运行校验（typecheck/lint/test，按脚本可用性执行）。
+- 产出最终迁移报告：`plans/execution/99-final-report.md`。
