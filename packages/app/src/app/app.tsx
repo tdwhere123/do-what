@@ -49,6 +49,7 @@ import {
   listCommands as listCommandsTyped,
 } from "./lib/opencode-session";
 import { clearPerfLogs, finishPerf, perfNow, recordPerfLog } from "./lib/perf-log";
+import { OutputBuffer } from "./lib/agent-output-parser";
 import { buildContextPrefix } from "./lib/shared-config";
 import {
   DEFAULT_MODEL,
@@ -61,7 +62,12 @@ import {
   VARIANT_PREF_KEY,
 } from "./constants";
 import { parseMcpServersFromContent, removeMcpFromConfig, validateMcpServerName } from "./mcp";
-import { addSessionToProject } from "./state/sessions";
+import {
+  addAgentRun,
+  addSessionToProject,
+  appendRunEvent,
+  updateAgentRun,
+} from "./state/sessions";
 import type {
   Client,
   DashboardTab,
@@ -129,6 +135,8 @@ import { createExtensionsStore } from "./context/extensions";
 import { useGlobalSync } from "./context/global-sync";
 import { createWorkspaceStore } from "./context/workspace";
 import {
+  agentRunAbort,
+  agentRunStart,
   readOpencodeConfig,
   writeOpencodeConfig,
   schedulerDeleteJob,
@@ -758,6 +766,7 @@ export default function App() {
 
   const [prompt, setPrompt] = createSignal("");
   const [lastPromptSent, setLastPromptSent] = createSignal("");
+  const [localRuntimeBySessionId, setLocalRuntimeBySessionId] = createSignal<Record<string, "claude-code" | "codex">>({});
 
   type PartInput = TextPartInput | FilePartInput | AgentPartInput | SubtaskPartInput;
 
@@ -936,6 +945,139 @@ export default function App() {
     return fallback;
   };
 
+  const isLocalCliRuntime = (
+    runtime: ComposerDraft["runtime"] | undefined,
+  ): runtime is "claude-code" | "codex" => runtime === "claude-code" || runtime === "codex";
+
+  const parseAgentRunDoneChunk = (chunk: string): number | null => {
+    try {
+      const parsed = JSON.parse(chunk) as { type?: string; exitCode?: number | string };
+      if (parsed?.type !== "done") return null;
+      const rawExitCode = typeof parsed.exitCode === "string" ? Number(parsed.exitCode) : parsed.exitCode;
+      return Number.isFinite(rawExitCode) ? Number(rawExitCode) : 0;
+    } catch {
+      return null;
+    }
+  };
+
+  const runPromptWithLocalRuntime = async (input: {
+    sessionID: string;
+    runtime: "claude-code" | "codex";
+    promptText: string;
+    projectId?: string | null;
+    parentSessionIds?: string[];
+  }) => {
+    if (!isTauriRuntime()) {
+      throw new Error("Claude Code / Codex runtime requires desktop mode (pnpm run dev:desktop).");
+    }
+
+    const runId = input.sessionID;
+    const now = Date.now();
+    const title = input.promptText.trim().split(/\r?\n/).find(Boolean)?.trim().slice(0, 88) || `Run ${runId.slice(0, 8)}`;
+    const workdir = workspaceProjectDir().trim() || workspaceStore.activeWorkspaceRoot().trim() || undefined;
+
+    addAgentRun({
+      id: runId,
+      runtime: input.runtime,
+      type: "quick-chat",
+      prompt: input.promptText,
+      workdir,
+      title,
+      status: "running",
+      events: [],
+      startedAt: now,
+      projectId: input.projectId ?? undefined,
+      parentSessionIds: input.parentSessionIds ?? [],
+    });
+
+    setSessionStatusById({ ...sessionStatusById(), [runId]: "running" });
+    setLocalRuntimeBySessionId((current) => ({ ...current, [runId]: input.runtime }));
+
+    const outputBuffer = new OutputBuffer((events) => {
+      for (const event of events) {
+        appendRunEvent(runId, event);
+      }
+    });
+
+    let settled = false;
+    let resolveDone: () => void = () => undefined;
+    let rejectDone: (error: Error) => void = () => undefined;
+    const done = new Promise<void>((resolve, reject) => {
+      resolveDone = resolve;
+      rejectDone = reject;
+    });
+
+    const finish = (status: "done" | "error" | "aborted", exitCode: number, errorMessage?: string) => {
+      if (settled) return;
+      settled = true;
+
+      outputBuffer.flush();
+
+      if (errorMessage) {
+        appendRunEvent(runId, { type: "error", message: errorMessage });
+      }
+      if (input.runtime === "codex") {
+        appendRunEvent(runId, {
+          type: "done",
+          exitCode,
+          durationMs: Math.max(0, Date.now() - now),
+        });
+      }
+
+      updateAgentRun(runId, {
+        status,
+        endedAt: Date.now(),
+      });
+      setSessionStatusById({ ...sessionStatusById(), [runId]: "idle" });
+      setLocalRuntimeBySessionId((current) => {
+        if (!current[runId]) return current;
+        const next = { ...current };
+        delete next[runId];
+        return next;
+      });
+
+      if (status === "error" || exitCode !== 0) {
+        rejectDone(new Error(errorMessage ?? `Runtime exited with code ${exitCode}`));
+        return;
+      }
+      resolveDone();
+    };
+
+    const eventName = `agent-run-output/${runId}`;
+    const unlisten = await listen<{ chunk?: string }>(eventName, (event) => {
+      const chunk = event.payload?.chunk;
+      if (typeof chunk !== "string") return;
+      const trimmed = chunk.trim();
+      if (!trimmed) return;
+
+      const doneExitCode = parseAgentRunDoneChunk(trimmed);
+      if (doneExitCode !== null) {
+        finish(doneExitCode === 0 ? "done" : "error", doneExitCode, doneExitCode === 0 ? undefined : `Runtime exited with code ${doneExitCode}`);
+        return;
+      }
+
+      outputBuffer.push(trimmed, input.runtime);
+    });
+
+    try {
+      await agentRunStart({
+        runId,
+        runtime: input.runtime,
+        prompt: input.promptText,
+        workdir,
+        config: {},
+      });
+      await done;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      finish("error", 1, message);
+      throw error;
+    } finally {
+      outputBuffer.destroy();
+      unlisten();
+    }
+  };
+
   async function sendPrompt(draft?: ComposerDraft) {
     const hasExplicitDraft = Boolean(draft);
     const fallbackText = prompt().trim();
@@ -1008,8 +1150,26 @@ export default function App() {
       const model = selectedSessionModel();
       const agent = selectedSessionAgent();
       const parts = buildPromptParts(effectiveDraft);
+      const runtime = isLocalCliRuntime(resolvedDraft.runtime) ? resolvedDraft.runtime : "opencode";
 
-      if (resolvedDraft.mode === "shell") {
+      if (runtime !== "opencode") {
+        if (resolvedDraft.mode === "shell") {
+          throw new Error(`${runtime} runtime currently supports prompt mode only.`);
+        }
+        if (resolvedDraft.command || compactCommand) {
+          throw new Error(`${runtime} runtime does not support slash commands yet.`);
+        }
+        if (resolvedDraft.attachments.length) {
+          throw new Error(`${runtime} runtime does not support attachments yet.`);
+        }
+        await runPromptWithLocalRuntime({
+          sessionID,
+          runtime,
+          promptText: content,
+          projectId: effectiveDraft.projectId,
+          parentSessionIds: effectiveDraft.parentSessionIds,
+        });
+      } else if (resolvedDraft.mode === "shell") {
         await shellInSession(c, sessionID, content);
       } else if (resolvedDraft.command || compactCommand) {
         if (compactCommand) {
@@ -1091,9 +1251,24 @@ export default function App() {
 
   async function abortSession(sessionID?: string) {
     const c = client();
-    if (!c) return;
     const id = (sessionID ?? selectedSessionId() ?? "").trim();
     if (!id) return;
+
+    const localRuntime = localRuntimeBySessionId()[id];
+    if (localRuntime) {
+      await agentRunAbort(id);
+      updateAgentRun(id, { status: "aborted", endedAt: Date.now() });
+      setSessionStatusById({ ...sessionStatusById(), [id]: "idle" });
+      setLocalRuntimeBySessionId((current) => {
+        if (!current[id]) return current;
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
+      return;
+    }
+
+    if (!c) return;
     // OpenCode exposes session.abort which interrupts the active prompt/run.
     // We intentionally don't mutate global busy state here; the SessionView
     // provides local UX (button disabled + toast) for cancellation.

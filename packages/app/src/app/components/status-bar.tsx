@@ -1,10 +1,8 @@
 import { Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
-import { Cpu, MessageCircle, Server, Settings } from "lucide-solid";
+import { Cpu, Server, Settings } from "lucide-solid";
 
 import type { OpenworkServerStatus } from "../lib/openwork-server";
-import type { OpenCodeRouterStatus } from "../lib/tauri";
 import type { McpStatusMap } from "../types";
-import { getOpenCodeRouterStatus } from "../lib/tauri";
 
 import Button from "./button";
 
@@ -21,9 +19,6 @@ type StatusBarProps = {
 };
 
 export default function StatusBar(props: StatusBarProps) {
-  const [opencodeRouterStatus, setOpenCodeRouterStatus] = createSignal<OpenCodeRouterStatus | null>(null);
-  const [documentVisible, setDocumentVisible] = createSignal(true);
-
   const opencodeStatusMeta = createMemo(() => ({
     dot: props.clientConnected ? "bg-green-9" : "bg-gray-6",
     text: props.clientConnected ? "text-green-11" : "text-[var(--color-text-tertiary)]",
@@ -39,23 +34,6 @@ export default function StatusBar(props: StatusBarProps) {
       default:
         return { dot: "bg-gray-6", text: "text-[var(--color-text-tertiary)]", label: "Unavailable" };
     }
-  });
-
-  const messagingMeta = createMemo(() => {
-    const status = opencodeRouterStatus();
-    if (!status) {
-      return { dot: "bg-gray-6", text: "text-[var(--color-text-tertiary)]", label: "Messaging bridge unavailable" };
-    }
-    const telegramConfigured = (status.telegram.items?.length ?? 0) > 0;
-    const slackConfigured = (status.slack.items?.length ?? 0) > 0;
-    const configuredCount = [telegramConfigured, slackConfigured].filter(Boolean).length;
-    if (status.running && configuredCount > 0) {
-      return { dot: "bg-green-9", text: "text-green-11", label: "Messaging bridge ready" };
-    }
-    if (configuredCount > 0 || status.running) {
-      return { dot: "bg-amber-9", text: "text-amber-11", label: "Messaging bridge setup" };
-    }
-    return { dot: "bg-gray-6", text: "text-[var(--color-text-tertiary)]", label: "Messaging bridge offline" };
   });
 
   type ProTip = {
@@ -139,26 +117,6 @@ export default function StatusBar(props: StatusBarProps) {
     }
     setActiveTip(tips[0]);
     setTipCursor(1);
-  });
-
-  const refreshOpenCodeRouter = async () => {
-    const next = await getOpenCodeRouterStatus();
-    setOpenCodeRouterStatus(next);
-  };
-
-  createEffect(() => {
-    if (typeof document === "undefined") return;
-    const update = () => setDocumentVisible(document.visibilityState !== "hidden");
-    update();
-    document.addEventListener("visibilitychange", update);
-    onCleanup(() => document.removeEventListener("visibilitychange", update));
-  });
-
-  createEffect(() => {
-    if (!documentVisible()) return;
-    refreshOpenCodeRouter();
-    const interval = window.setInterval(refreshOpenCodeRouter, 15_000);
-    onCleanup(() => window.clearInterval(interval));
   });
 
   onMount(() => {

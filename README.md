@@ -1,36 +1,67 @@
-# do-what（桌面定制版骨架）
+# do-what
 
-这个仓库已收敛为**桌面完整体验优先**的改造基线：
-- 保留桌面端完整链路（UI + Tauri + Orchestrator + Server）。
-- 删除 web/landing/services/packaging 等配套层，降低后续个人化改造复杂度。
+`do-what` 是一个本地优先的桌面 AI 工作台，采用多运行时并列架构：
+- OpenCode
+- Claude Code
+- Codex
 
-## 保留的核心模块
+`opencode-router` 仅作为遗留可选扩展，不在 v0.6 默认主链路中，不再阻塞安装和启动。
 
-- `packages/app`：桌面 UI（SolidJS + Tailwind）。
-- `packages/desktop`：Tauri 桌面壳与系统能力。
-- `packages/orchestrator`：本地编排器（`openwork`）。
-- `packages/server`：服务端控制面。
-- `packages/opencode-router`：编排链路依赖的连接器包。
+## 1. 当前仓库结构
 
-## 建议阅读顺序
+- `packages/app`：桌面 UI（SolidJS + Tailwind）
+- `packages/desktop`：Tauri 壳 + 系统桥接命令
+- `packages/orchestrator`：本地编排器（进程管理、健康检查、沙箱）
+- `packages/server`：工作区配置/文件能力/API 代理
 
-1. `PROJECT_FRAMEWORK.md`
-2. `ARCHITECTURE.md`
-3. `INFRASTRUCTURE.md`
+## 2. Windows 快速启动（推荐）
 
-## 常用命令
+```powershell
+pnpm run bootstrap:windows
+pnpm dev
+```
+
+`bootstrap:windows` 会执行：
+1. 环境检测（Node/pnpm/bun/Rust/Cargo/Build Tools/WebView2）
+2. 缺失环境自动安装（winget）
+3. `pnpm install --frozen-lockfile`
+4. `prepare:sidecar`
+
+说明：
+- `pnpm dev` 默认是瘦身模式（仅 UI，不编译桌面 Rust）。
+- 桌面模式请用：`pnpm run dev:desktop`
+
+## 3. 常用命令
 
 ```bash
-pnpm install
+pnpm run doctor:windows
+pnpm run setup:windows
+pnpm run bootstrap:windows
+
 pnpm dev
+pnpm run dev:desktop
 pnpm dev:ui
 pnpm build
 pnpm typecheck
-pnpm test:e2e
 ```
 
-## 改造建议（个人使用）
+## 4. Router 状态（v0.6）
 
-- 优先改 `packages/app/src`（交互与信息密度）。
-- 需要系统能力时改 `packages/desktop/src-tauri`。
-- 涉及执行流程与会话控制，再改 `packages/orchestrator/src`、`packages/server/src`。
+router 已从默认桌面链路下线，不再作为当前版本运行前提。
+`DOWHAT_ROUTER_ENABLED` 在 v0.6 主链路中不再生效（会被忽略）。
+
+## 5. 文档索引
+
+- `docs/INSTALL_WINDOWS.md`：Windows 安装与自动补环境
+- `docs/STARTUP_GUIDE.md`：启动模式与启动顺序
+- `docs/TROUBLESHOOTING.md`：常见报错与定位
+- `docs/CORE_LOGIC_AND_MODULES.md`：核心逻辑与功能区块
+- `ARCHITECTURE.md`：运行时与数据流
+- `INFRASTRUCTURE.md`：基础设施与依赖策略
+
+## 6. 版本内维护规则
+
+- 任何功能变更必须同步：
+  - `plans/v0.6.md`
+  - `plans/history.md`
+  - 受影响模块 README

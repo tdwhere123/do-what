@@ -73,11 +73,12 @@ import soulSetupTemplate from "../data/commands/give-me-a-soul.md?raw";
 import MessageList from "../components/session/message-list";
 import Composer from "../components/session/composer";
 import type { SidebarSectionState } from "../components/session/sidebar";
+import AgentRunView from "../components/agent-run";
 import FlyoutItem from "../components/flyout-item";
 import QuestionModal from "../components/question-modal";
 import ArtifactMarkdownEditor from "../components/session/artifact-markdown-editor";
 import SessionDagWidget from "../components/session-dag";
-import { useProjects } from "../state/sessions";
+import { useAgentRuns, useProjects } from "../state/sessions";
 
 export type SessionViewProps = {
   selectedSessionId: string | null;
@@ -255,8 +256,12 @@ export default function SessionView(props: SessionViewProps) {
   const [agentPickerBusy, setAgentPickerBusy] = createSignal(false);
 
   const { projects } = useProjects();
+  const { agentRuns } = useAgentRuns();
   const activeProjectId = createMemo(() =>
     projects.find((project) => props.selectedSessionId && project.sessionIds.includes(props.selectedSessionId))?.id ?? null,
+  );
+  const selectedAgentRun = createMemo(() =>
+    agentRuns.find((run) => run.id === props.selectedSessionId) ?? null
   );
 
   const [agentPickerReady, setAgentPickerReady] = createSignal(false);
@@ -2960,7 +2965,7 @@ export default function SessionView(props: SessionViewProps) {
              ref={(el) => (chatContainerEl = el)}
            >
              <div class="max-w-5xl mx-auto w-full">
-           <Show when={props.messages.length === 0}>
+           <Show when={props.messages.length === 0 && !selectedAgentRun()}>
              <div class="text-center py-16 px-6 space-y-6">
                <img
                  src="/svg/organic/shape/flower/Elements-organic-shape-flower-nature-splash.svg"
@@ -3053,6 +3058,18 @@ export default function SessionView(props: SessionViewProps) {
               ) : undefined
             }
           />
+
+          <Show when={selectedAgentRun()}>
+            {(run) => (
+              <div class="mt-6 rounded-xl border border-dls-border bg-dls-surface overflow-hidden">
+                <div class="flex items-center justify-between border-b border-dls-border px-4 py-2 text-xs text-dls-secondary">
+                  <span>Local Runtime Output</span>
+                  <span class="uppercase tracking-wide">{run().runtime}</span>
+                </div>
+                <AgentRunView events={run().events} status={run().status} />
+              </div>
+            )}
+          </Show>
 
            <div
              ref={(el) => {

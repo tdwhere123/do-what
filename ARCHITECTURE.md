@@ -1,312 +1,81 @@
-# OpenWork Architecture
+# Architecture
 
-## Design principle: Predictable > Clever
+## 1. 总体架构
 
-OpenWork optimizes for **predictability** over "clever" auto-detection. Users should be able to form a correct mental model of what will happen.
+`do-what` 是四层结构：
+1. UI (`packages/app`)
+2. Desktop Bridge (`packages/desktop`)
+3. Orchestrator (`packages/orchestrator`)
+4. Server (`packages/server`)
 
-Guidelines:
+运行时采用并列模型：
+- OpenCode
+- Claude Code
+- Codex
 
-- Prefer **explicit configuration** (a single setting or env var) over heuristics.
-- Auto-detection is acceptable as a convenience, but must be:
-  - explainable (we can tell the user what we tried)
-  - overrideable (one obvious escape hatch)
-  - safe (no surprising side effects)
-- When a prerequisite is missing, surface the **exact failing check** and a concrete next step.
+## 2. 核心逻辑（端到端）
 
-### Example: Docker-backed sandboxes (desktop)
+### 2.1 启动链路
 
-When enabling Docker-backed sandbox mode, prefer an explicit, single-path override for the Docker client binary:
+1. Desktop 启动 Tauri
+2. Tauri 根据设置拉起 orchestrator / engine
+3. orchestrator 启动 OpenCode 与 openwork-server（以及可选 router）
+4. UI 通过 SDK 与 server API 建立连接，订阅事件流
 
-- `OPENWORK_DOCKER_BIN` (absolute path to `docker`)
+### 2.2 会话执行链路
 
-This keeps behavior predictable across environments where GUI apps do not inherit shell PATH (common on macOS).
+1. 用户在 Composer 发起任务
+2. UI 根据所选 runtime 路由执行
+3. Desktop 命令层发起进程调用或 API 请求
+4. 执行事件回流 UI（消息、工具调用、错误、完成态）
 
-Auto-detection can exist as a convenience, but should be tiered and explainable:
+### 2.3 配置与文件链路
 
-1. Honor `OPENWORK_DOCKER_BIN` if set.
-2. Try the process PATH.
-3. On macOS, try the login PATH from `/usr/libexec/path_helper`.
-4. Last-resort: try well-known locations (Homebrew, Docker Desktop bundle) and validate the binary exists.
+1. UI 请求工作区配置变更
+2. server 执行文件读写与审批
+3. 必要时触发 engine reload
+4. UI 刷新状态与能力面板
 
-The readiness check should be a clear, single command (e.g. `docker info`) and the UI should show the exact error output when it fails.
+## 3. 功能区块说明
 
-## opencode primitives
-how to pick the right extension abstraction for 
-@opencode
+### 3.1 Sessions
 
-opencode has a lot of extensibility options:
-mcp / plugins / skills / bash / agents / commands
+- 主会话页面：消息流、工具卡片、上下文面板、附件面板
+- 支持多 runtime 的发送与回放
 
-- mcp
-use when you need authenticated third-party flows (oauth) and want to expose that safely to end users
-good fit when "auth + capability surface" is the product boundary
-downside: you're limited to whatever surface area the server exposes
+### 3.2 Scheduled
 
-- bash / raw cli
-use only for the most advanced users or internal power workflows
-highest risk, easiest to get out of hand (context creep + permission creep + footguns)
-great for power users and prototyping, terrifying as a default for non-tech users
+- 调度任务列表、刷新、删除
+- 依赖 scheduler 能力与工作区配置
 
-- plugins
-use when you need real tools in code and want to scope permissions around them
-good middle ground: safer than raw cli, more flexible than mcp, reusable and testable
-basically "guardrails + capability packaging"
+### 3.3 Soul
 
-- skills
-use when you want reliable plain-english patterns that shape behavior
-best for repeatability and making workflows legible
-pro tip: pair skills with plugins or cli (i literally embed skills inside plugins right now and expose commands like get_skills / retrieve)
+- 项目/系统记忆管理与心跳数据展示
+- 面向长期上下文维护
 
-- agents
-use when you need to create tasks that are executed by different models than the main one and might have some extra context to find skills or interact with mcps.
+### 3.4 Skills
 
-- commands 
-`/` commands that trigger tools
+- 本地技能读取、编辑、安装、卸载
+- 支持模板与导入流程
 
-These are all opencode primitives you can read the docs to find out exactly how to set them up.
+### 3.5 Extensions
 
-## Core Concepts of OpenWork
+- 插件与 MCP 配置管理
+- Router 属于扩展能力，不是基础启动依赖
 
-- uses all these primitives
-- uses native OpenCode commands for reusable flows (markdown files in `.opencode/commands`)
-- adds a new abstraction "workspace" is a project fodler and a simple .json file that includes a list of opencode primitives that map perfectly to an opencode workdir (not fully implemented)
-  - openwork can open a workpace.json and decide where to populate a folder with thse settings (not implemented today
+### 3.6 Settings
 
-## Core Architecture
+- 引擎源、运行时、主题、开发者模式、修复工具
+- 环境诊断与重连入口
 
-OpenWork is a client experience that consumes OpenWork server surfaces.
+## 4. Router 定位
 
-Historically, users reached OpenWork server capabilities in two ways:
+- Router 仅用于消息通道桥接（Telegram/Slack/WhatsApp 等）
+- 默认关闭
+- 显式启用后才参与 sidecar 构建和运行
 
-- a running desktop OpenWork app acting as host
-- a running `openwork-orchestrator` (CLI host)
+## 5. 设计原则
 
-Now there is a third, first-class path: hosted OpenWork Cloud workers.
-
-OpenWork therefore has three runtime connection modes:
-
-### Mode A - Host (Desktop/Server)
-
-- OpenWork runs on a desktop/laptop and **starts** OpenCode locally.
-- The OpenCode server runs on loopback (default `127.0.0.1:4096`).
-- OpenWork UI connects via the official SDK and listens to events.
-
-### Mode B - Client (Desktop/Mobile)
-
-- OpenWork runs on iOS/Android as a **remote controller**.
-- It connects to an already-running OpenCode server hosted by a trusted device.
-- Pairing uses a QR code / one-time token and a secure transport (LAN or tunneled).
-
-### Mode C - Hosted OpenWork Cloud
-
-- User signs in to hosted OpenWork web/app surfaces.
-- User launches a cloud worker from hosted control plane.
-- OpenWork returns remote connect credentials (`/w/ws_*` URL + access token).
-- User connects from OpenWork app using `Add a worker` -> `Connect remote`.
-
-This model keeps the user experience consistent across self-hosted and hosted paths while preserving OpenCode parity.
-
-## Cloud Worker Connect Flow (Canonical)
-
-1. Authenticate in OpenWork Cloud control surface.
-2. Launch worker (with checkout/paywall when needed).
-3. Wait for provisioning and health.
-4. Generate/retrieve connect credentials.
-5. Connect in OpenWork app via deep link or manual URL + token.
-
-Technical note:
-
-- Default connect URL should be workspace-scoped (`/w/ws_*`) when available.
-- Technical diagnostics (host URL, worker ID, raw logs) should be progressive disclosure, not default UI.
-
-## Web Parity + Filesystem Actions
-
-The browser runtime cannot read or write arbitrary local files. Any feature that:
-
-- reads skills/commands/plugins from `.opencode/`
-- edits `SKILL.md` / command templates / `opencode.json`
-- opens folders / reveals paths
-
-must be routed through a host-side service.
-
-In OpenWork, the long-term direction is:
-
-- Use the OpenWork server (`packages/server`) as the single API surface for filesystem-backed operations.
-- Treat Tauri-only file operations as an implementation detail / convenience fallback, not a separate feature set.
-
-This ensures the same UI flows work on desktop, mobile, and web clients, with approvals and auditing handled centrally.
-
-## OpenCode Integration (Exact SDK + APIs)
-
-OpenWork uses the official JavaScript/TypeScript SDK:
-
-- Package: `@opencode-ai/sdk/v2` (UI should import `@opencode-ai/sdk/v2/client` to avoid Node-only server code)
-- Purpose: type-safe client generated from OpenAPI spec
-
-### Engine Lifecycle
-
-#### Start server + client (Host mode)
-
-Use `createOpencode()` to launch the OpenCode server and create a client.
-
-```ts
-import { createOpencode } from "@opencode-ai/sdk/v2";
-
-const opencode = await createOpencode({
-  hostname: "127.0.0.1",
-  port: 4096,
-  timeout: 5000,
-  config: {
-    model: "anthropic/claude-3-5-sonnet-20241022",
-  },
-});
-
-const { client } = opencode;
-// opencode.server.url is available
-```
-
-#### Connect to an existing server (Client mode)
-
-```ts
-import { createOpencodeClient } from "@opencode-ai/sdk/v2/client";
-
-const client = createOpencodeClient({
-  baseUrl: "http://localhost:4096",
-  directory: "/path/to/project",
-});
-```
-
-### Health + Version
-
-- `client.global.health()`
-  - Used for startup checks, compatibility warnings, and diagnostics.
-
-### Event Streaming (Real-time UI)
-
-OpenWork must be real-time. It subscribes to SSE events:
-
-- `client.event.subscribe()`
-
-The UI uses these events to drive:
-
-- streaming assistant responses
-- step-level tool execution timeline
-- permission prompts
-- session lifecycle changes
-
-### Sessions (Primary Primitive)
-
-OpenWork maps a "Task Run" to an OpenCode **Session**.
-
-Core methods:
-
-- `client.session.create()`
-- `client.session.list()`
-- `client.session.get()`
-- `client.session.messages()`
-- `client.session.prompt()`
-- `client.session.abort()`
-- `client.session.summarize()`
-
-### Files + Search
-
-OpenWork's file browser and "what changed" UI are powered by:
-
-- `client.find.text()`
-- `client.find.files()`
-- `client.find.symbols()`
-- `client.file.read()`
-- `client.file.status()`
-
-### Permissions
-
-OpenWork must surface permission requests clearly and respond explicitly.
-
-- Permission response API:
-  - `client.permission.reply({ requestID, reply })` (where `reply` is `once` | `always` | `reject`)
-
-OpenWork UI should:
-
-1. Show what is being requested (scope + reason).
-2. Provide choices (allow once / allow for session / deny).
-3. Post the response to the server.
-4. Record the decision in the run's audit log.
-
-### Config + Providers
-
-OpenWork's settings pages use:
-
-- `client.config.get()`
-- `client.config.providers()`
-- `client.auth.set()` (optional flow to store keys)
-
-### Extensibility - Skills + Plugins
-
-OpenWork exposes two extension surfaces:
-
-1. **Skills (OpenPackage)**
-   - Installed into `.opencode/skills/*`.
-   - OpenWork can run `opkg install` to pull packages from the registry or GitHub.
-
-2. **Plugins (OpenCode)**
-   - Plugins are configured via `opencode.json` in the workspace.
-   - The format is the same as OpenCode CLI uses today.
-   - OpenWork should show plugin status and instructions; a native plugin manager is planned.
-
-### Engine reload (config refresh)
-
-- OpenWork server exposes `POST /workspace/:id/engine/reload`.
-- It calls OpenCode `POST /instance/dispose` with the workspace directory to force a config re-read.
-- Use after skills/plugins/MCP/config edits; reloads can interrupt active sessions.
-- Reload requests follow OpenWork server approval rules.
-
-### OpenPackage Registry (Current + Future)
-
-- Today, OpenWork only supports **curated lists + manual sources**.
-- Publishing to the official registry currently requires authentication (`opkg push` + `opkg configure`).
-- Future goals:
-  - in-app registry search
-  - curated list sync (e.g. Awesome Claude Skills)
-  - frictionless publishing without signup (pending registry changes)
-
-## Projects + Path
-
-- `client.project.list()` / `client.project.current()`
-- `client.path.get()`
-
-OpenWork conceptually treats "workspace" as the current project/path.
-
-## Optional TUI Control (Advanced)
-
-The SDK exposes `client.tui.*` methods. OpenWork can optionally provide a "Developer Mode" screen to:
-
-- append/submit prompt
-- open help/sessions/themes/models
-- show toast
-
-This is optional and not required for non-technical MVP.
-
-## Folder Authorization Model
-
-OpenWork enforces folder access through **two layers**:
-
-1. **OpenWork UI authorization**
-   - user explicitly selects allowed folders via native picker
-   - OpenWork remembers allowed roots per profile
-
-2. **OpenCode server permissions**
-   - OpenCode requests permissions as needed
-   - OpenWork intercepts requests via events and displays them
-
-Rules:
-
-- Default deny for anything outside allowed roots.
-- "Allow once" never expands persistent scope.
-- "Allow for session" applies only to the session ID.
-- "Always allow" (if offered) must be explicit and reversible.
-
-## Open Questions
-
-- Best packaging strategy for Host mode engine (bundled vs user-installed Node/runtime).
-- Best remote transport for mobile client (LAN only vs optional tunnel).
-- Scheduling API surface (native in OpenCode server vs OpenWork-managed scheduler).
+1. 默认可运行：缺少可选能力不应阻塞主链路
+2. 显式优先：关键开关由环境变量或配置决定
+3. 文档与行为一致：命令、前置条件、排错路径可复现

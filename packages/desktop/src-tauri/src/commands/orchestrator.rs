@@ -699,8 +699,6 @@ pub fn orchestrator_start_detached(
             "--approval".to_string(),
             "auto".to_string(),
             "--no-opencode-auth".to_string(),
-            "--opencode-router".to_string(),
-            "true".to_string(),
             "--detach".to_string(),
             "--openwork-host".to_string(),
             "0.0.0.0".to_string(),
@@ -712,6 +710,7 @@ pub fn orchestrator_start_detached(
             host_token.clone(),
             "--run-id".to_string(),
             sandbox_run_id.clone(),
+            "--no-opencode-router".to_string(),
         ];
 
         if wants_docker_sandbox {

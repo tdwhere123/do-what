@@ -1,1 +1,21 @@
-node_modules
+node_modules/
+.pnpm-store/
+
+# build artifacts
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# desktop (tauri/rust)
+packages/desktop/src-tauri/target/
+packages/desktop/src-tauri/sidecars/
+
+# logs/temp
+*.log
+*.tmp
+*.temp
+
+# OS
+.DS_Store
+Thumbs.db

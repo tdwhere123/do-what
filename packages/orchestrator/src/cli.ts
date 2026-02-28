@@ -338,6 +338,17 @@ function readBool(
   return fallback;
 }
 
+function readEnvBool(keys: string[], fallback: boolean): boolean {
+  for (const key of keys) {
+    const raw = process.env[key];
+    if (!raw) continue;
+    const normalized = raw.trim().toLowerCase();
+    if (["false", "0", "no", "off", "disabled"].includes(normalized)) return false;
+    if (["true", "1", "yes", "on", "enabled"].includes(normalized)) return true;
+  }
+  return fallback;
+}
+
 function readNumber(
   flags: Map<string, string | boolean>,
   key: string,
@@ -2458,9 +2469,10 @@ function printHelp(): void {
     "  --cors <origins>          Comma-separated CORS origins or *",
     "  --connect-host <host>     Override LAN host used for pairing URLs",
     "  --openwork-server-bin <p> Path to openwork-server binary (requires --allow-external)",
-    "  --opencode-router-bin <path>     Path to opencodeRouter binary (requires --allow-external)",
+    "  --opencode-router               Enable opencodeRouter sidecar (default: disabled)",
+    "  --opencode-router-bin <path>    Path to opencodeRouter binary (requires --allow-external)",
     "  --opencode-router-health-port <p> Health server port for opencodeRouter (default: random)",
-    "  --no-opencode-router             Disable opencodeRouter sidecar",
+    "  --no-opencode-router            Disable opencodeRouter sidecar",
     "  --opencode-router-required       Exit if opencodeRouter stops",
     "  --allow-external          Allow external sidecar binaries (dev only, required for custom bins)",
     "  --sidecar-dir <path>      Cache directory for downloaded sidecars",
@@ -4767,7 +4779,15 @@ async function runStart(args: ParsedArgs) {
       }
     }
   }
-  const opencodeRouterEnabled = readBool(args.flags, "opencode-router", true);
+  const opencodeRouterDefaultEnabled = readEnvBool(
+    ["DOWHAT_ROUTER_ENABLED", "OPENWORK_ROUTER_ENABLED", "OPENWORK_OPENCODE_ROUTER_ENABLED"],
+    false,
+  );
+  const opencodeRouterEnabled = readBool(
+    args.flags,
+    "opencode-router",
+    opencodeRouterDefaultEnabled,
+  );
   const opencodeRouterRequired = readBool(
     args.flags,
     "opencode-router-required",
