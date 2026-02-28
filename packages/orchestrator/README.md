@@ -27,6 +27,13 @@ do-what 默认桌面链路不启用 router。orchestrator 中的 router 参数�
 - `--opencode-source auto|bundled|downloaded|external`
 - `--check` / `--check-events`
 
+
+## 环境变量兼容（v0.6）
+
+- 新变量前缀：`DOWHAT_*`（优先）
+- 兼容前缀：`OPENWORK_*`（兼容期保留）
+- 使用 `OPENWORK_*` 时会打印一次 deprecated 提示（非阻塞）
+
 ## 开发命令
 
 ```bash

@@ -27,6 +27,13 @@
 
 桌面默认链路不再构建/启动 router。即使设置 `DOWHAT_ROUTER_ENABLED=1`，`prepare-sidecar` 也会忽略该请求。
 
+
+## 5. 环境变量兼容（v0.6）
+
+- 新变量前缀：`DOWHAT_*`（优先读取）
+- 兼容前缀：`OPENWORK_*`（兼容期保留）
+- 使用旧变量时会打印一次 deprecated 提示（不会阻塞脚本）
+
 ## 5. 常用命令
 
 ```bash

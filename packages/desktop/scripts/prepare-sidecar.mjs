@@ -17,6 +17,7 @@ import {
 import { dirname, join, resolve } from "path";
 import { tmpdir } from "os";
 import { fileURLToPath } from "url";
+import { readCompatEnv } from "./env-compat.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const parseBoolean = (value, fallback = false) => {
@@ -37,27 +38,27 @@ const readArg = (name) => {
 };
 
 const hasFlag = (name) => process.argv.slice(2).includes(name);
-const forceBuild = hasFlag("--force") || process.env.OPENWORK_SIDECAR_FORCE_BUILD === "1";
+const forceBuild = hasFlag("--force") || readCompatEnv("OPENWORK_SIDECAR_FORCE_BUILD") === "1";
 const routerRequested =
   hasFlag("--with-router") ||
   parseBoolean(
     process.env.DOWHAT_ROUTER_ENABLED ??
-      process.env.OPENWORK_OPENCODE_ROUTER_ENABLED ??
-      process.env.OPENWORK_ROUTER_ENABLED,
+      readCompatEnv("OPENWORK_OPENCODE_ROUTER_ENABLED") ??
+      readCompatEnv("OPENWORK_ROUTER_ENABLED"),
     false
   );
 const routerEnabled = false;
 if (routerRequested) {
   console.warn("OpenCodeRouter build request ignored: router is removed from the default do-what runtime.");
 }
-const sidecarOverride = process.env.OPENWORK_SIDECAR_DIR?.trim() || readArg("--outdir");
+const sidecarOverride = readCompatEnv("OPENWORK_SIDECAR_DIR")?.trim() || readArg("--outdir");
 const sidecarDir = sidecarOverride ? resolve(sidecarOverride) : join(__dirname, "..", "src-tauri", "sidecars");
 const packageJsonPath = resolve(__dirname, "..", "package.json");
 
 const opencodeGithubRepo = (() => {
   const raw =
     process.env.OPENCODE_GITHUB_REPO?.trim() ||
-    process.env.OPENWORK_OPENCODE_GITHUB_REPO?.trim() ||
+    readCompatEnv("OPENWORK_OPENCODE_GITHUB_REPO")?.trim() ||
     "anomalyco/opencode";
   const normalized = raw
     .replace(/^https:\/\/github\.com\//i, "")
@@ -124,7 +125,7 @@ const opencodeRouterVersion = (() => {
 })();
 const chromeDevtoolsMcpVersion =
   process.env.CHROME_DEVTOOLS_MCP_VERSION?.trim() ||
-  process.env.OPENWORK_CHROME_DEVTOOLS_MCP_VERSION?.trim() ||
+  readCompatEnv("OPENWORK_CHROME_DEVTOOLS_MCP_VERSION")?.trim() ||
   "0.17.0";
 
 // Target triple for native platform binaries
