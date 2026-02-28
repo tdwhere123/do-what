@@ -9,10 +9,10 @@
 
 ## 1. 当前仓库结构
 
-- `packages/app`：桌面 UI（SolidJS + Tailwind）
-- `packages/desktop`：Tauri 壳 + 系统桥接命令
-- `packages/orchestrator`：本地编排器（进程管理、健康检查、沙箱）
-- `packages/server`：工作区配置/文件能力/API 代理
+- `packages/app`（`@do-what/ui`）：桌面 UI（SolidJS + Tailwind）
+- `packages/desktop`（`@do-what/desktop`）：Tauri 壳 + 系统桥接命令
+- `packages/orchestrator`（`@do-what/orchestrator`）：本地编排器（进程管理、健康检查、沙箱）
+- `packages/server`（`@do-what/server`）：工作区配置/文件能力/API 代理
 
 ## 2. Windows 快速启动（推荐）
 
@@ -38,7 +38,7 @@ pnpm run doctor:windows
 pnpm run setup:windows
 pnpm run bootstrap:windows
 
-pnpm dev
+pnpm run dev:business
 pnpm run dev:desktop
 pnpm dev:ui
 pnpm build

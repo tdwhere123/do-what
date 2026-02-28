@@ -54,10 +54,13 @@
 - 新增 package README：
   - `packages/app/README.md`
   - `packages/desktop/README.md`
+- 命名与脚本统一（package/script migration）：
+  - workspace/package 名称改为 `@do-what/*` 体系
+  - 根脚本统一为 `dev:business` / `dev:desktop` / `dev:ui`
+  - `dev:lite` 保留为 deprecated 过渡别名
 
 ## v0.6 待完成
 
-1. 落地 `dev:business` 作为默认业务链路
-2. 完成 app/server/orchestrator 的 core/optional 切分
-3. 补齐仓库构建产物清理与 `.gitignore` 完善
-4. 补充更多平台安装文档（macOS / Linux）
+1. 完成 app/server/orchestrator 的 core/optional 切分
+2. 补齐仓库构建产物清理与 `.gitignore` 完善
+3. 补充更多平台安装文档（macOS / Linux）
