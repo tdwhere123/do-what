@@ -103,6 +103,9 @@ importers:
 
   packages/orchestrator:
     dependencies:
+      '@do-what/server':
+        specifier: workspace:*
+        version: link:../server
       '@opencode-ai/sdk':
         specifier: ^1.1.31
         version: 1.1.39
@@ -113,9 +116,6 @@ importers:
         specifier: 0.1.77
         version: 0.1.77(solid-js@1.9.9)(stage-js@1.0.0-alpha.17)(typescript@5.9.3)(web-tree-sitter@0.25.10)
       opencode-router:
-        specifier: 0.11.121
-        version: 0.11.121
-      openwork-server:
         specifier: 0.11.121
         version: 0.11.121
       solid-js:
@@ -1765,10 +1765,6 @@ packages:
 
   opencode-router@0.11.121:
     resolution: {integrity: sha512-YEjTMnTKJiIja9xCKmKUJ+oK1h1mS+iAC+EnaI5Cfiuee2K2HRYd9lQKmtZsn8Y0MFqhLWRvcHExW/2qdf/09g==}
-    hasBin: true
-
-  openwork-server@0.11.121:
-    resolution: {integrity: sha512-QQFdWJ79yg6sfZPWiO9qNLvlx+bnkSWDdw+7RfN82gLgMp5DfxwKO4QSqDeD2RnYumkJBLhHloiuiBDvyMnFhg==}
     hasBin: true
 
   p-finally@1.0.0:
@@ -3768,12 +3764,6 @@ snapshots:
       - encoding
       - supports-color
       - utf-8-validate
-
-  openwork-server@0.11.121:
-    dependencies:
-      jsonc-parser: 3.3.1
-      minimatch: 10.1.1
-      yaml: 2.8.2
 
   p-finally@1.0.0: {}
 

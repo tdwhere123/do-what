@@ -559,11 +559,19 @@ fn find_in_path(binary: &str) -> Option<PathBuf> {
 }
 
 fn create_debug_stub(dest_path: &PathBuf, sidecar_dir: &PathBuf, profile: &str, target: &str) {
-    if profile == "release" || target.contains("windows") {
+    if profile == "release" {
         return;
     }
 
     if fs::create_dir_all(sidecar_dir).is_err() {
+        return;
+    }
+
+    if target.contains("windows") {
+        // On Windows, write a minimal valid MZ (PE) stub so cargo/tauri can
+        // see the file. The sidecar won't work, but the dev build will compile.
+        let mz_stub: &[u8] = &[0x4D, 0x5A]; // "MZ" magic
+        let _ = fs::write(dest_path, mz_stub);
         return;
     }
 

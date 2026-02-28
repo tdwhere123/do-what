@@ -75,7 +75,7 @@ function Install-WingetPackage {
       return
     }
 
-    $hexCode = ('0x{0:X8}' -f ([uint32]$exitCode))
+    $hexCode = ('0x{0:X8}' -f ([int32]$exitCode))
     $snippet = ($output | Select-Object -First 4) -join " | "
     $errors.Add("attempt=$($i + 1), exit=$exitCode ($hexCode), output=$snippet")
   }

@@ -60,6 +60,11 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_shell::init());
 
+    // The updater plugin requires pubkey + endpoints to be configured in tauri.conf.json.
+    // Skip it in debug/dev builds to avoid a PluginInitialization panic.
+    #[cfg(all(desktop, not(debug_assertions)))]
+    let builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+
     let app = builder
         .manage(EngineManager::default())
         .manage(OrchestratorManager::default())
