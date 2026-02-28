@@ -82,7 +82,6 @@ export interface Capabilities {
   tokens: { scoped: boolean; scopes: TokenScope[] };
   proxy: {
     opencode: boolean;
-    opencodeRouter: boolean;
   };
   toolProviders: {
     browser: {

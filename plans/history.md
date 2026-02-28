@@ -5,13 +5,13 @@
 | 版本 | 主题 | 状态 |
 |---|---|---|
 | v0.1-v0.5 | 基线清理、多运行时雏形、UI 重构 | 已完成（历史） |
-| v0.6 | 环境自安装 + 文档重建 + Router 可选化 | 进行中 |
+| v0.6 | 环境自安装 + 文档重建 + Router 主线移除 | 进行中 |
 
 ## v0.6 目标
 
 1. 缺失环境自动安装（Windows / winget）
 2. 安装与启动链路稳定化
-3. Router 从硬依赖改为可选能力
+3. Router 从硬依赖降级并最终从主线移除
 4. 删除历史 PR 文档噪音
 5. 强制维护 `AGENTS.md` 与 `plans/`
 
@@ -114,3 +114,37 @@
   - `packages/app/README.md`
   - `packages/orchestrator/README.md`
   - `packages/server/README.md`
+
+## v0.6 本次增量（2026-02-28，Router 可选连接能力移除）
+
+- 主链路行为调整：
+  - `prepare-sidecar` 固定禁用 router sidecar，历史开关仅保留兼容读取并输出 ignored 提示
+  - `orchestrator/src/cli.ts` 固定 `opencodeRouterEnabled=false`，历史 CLI/env 开关不再生效
+  - `desktop/src-tauri/build.rs` 不再参与 router sidecar 兜底装配
+  - `app/src/app/lib/tauri.ts` 移除 router 状态与控制调用封装
+- 开发脚本联动：
+  - `scripts/dev-headless-web.ts` 移除 router 启动参数与构建依赖
+  - 根脚本 `test:orchestrator` 对齐为 orchestrator typecheck
+- 受影响文档与元信息已同步：
+  - `README.md`
+  - `packages/app/README.md`
+  - `packages/desktop/README.md`
+  - `packages/orchestrator/README.md`
+  - `packages/server/README.md`
+  - `packages/orchestrator/package.json`（description 去除 optional router 表述）
+- 稳定性检查结果：
+  - 通过：`ui/server/orchestrator` typecheck、`server test`、`orchestrator build`、`ui build`、`desktop cargo check`
+  - 环境限制：`ui test:health`、`ui test:sessions` 因本机缺少 `opencode`（`spawn opencode ENOENT`）未通过
+
+## v0.6 本次增量（2026-02-28，Router 代码路径摘除）
+
+- 摘除 `opencode-router` 主线代码路径：
+  - `packages/orchestrator/src/cli.ts` 删除 router 二进制解析/健康检查/sandbox 注入/proxy 自检逻辑。
+  - `packages/orchestrator/src/tui/app.tsx` 删除 Router 页面与交互逻辑。
+- 物理删除脚本：
+  - `packages/orchestrator/scripts/build-opencode-router.mjs`
+  - `packages/orchestrator/scripts/router.mjs`
+- 验证结果：
+  - 通过：`@do-what/orchestrator typecheck/build`、`@do-what/server typecheck/test`、`@do-what/ui typecheck/build`、`@do-what/desktop cargo check`
+  - 环境限制：`@do-what/ui test:health`、`@do-what/ui test:sessions` 依赖本机 `opencode`，当前缺失导致 `ENOENT`
+- README 联动：根 README 与 `app/desktop/orchestrator/server` README 已同步为“摘除”语义。

@@ -81,7 +81,6 @@ pub fn spawn_openwork_server(
     opencode_directory: Option<&str>,
     opencode_username: Option<&str>,
     opencode_password: Option<&str>,
-    opencode_router_health_port: Option<u16>,
 ) -> Result<(Receiver<CommandEvent>, CommandChild), String> {
     let command = match app.shell().sidecar("openwork-server") {
         Ok(command) => command,
@@ -102,10 +101,6 @@ pub fn spawn_openwork_server(
         .map(|path| Path::new(path))
         .unwrap_or_else(|| Path::new("."));
     let mut command = command.args(args).current_dir(cwd);
-
-    if let Some(port) = opencode_router_health_port {
-        command = command.env("OPENCODE_ROUTER_HEALTH_PORT", port.to_string());
-    }
 
     if let Some(username) = opencode_username {
         if !username.trim().is_empty() {

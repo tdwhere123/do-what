@@ -37,4 +37,4 @@ pnpm --filter @do-what/server typecheck
 - `DOWHAT_OPENCODE_PASSWORD` / `OPENWORK_OPENCODE_PASSWORD`
 
 - 保持 local-first，不把云端作为必需依赖。
-- router 连接链路已从主线禁用，本包不再将其作为能力入口。
+- router 连接链路已从主线摘除，本包不再将其作为能力入口。

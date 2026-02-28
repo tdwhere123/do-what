@@ -67,7 +67,7 @@ pnpm typecheck
 
 详见：`docs/CORE_LOGIC_AND_MODULES.md`。
 
-router 连接链路已从主线彻底禁用；即使传入历史开关参数也会被忽略。
+router 连接链路已从主线代码中摘除，不再作为可配置能力存在。
 
 - Windows 安装：`docs/INSTALL_WINDOWS.md`
 - 启动链路：`docs/STARTUP_GUIDE.md`

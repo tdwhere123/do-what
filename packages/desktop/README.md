@@ -26,7 +26,7 @@ pnpm run setup:windows
 
 ## 关键脚本
 
-桌面主线已禁用 router 连接链路。历史开关（如 `DOWHAT_ROUTER_ENABLED`、`--with-router`）会被忽略。
+桌面主线已移除 router 连接链路，不再参与 sidecar/启动链路。
 
 ## 多助手状态接口（Track 2）
 
@@ -48,4 +48,4 @@ pnpm run setup:windows
 
 ## 5. 常用命令
 
-- `opencode-router` 不再属于 do-what 主线能力。
+- `opencode-router` 已从 do-what 主线代码路径摘除。

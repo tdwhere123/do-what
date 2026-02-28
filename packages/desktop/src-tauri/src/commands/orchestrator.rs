@@ -710,7 +710,6 @@ pub fn orchestrator_start_detached(
             host_token.clone(),
             "--run-id".to_string(),
             sandbox_run_id.clone(),
-            "--no-opencode-router".to_string(),
         ];
 
         if wants_docker_sandbox {

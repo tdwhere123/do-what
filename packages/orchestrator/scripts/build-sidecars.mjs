@@ -27,14 +27,6 @@ if (!serverVersion) {
   throw new Error("openwork-server version missing in packages/server/package.json");
 }
 
-const routerPkg = JSON.parse(
-  readFileSync(resolve(repoRoot, "packages", "opencode-router", "package.json"), "utf8"),
-);
-const routerVersion = String(routerPkg.version ?? "").trim();
-if (!routerVersion) {
-  throw new Error("opencode-router version missing in packages/opencode-router/package.json");
-}
-
 const run = (command, args, cwd) => {
   const result = spawnSync(command, args, { cwd, stdio: "inherit" });
   if (result.status !== 0) {
@@ -43,7 +35,6 @@ const run = (command, args, cwd) => {
 };
 
 run("pnpm", ["--filter", "openwork-server", "build:bin:all"], repoRoot);
-run("pnpm", ["--filter", "opencode-router", "build:bin:all"], repoRoot);
 
 const targets = [
   { id: "darwin-arm64", bun: "bun-darwin-arm64" },
@@ -59,13 +50,10 @@ const sha256File = (path) => {
 };
 
 const serverDir = resolve(repoRoot, "packages", "server", "dist", "bin");
-const routerDir = resolve(repoRoot, "packages", "opencode-router", "dist", "bin");
-
 mkdirSync(outdir, { recursive: true });
 
 const entries = {
   "openwork-server": { version: serverVersion, targets: {} },
-  "opencode-router": { version: routerVersion, targets: {} },
 };
 
 for (const target of targets) {
@@ -77,22 +65,10 @@ for (const target of targets) {
   const serverDest = join(outdir, `openwork-server-${target.id}${ext}`);
   copyFileSync(serverSrc, serverDest);
 
-  const routerSrc = join(routerDir, `opencode-router-${target.bun}${ext}`);
-  if (!existsSync(routerSrc)) {
-    throw new Error(`Missing opencode-router binary at ${routerSrc}`);
-  }
-  const routerDest = join(outdir, `opencode-router-${target.id}${ext}`);
-  copyFileSync(routerSrc, routerDest);
-
   entries["openwork-server"].targets[target.id] = {
     asset: basename(serverDest),
     sha256: sha256File(serverDest),
     size: statSync(serverDest).size,
-  };
-  entries["opencode-router"].targets[target.id] = {
-    asset: basename(routerDest),
-    sha256: sha256File(routerDest),
-    size: statSync(routerDest).size,
   };
 }
 

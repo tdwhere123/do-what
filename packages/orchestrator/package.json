@@ -2,7 +2,7 @@
   "name": "@do-what/orchestrator",
   "version": "0.11.121",
   "opencodeVersion": "1.2.6",
-  "description": "do-what host orchestrator for opencode + do-what server + optional opencode-router",
+  "description": "do-what host orchestrator for opencode + do-what server",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,7 +13,7 @@
     "build:bin:bundled": "node scripts/clean-dist.mjs && node ../desktop/scripts/prepare-sidecar.mjs --outdir dist && bun ./script/build.ts --outdir dist --filename openwork && bun scripts/build-bin.ts",
     "build:sidecars": "node scripts/build-sidecars.mjs",
     "typecheck": "tsc -p tsconfig.typecheck.json",
-    "test:router": "pnpm typecheck",
+    "test": "pnpm typecheck",
     "prepublishOnly": "node -e \"console.error('openwork-orchestrator is published via packages/orchestrator/scripts/publish-npm.mjs (meta + platform packages)'); process.exit(1);\""
   },
   "files": [
@@ -47,7 +47,6 @@
     "@opencode-ai/sdk": "^1.1.31",
     "@opentui/core": "0.1.77",
     "@opentui/solid": "0.1.77",
-    "opencode-router": "0.11.121",
     "solid-js": "1.9.9",
     "@do-what/server": "workspace:*"
   },

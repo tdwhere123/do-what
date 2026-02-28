@@ -459,7 +459,6 @@ pub fn engine_start(
             Some(&opencode_connect_url),
             opencode_username.as_deref(),
             opencode_password.as_deref(),
-            None,
         ) {
             if let Ok(mut state) = manager.inner.lock() {
                 state.last_stderr =
@@ -616,7 +615,6 @@ pub fn engine_start(
         Some(&opencode_connect_url),
         opencode_username.as_deref(),
         opencode_password.as_deref(),
-        None,
     ) {
         state.last_stderr = Some(truncate_output(&format!("OpenWork server: {error}"), 8000));
     }

@@ -29,7 +29,6 @@ const desktopVersion = readJson(resolve(root, "packages", "desktop", "package.js
 const orchestratorVersion =
   readJson(resolve(root, "packages", "orchestrator", "package.json")).version ?? null;
 const serverVersion = readJson(resolve(root, "packages", "server", "package.json")).version ?? null;
-const opencodeRouterVersion = readJson(resolve(root, "packages", "opencode-router", "package.json")).version ?? null;
 const tauriVersion = readJson(resolve(root, "packages", "desktop", "src-tauri", "tauri.conf.json")).version ?? null;
 const cargoVersion = readCargoVersion(resolve(root, "packages", "desktop", "src-tauri", "Cargo.toml"));
 
@@ -48,7 +47,6 @@ check("app", appVersion);
 check("desktop", desktopVersion);
 check("openwork-orchestrator", orchestratorVersion);
 check("openwork-server", serverVersion);
-check("opencode-router", opencodeRouterVersion);
 check("tauri", tauriVersion);
 check("cargo", cargoVersion);
 

@@ -8,17 +8,17 @@
 pnpm --filter @do-what/orchestrator dev
 pnpm --filter @do-what/orchestrator build
 pnpm --filter @do-what/orchestrator typecheck
-pnpm --filter @do-what/orchestrator test:router
+pnpm --filter @do-what/orchestrator test
 ```
 
 ## 运行时定位
 
 主线 runtime：
 
-do-what 主线已禁用 router 连接链路。历史 router 开关参数会被忽略。
+do-what 主线已移除 router 连接链路，不再提供该能力入口。
 
 可选 runtime 扩展：
-- N/A（router 已从主线移除）
+- N/A（router 模块已从主线摘除）
 
 
 ## 环境变量兼容（v0.6）
