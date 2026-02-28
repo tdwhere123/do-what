@@ -1,81 +1,56 @@
-# Architecture
+# do-what Architecture
 
-## 1. 总体架构
+## 1. 分层概览
 
-`do-what` 是四层结构：
-1. UI (`packages/app`)
-2. Desktop Bridge (`packages/desktop`)
-3. Orchestrator (`packages/orchestrator`)
-4. Server (`packages/server`)
+`do-what` 采用四层结构：
 
-运行时采用并列模型：
-- OpenCode
-- Claude Code
-- Codex
+1. **App 层**（`packages/app`）：业务 UI 与交互。
+2. **Desktop 层**（`packages/desktop`）：Tauri 壳与系统命令桥接。
+3. **Orchestrator 层**（`packages/orchestrator`）：本地 runtime 编排与进程生命周期。
+4. **Server 层**（`packages/server`）：工作区配置、文件能力、接口代理。
 
-## 2. 核心逻辑（端到端）
+## 2. 两条启动主线
 
-### 2.1 启动链路
+### 2.1 业务启动链路（默认）
 
-1. Desktop 启动 Tauri
-2. Tauri 根据设置拉起 orchestrator / engine
-3. orchestrator 启动 OpenCode 与 openwork-server（以及可选 router）
-4. UI 通过 SDK 与 server API 建立连接，订阅事件流
+命令：`pnpm dev`
 
-### 2.2 会话执行链路
+- 实际执行根脚本 `dev -> dev:lite`。
+- `dev:lite` 仅启动 `@different-ai/openwork-ui`（Vite）。
+- 用于最快验证会话、页面与业务逻辑，不依赖 Rust/Tauri 编译。
 
-1. 用户在 Composer 发起任务
-2. UI 根据所选 runtime 路由执行
-3. Desktop 命令层发起进程调用或 API 请求
-4. 执行事件回流 UI（消息、工具调用、错误、完成态）
+### 2.2 桌面启动链路（完整）
 
-### 2.3 配置与文件链路
+命令：`pnpm run dev:desktop`
 
-1. UI 请求工作区配置变更
-2. server 执行文件读写与审批
-3. 必要时触发 engine reload
-4. UI 刷新状态与能力面板
+- 实际执行 `@different-ai/openwork` 的 `scripts/dev.mjs`。
+- 需要桌面前置（Rust、Build Tools、WebView2 等）。
+- 会触发 sidecar 准备与桌面壳集成流程。
 
-## 3. 功能区块说明
+## 3. 运行时与可选能力
 
-### 3.1 Sessions
+主线运行时：
 
-- 主会话页面：消息流、工具卡片、上下文面板、附件面板
-- 支持多 runtime 的发送与回放
+- `opencode`
+- `claude-code`
+- `codex`
 
-### 3.2 Scheduled
+可选能力：
 
-- 调度任务列表、刷新、删除
-- 依赖 scheduler 能力与工作区配置
+- `opencode-router`：默认不参与 v0.6 主链路；只在显式启用或独立分支恢复时使用。
 
-### 3.3 Soul
+## 4. 核心业务区块
 
-- 项目/系统记忆管理与心跳数据展示
-- 面向长期上下文维护
+- `session`：消息收发、事件流渲染、会话切换。
+- `proto`：跨模块通信协议、命令/事件形态。
+- `scheduled`：计划任务创建、执行与清理。
+- `soul`：长期记忆与工作上下文沉淀。
+- `skills`：技能包加载、配置与安装。
+- `extensions`：扩展能力管理（MCP、可选 router、其他外部集成）。
 
-### 3.4 Skills
+## 5. 设计约束
 
-- 本地技能读取、编辑、安装、卸载
-- 支持模板与导入流程
-
-### 3.5 Extensions
-
-- 插件与 MCP 配置管理
-- Router 属于扩展能力，不是基础启动依赖
-
-### 3.6 Settings
-
-- 引擎源、运行时、主题、开发者模式、修复工具
-- 环境诊断与重连入口
-
-## 4. Router 定位
-
-- Router 仅用于消息通道桥接（Telegram/Slack/WhatsApp 等）
-- 默认关闭
-- 显式启用后才参与 sidecar 构建和运行
-
-## 5. 设计原则
-
-1. 默认可运行：缺少可选能力不应阻塞主链路
-2. 显式优先：关键开关由环境变量或配置决定
-3. 文档与行为一致：命令、前置条件、排错路径可复现
+1. 安装和启动链路优先，不因可选能力失败而阻塞。
+2. 文档命令必须能在 CLI 复现。
+3. 默认路径优先业务可运行，再进入桌面链路验证。
+4. 文档与脚本行为保持一致。

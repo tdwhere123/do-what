@@ -1,67 +1,75 @@
 # do-what
 
-`do-what` 是一个本地优先的桌面 AI 工作台，采用多运行时并列架构：
-- OpenCode
-- Claude Code
-- Codex
+`do-what` 是一个 **desktop-first、local-first** 的多运行时 AI 工作台。当前主线运行时为：
 
-`opencode-router` 仅作为遗留可选扩展，不在 v0.6 默认主链路中，不再阻塞安装和启动。
+- `opencode`
+- `claude-code`
+- `codex`
 
-## 1. 当前仓库结构
+`opencode-router` 在 v0.6 中是 **可选能力**，默认不参与安装与启动主链路。
 
-- `packages/app`：桌面 UI（SolidJS + Tailwind）
-- `packages/desktop`：Tauri 壳 + 系统桥接命令
-- `packages/orchestrator`：本地编排器（进程管理、健康检查、沙箱）
-- `packages/server`：工作区配置/文件能力/API 代理
+## 默认开发命令
 
-## 2. Windows 快速启动（推荐）
-
-```powershell
-pnpm run bootstrap:windows
+```bash
 pnpm dev
 ```
 
-`bootstrap:windows` 会执行：
-1. 环境检测（Node/pnpm/bun/Rust/Cargo/Build Tools/WebView2）
-2. 缺失环境自动安装（winget）
-3. `pnpm install --frozen-lockfile`
-4. `prepare:sidecar`
+根脚本中 `dev` 映射到 `dev:lite`，仅启动 `packages/app` 的 Vite 开发服务，适合先验证业务链路。
 
-说明：
-- `pnpm dev` 默认是瘦身模式（仅 UI，不编译桌面 Rust）。
-- 桌面模式请用：`pnpm run dev:desktop`
+## 桌面启动链路（Tauri）
 
-## 3. 常用命令
+桌面开发命令：
 
 ```bash
+pnpm run dev:desktop
+```
+
+前置要求：
+
+1. Node.js + pnpm
+2. Bun（orchestrator/server 运行需要）
+3. Rust/Cargo（Tauri 需要）
+4. Visual Studio C++ Build Tools（Windows）
+5. WebView2 Runtime（Windows）
+
+Windows 推荐先执行：
+
+```powershell
 pnpm run doctor:windows
 pnpm run setup:windows
 pnpm run bootstrap:windows
-
-pnpm dev
-pnpm run dev:desktop
-pnpm dev:ui
-pnpm build
-pnpm typecheck
 ```
 
-## 4. Router 状态（v0.6）
+## 仓库结构
 
-router 已从默认桌面链路下线，不再作为当前版本运行前提。
-`DOWHAT_ROUTER_ENABLED` 在 v0.6 主链路中不再生效（会被忽略）。
+- `packages/app`：业务 UI（会话、技能、扩展、设置）
+- `packages/desktop`：Tauri 桌面壳与系统桥接
+- `packages/orchestrator`：本地编排器，负责 runtime 进程管理
+- `packages/server`：本地文件/配置/API 能力
 
-## 5. 文档索引
+## 核心功能区块
 
-- `docs/INSTALL_WINDOWS.md`：Windows 安装与自动补环境
-- `docs/STARTUP_GUIDE.md`：启动模式与启动顺序
-- `docs/TROUBLESHOOTING.md`：常见报错与定位
-- `docs/CORE_LOGIC_AND_MODULES.md`：核心逻辑与功能区块
-- `ARCHITECTURE.md`：运行时与数据流
-- `INFRASTRUCTURE.md`：基础设施与依赖策略
+- `session`：主会话发送、回流、状态管理
+- `proto`：协议与事件结构（UI/desktop/server 之间）
+- `scheduled`：调度任务管理
+- `soul`：长期记忆/上下文资产
+- `skills`：本地技能管理与安装
+- `extensions`：扩展与 MCP 配置（含可选 router）
 
-## 6. 版本内维护规则
+详见：`docs/CORE_LOGIC_AND_MODULES.md`。
 
-- 任何功能变更必须同步：
-  - `plans/v0.6.md`
-  - `plans/history.md`
-  - 受影响模块 README
+## 安装、启动、排错文档
+
+- Windows 安装：`docs/INSTALL_WINDOWS.md`
+- 启动链路：`docs/STARTUP_GUIDE.md`
+- 常见故障：`docs/TROUBLESHOOTING.md`
+- 运行时矩阵：`docs/RUNTIME_MATRIX.md`
+
+## 维护要求（v0.6）
+
+文档或行为变更后，必须同步更新：
+
+1. `plans/v0.6.md`
+2. `plans/history.md`
+3. 受影响模块 README
+4. 结构瘦身/模块拆分时同步 `plans/v0.6-slimming-spec.md`

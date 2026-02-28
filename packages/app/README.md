@@ -1,33 +1,32 @@
-# @different-ai/openwork-ui
+# packages/app
 
-`packages/app` 是 do-what 的前端业务层（SolidJS + Vite）。
+`packages/app` 是 do-what 的业务前端（SolidJS + Vite）。
 
-## 1. 核心职责
-
-1. 会话 UI（消息列表、输入框、模型/运行时选择）
-2. 工作区切换与基础设置
-3. `scheduled/soul/extensions/proto` 业务入口与页面
-4. 与 Tauri 命令桥和 openwork server API 的前端接线
-
-## 2. 关键入口
-
-- `src/app/app.tsx`: 全局状态与会话发送主链路
-- `src/app/pages/session.tsx`: 会话页面主容器
-- `src/app/components/session/composer.tsx`: 输入框与 runtime 选择
-- `src/app/lib/tauri.ts`: Tauri invoke 封装
-
-## 3. Runtime 发送逻辑（v0.6）
-
-会话发送在 `app.tsx -> sendPrompt()`：
-1. `opencode`: 走 OpenCode session API（原主链）
-2. `claude-code` / `codex`: 走 Tauri `agent_run_start` 本地 CLI 执行
-
-本地 runtime 输出在 Session 页面中的 `Local Runtime Output` 区域渲染。
-
-## 4. 开发命令
+## 默认开发
 
 ```bash
 pnpm --filter @different-ai/openwork-ui dev
-pnpm --filter @different-ai/openwork-ui typecheck
-pnpm --filter @different-ai/openwork-ui build
 ```
+
+根命令 `pnpm dev` 会调用这里的开发服务。
+
+## 关键脚本
+
+- `dev`：本地开发
+- `build`：生产构建
+- `typecheck`：TypeScript 检查
+- `test:health` / `test:sessions` / `test:e2e`：业务脚本测试
+
+## 核心功能区块映射
+
+- `session`：会话页与消息流
+- `proto`：前端协议结构与事件消费
+- `scheduled`：调度任务视图
+- `soul`：记忆与上下文资产
+- `skills`：技能管理页面
+- `extensions`：扩展配置与管理
+
+## 注意事项
+
+- 本包是业务主链路入口，不依赖 router 才能运行。
+- router 属于 extensions 范畴的可选能力。

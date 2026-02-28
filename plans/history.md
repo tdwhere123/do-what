@@ -61,3 +61,11 @@
 2. 完成 app/server/orchestrator 的 core/optional 切分
 3. 补齐仓库构建产物清理与 `.gitignore` 完善
 4. 补充更多平台安装文档（macOS / Linux）
+
+## v0.6 增量记录（2026-02-28 / docs-rebuild）
+
+- 文档体系全面切换到 do-what 叙事。
+- 明确默认业务启动与桌面启动链路，补充前置依赖说明。
+- 新增 `docs/INSTALL_WINDOWS.md`、`docs/STARTUP_GUIDE.md`、`docs/TROUBLESHOOTING.md`、`docs/CORE_LOGIC_AND_MODULES.md`、`docs/RUNTIME_MATRIX.md`。
+- 同步更新根 README 与 app/desktop/orchestrator/server 模块 README。
+- 新增执行计划记录：`plans/execution/04-docs-rebuild.md`。
