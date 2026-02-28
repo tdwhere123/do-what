@@ -59,6 +59,12 @@
   - 根脚本统一为 `dev:business` / `dev:desktop` / `dev:ui`
   - `dev:lite` 保留为 deprecated 过渡别名
 
+- Router 可选化收敛（本次）：
+  - `prepare-sidecar` 默认不依赖 router，显式启用时尝试构建
+  - router 包/sidecar 缺失从硬失败改为 warning 降级（不阻塞主链路）
+  - orchestrator 显式启用 router 但缺失 binary 时，未 required 则自动降级继续启动
+  - 新增执行文档：`plans/execution/03-router-optionalization.md`
+
 ## v0.6 待完成
 
 1. 落地 `dev:business` 作为默认业务链路

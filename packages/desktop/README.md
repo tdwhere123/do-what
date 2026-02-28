@@ -25,7 +25,7 @@
 
 ## 4. Router 状态（v0.6）
 
-桌面默认链路不再构建/启动 router。即使设置 `DOWHAT_ROUTER_ENABLED=1`，`prepare-sidecar` 也会忽略该请求。
+桌面默认链路不构建 router。仅当显式启用 `DOWHAT_ROUTER_ENABLED=1` 或 `--with-router` 时才尝试构建；若缺少 `packages/opencode-router` 或构建失败，会记录 warning 并继续主链路。
 
 ## 5. 常用命令
 

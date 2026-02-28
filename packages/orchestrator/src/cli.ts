@@ -4783,7 +4783,7 @@ async function runStart(args: ParsedArgs) {
     ["DOWHAT_ROUTER_ENABLED", "OPENWORK_ROUTER_ENABLED", "OPENWORK_OPENCODE_ROUTER_ENABLED"],
     false,
   );
-  const opencodeRouterEnabled = readBool(
+  let opencodeRouterEnabled = readBool(
     args.flags,
     "opencode-router",
     opencodeRouterDefaultEnabled,
@@ -4801,15 +4801,25 @@ async function runStart(args: ParsedArgs) {
     sidecar,
     source: sidecarSource,
   });
-  const opencodeRouterBinary = opencodeRouterEnabled
-    ? await resolveOpenCodeRouterBin({
+  let opencodeRouterBinary: ResolvedBinary | null = null;
+  if (opencodeRouterEnabled) {
+    try {
+      opencodeRouterBinary = await resolveOpenCodeRouterBin({
         explicit: explicitOpenCodeRouterBin,
         manifest,
         allowExternal,
         sidecar,
         source: sidecarSource,
-      })
-    : null;
+      });
+    } catch (error) {
+      if (opencodeRouterRequired) {
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`OpenCodeRouter requested but unavailable: ${message}. Continuing with router disabled.`);
+      opencodeRouterEnabled = false;
+    }
+  }
 
   if (sandboxMode !== "none") {
     // Ensure the binaries we stage into the container are actual files.

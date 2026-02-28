@@ -48,7 +48,8 @@ pnpm typecheck
 ## 4. Router 状态（v0.6）
 
 router 已从默认桌面链路下线，不再作为当前版本运行前提。
-`DOWHAT_ROUTER_ENABLED` 在 v0.6 主链路中不再生效（会被忽略）。
+需要时可显式启用：`DOWHAT_ROUTER_ENABLED=1`（或 sidecar 预构建命令加 `--with-router`）。
+即使 router 包/sidecar 缺失，系统也会降级为“无 router”继续启动主链路。
 
 ## 5. 文档索引
 
