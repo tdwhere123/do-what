@@ -84,3 +84,11 @@
 1. `plans/history.md`
 2. 受影响模块 README
 3. `AGENTS.md`（如涉及维护规则变更）
+
+
+## v0.10 (2026-03-01)
+- Fixed Windows runtime launch path to avoid program-not-found for Codex/Claude (.cmd aware resolution).
+- Fixed UI issues: composer placeholder -> do-what, broken dashboard Tailwind class repaired, Skills branding cleanup.
+- Cleared default hub source (no built-in openwork-hub). Hub now relies on optional DOWHAT_HUB_* config or external install flows.
+- Hard-cut compatibility: removed OPENWORK_* mapping branches, unified env/header/flag prefixes to DOWHAT_* / X-DoWhat-* / --dowhat-*.
+- Detailed record: plans/v0.10-record.md.

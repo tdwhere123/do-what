@@ -12,7 +12,7 @@ export type InboxPanelProps = {
   maxPreview?: number;
 };
 
-const INBOX_PREFIX = ".opencode/openwork/inbox/";
+const INBOX_PREFIX = ".opencode/dowhat/inbox/";
 
 function safeName(item: OpenworkInboxItem): string {
   return String(item.name ?? item.path ?? "file").trim() || "file";

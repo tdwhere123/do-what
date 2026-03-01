@@ -26,11 +26,11 @@ function normalizeScope(value: unknown): TokenScope | null {
 }
 
 function resolveTokenStorePath(config: ServerConfig): string {
-  const override = (readCompatEnv("OPENWORK_TOKEN_STORE") ?? "").trim();
+  const override = (readCompatEnv("DOWHAT_TOKEN_STORE") ?? "").trim();
   if (override) return resolve(override);
 
   const configPath = config.configPath?.trim();
-  const configDir = configPath ? dirname(configPath) : join(homedir(), ".config", "openwork");
+  const configDir = configPath ? dirname(configPath) : join(homedir(), ".config", "do-what");
   return join(configDir, "tokens.json");
 }
 

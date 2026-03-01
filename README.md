@@ -93,3 +93,9 @@ router 连接链路已从主线代码中摘除，不再作为可配置能力存�
 - do-what-logo + 星星闪烁动画
 - 系统通知文本全部汉化
 - `theme.ts` key: `dowhat.themePref`
+
+
+## v0.10 Update (2026-03-01)
+- OpenWork compatibility branches were hard-removed in core runtime/env/header paths; current prefix is DOWHAT_*.
+- Hub default source is now empty by design. Use external install flows or configure custom hub source via DOWHAT_HUB_* / VITE_DOWHAT_HUB_*.
+- Detailed implementation record: plans/v0.10-record.md.

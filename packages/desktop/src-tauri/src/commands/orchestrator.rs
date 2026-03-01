@@ -232,7 +232,7 @@ fn resolve_docker_candidates() -> Vec<PathBuf> {
     let mut seen: HashSet<PathBuf> = HashSet::new();
 
     // 1) Explicit override (most reliable in odd environments)
-    for key in ["OPENWORK_DOCKER_BIN", "OPENWRK_DOCKER_BIN", "DOCKER_BIN"] {
+    for key in ["DOWHAT_DOCKER_BIN", "OPENWRK_DOCKER_BIN", "DOCKER_BIN"] {
         if let Some(value) = env::var_os(key) {
             let raw = value.to_string_lossy().trim().to_string();
             if !raw.is_empty() {
@@ -326,7 +326,7 @@ fn run_docker_command_detailed(
         }
     }
 
-    let hint = "Set OPENWORK_DOCKER_BIN (or OPENWRK_DOCKER_BIN) to your docker binary, e.g. /opt/homebrew/bin/docker";
+    let hint = "Set DOWHAT_DOCKER_BIN (or OPENWRK_DOCKER_BIN) to your docker binary, e.g. /opt/homebrew/bin/docker";
     Err(format!(
         "Failed to run docker: {} ({})",
         errors.join("; "),
@@ -677,7 +677,7 @@ pub fn orchestrator_start_detached(
             "Inspecting Docker configuration...",
             json!({
                 "candidates": candidates,
-                "openworkDockerBin": env::var("OPENWORK_DOCKER_BIN").ok(),
+                "openworkDockerBin": env::var("DOWHAT_DOCKER_BIN").ok(),
                 "openwrkDockerBin": env::var("OPENWRK_DOCKER_BIN").ok(),
                 "dockerBin": env::var("DOCKER_BIN").ok(),
             }),
@@ -700,13 +700,13 @@ pub fn orchestrator_start_detached(
             "auto".to_string(),
             "--no-opencode-auth".to_string(),
             "--detach".to_string(),
-            "--openwork-host".to_string(),
+            "--dowhat-host".to_string(),
             "0.0.0.0".to_string(),
-            "--openwork-port".to_string(),
+            "--dowhat-port".to_string(),
             port.to_string(),
-            "--openwork-token".to_string(),
+            "--dowhat-token".to_string(),
             token.clone(),
-            "--openwork-host-token".to_string(),
+            "--dowhat-host-token".to_string(),
             host_token.clone(),
             "--run-id".to_string(),
             sandbox_run_id.clone(),
@@ -1225,7 +1225,7 @@ exit 0
         );
 
         let _path = EnvGuard::set("PATH", tmp.to_string_lossy().to_string());
-        let _docker = EnvGuard::set("OPENWORK_DOCKER_BIN", slow.to_string_lossy().to_string());
+        let _docker = EnvGuard::set("DOWHAT_DOCKER_BIN", slow.to_string_lossy().to_string());
         let _docker_alt = EnvGuard::unset("OPENWRK_DOCKER_BIN");
         let _docker_bin = EnvGuard::unset("DOCKER_BIN");
 
@@ -1267,7 +1267,7 @@ exit 0
         );
 
         let _path = EnvGuard::set("PATH", tmp.to_string_lossy().to_string());
-        let _docker = EnvGuard::set("OPENWORK_DOCKER_BIN", fast.to_string_lossy().to_string());
+        let _docker = EnvGuard::set("DOWHAT_DOCKER_BIN", fast.to_string_lossy().to_string());
         let _docker_alt = EnvGuard::unset("OPENWRK_DOCKER_BIN");
         let _docker_bin = EnvGuard::unset("DOCKER_BIN");
 

@@ -30,15 +30,15 @@ const readArg = (name) => {
 };
 
 const hasFlag = (name) => process.argv.slice(2).includes(name);
-const forceBuild = hasFlag("--force") || readCompatEnv("OPENWORK_SIDECAR_FORCE_BUILD") === "1";
-const sidecarOverride = readCompatEnv("OPENWORK_SIDECAR_DIR")?.trim() || readArg("--outdir");
+const forceBuild = hasFlag("--force") || readCompatEnv("DOWHAT_SIDECAR_FORCE_BUILD") === "1";
+const sidecarOverride = readCompatEnv("DOWHAT_SIDECAR_DIR")?.trim() || readArg("--outdir");
 const sidecarDir = sidecarOverride ? resolve(sidecarOverride) : join(__dirname, "..", "src-tauri", "sidecars");
 const packageJsonPath = resolve(__dirname, "..", "package.json");
 
 const opencodeGithubRepo = (() => {
   const raw =
     process.env.OPENCODE_GITHUB_REPO?.trim() ||
-    readCompatEnv("OPENWORK_OPENCODE_GITHUB_REPO")?.trim() ||
+    readCompatEnv("DOWHAT_OPENCODE_GITHUB_REPO")?.trim() ||
     "anomalyco/opencode";
   const normalized = raw
     .replace(/^https:\/\/github\.com\//i, "")
@@ -94,7 +94,7 @@ const fetchLatestOpencodeVersion = async () => {
 const opencodeAssetOverride = process.env.OPENCODE_ASSET?.trim() || null;
 const chromeDevtoolsMcpVersion =
   process.env.CHROME_DEVTOOLS_MCP_VERSION?.trim() ||
-  readCompatEnv("OPENWORK_CHROME_DEVTOOLS_MCP_VERSION")?.trim() ||
+  readCompatEnv("DOWHAT_CHROME_DEVTOOLS_MCP_VERSION")?.trim() ||
   "0.17.0";
 
 // Target triple for native platform binaries

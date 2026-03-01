@@ -42,3 +42,10 @@ pnpm --filter @do-what/ui dev
 - 系统通知文本全部汉化
 - 默认浅色主题，暗色为暖棕方案
 
+
+
+## v0.10 Update (2026-03-01)
+- Composer placeholder updated to do-what branding.
+- Dashboard broken Tailwind class fixed (navigation button sizing/alignment).
+- Skills Hub no longer pulls a built-in repository by default; use Install from link or configure VITE_DOWHAT_HUB_*.
+

@@ -24,9 +24,9 @@ do-what 主线已移除 router 连接链路，不再提供该能力入口。
 ## 环境变量兼容（v0.6）
 
 - 新变量前缀：`DOWHAT_*`（优先）
-- 兼容前缀：`OPENWORK_*`（兼容期保留）
-- 使用 `OPENWORK_*` 时会打印一次 deprecated 提示（非阻塞）
-- 数据目录可通过 `DOWHAT_DATA_DIR`（兼容 `OPENWORK_DATA_DIR`）显式指定
+- 兼容前缀：`DOWHAT_*`（兼容期保留）
+- 使用 `DOWHAT_*` 时会打印一次 deprecated 提示（非阻塞）
+- 数据目录可通过 `DOWHAT_DATA_DIR`（兼容 `DOWHAT_DATA_DIR`）显式指定
 
 ## 开发命令
 
@@ -39,4 +39,10 @@ do-what 主线已移除 router 连接链路，不再提供该能力入口。
 - `opencode-config` 路径生成现在会过滤 NUL 字节并提前创建目标目录
 - 防止守护进程/启动流程中因无效路径字符导致的 ENOENT 错误
 - 移除守护进程内部遗留的 router 命名，状态文件改为 `dowhat-orchestrator-state.json`
+
+
+
+## v0.10 Update (2026-03-01)
+- Orchestrator env compatibility mapper now reads DOWHAT_* directly.
+- CLI/help and runtime flags were unified under the dowhat-* naming scheme where applicable.
 

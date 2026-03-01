@@ -50,7 +50,7 @@ import {
 } from "./lib/opencode-session";
 import { clearPerfLogs, finishPerf, perfNow, recordPerfLog } from "./lib/perf-log";
 import { OutputBuffer } from "./lib/agent-output-parser";
-import { buildContextPrefix } from "./lib/shared-config";
+import { getRuntimeCapabilities, runtimeFeatureHint } from "./lib/runtime-capabilities";
 import {
   DEFAULT_MODEL,
   HIDE_TITLEBAR_PREF_KEY,
@@ -64,11 +64,10 @@ import {
 import { parseMcpServersFromContent, removeMcpFromConfig, validateMcpServerName } from "./mcp";
 import {
   addAgentRun,
-  addSessionToProject,
   appendRunEvent,
   updateAgentRun,
 } from "./state/sessions";
-import { hasAnyConnectedRuntime, refreshRuntimeSnapshot } from "./state/runtime-connection";
+import { refreshRuntimeSnapshot } from "./state/runtime-connection";
 import type {
   Client,
   DashboardTab,
@@ -138,6 +137,7 @@ import { createWorkspaceStore } from "./context/workspace";
 import {
   agentRunAbort,
   agentRunStart,
+  checkRuntimeAvailable,
   readOpencodeConfig,
   writeOpencodeConfig,
   schedulerDeleteJob,
@@ -213,8 +213,8 @@ function parseRemoteConnectDeepLink(rawUrl: string): RemoteWorkspaceDefaults | n
 
 export default function App() {
   const envOpenworkWorkspaceId =
-    typeof import.meta.env?.VITE_OPENWORK_WORKSPACE_ID === "string"
-      ? import.meta.env.VITE_OPENWORK_WORKSPACE_ID.trim() || null
+    typeof import.meta.env?.VITE_DOWHAT_WORKSPACE_ID === "string"
+      ? import.meta.env.VITE_DOWHAT_WORKSPACE_ID.trim() || null
       : null;
 
   // Workspace switch tracing is noisy, so only emit in developer mode.
@@ -965,8 +965,6 @@ export default function App() {
     sessionID: string;
     runtime: "claude-code" | "codex";
     promptText: string;
-    projectId?: string | null;
-    parentSessionIds?: string[];
   }) => {
     if (!isTauriRuntime()) {
       throw new Error("Claude Code / Codex runtime requires desktop mode (pnpm run dev:desktop).");
@@ -987,8 +985,6 @@ export default function App() {
       status: "running",
       events: [],
       startedAt: now,
-      projectId: input.projectId ?? undefined,
-      parentSessionIds: input.parentSessionIds ?? [],
     });
 
     setSessionStatusById({ ...sessionStatusById(), [runId]: "running" });
@@ -1091,24 +1087,9 @@ export default function App() {
     const baseContent = (resolvedDraft.resolvedText ?? resolvedDraft.text).trim();
     if (!baseContent && !resolvedDraft.attachments.length) return;
 
-    const contextPrefix = await buildContextPrefix(resolvedDraft.parentSessionIds ?? []);
-    const content = `${contextPrefix}${baseContent}`.trim();
-    const effectiveDraft: ComposerDraft = {
-      ...resolvedDraft,
-      text: content,
-      resolvedText: content,
-    };
-
-    if (!hasAnyConnectedRuntime()) {
-      await refreshRuntimeSnapshot();
-      if (!hasAnyConnectedRuntime()) {
-        setError("Please connect an AI assistant before sending prompts.");
-        return;
-      }
-    }
-
-    const c = client();
-    if (!c) return;
+    const content = baseContent;
+    const runtime = isLocalCliRuntime(resolvedDraft.runtime) ? resolvedDraft.runtime : "opencode";
+    const runtimeCapabilities = getRuntimeCapabilities(runtime);
 
     const compactShortcut = /^\/compact(?:\s+.*)?$/i.test(content);
     const compactCommand = resolvedDraft.command?.name === "compact" || compactShortcut;
@@ -1124,10 +1105,6 @@ export default function App() {
       sessionID = selectedSessionId();
     }
     if (!sessionID) return;
-
-    if (effectiveDraft.projectId) {
-      addSessionToProject(effectiveDraft.projectId, sessionID);
-    }
 
     setBusy(true);
     setBusyLabel("status.running");
@@ -1156,85 +1133,96 @@ export default function App() {
         setPrompt("");
       }
 
-      const model = selectedSessionModel();
-      const agent = selectedSessionAgent();
-      const parts = buildPromptParts(effectiveDraft);
-      const runtime = isLocalCliRuntime(resolvedDraft.runtime) ? resolvedDraft.runtime : "opencode";
-
       if (runtime !== "opencode") {
-        if (resolvedDraft.mode === "shell") {
-          throw new Error(`${runtime} runtime currently supports prompt mode only.`);
+        if (!runtimeCapabilities.supportsShellMode && resolvedDraft.mode === "shell") {
+          throw new Error(runtimeFeatureHint(runtime, "shell"));
         }
-        if (resolvedDraft.command || compactCommand) {
-          throw new Error(`${runtime} runtime does not support slash commands yet.`);
+        if (!runtimeCapabilities.supportsSlashCommands && (resolvedDraft.command || compactCommand)) {
+          throw new Error(runtimeFeatureHint(runtime, "slash"));
         }
-        if (resolvedDraft.attachments.length) {
-          throw new Error(`${runtime} runtime does not support attachments yet.`);
+        if (!runtimeCapabilities.supportsAttachments && resolvedDraft.attachments.length) {
+          throw new Error(runtimeFeatureHint(runtime, "attachments"));
+        }
+        if (!isTauriRuntime()) {
+          throw new Error(`${runtimeCapabilities.label} 仅在桌面模式可用。`);
+        }
+        try {
+          await checkRuntimeAvailable(runtime);
+        } catch {
+          await refreshRuntimeSnapshot();
+          throw new Error(`${runtimeCapabilities.label} 未安装或不可用。`);
         }
         await runPromptWithLocalRuntime({
           sessionID,
           runtime,
           promptText: content,
-          projectId: effectiveDraft.projectId,
-          parentSessionIds: effectiveDraft.parentSessionIds,
         });
-      } else if (resolvedDraft.mode === "shell") {
-        await shellInSession(c, sessionID, content);
-      } else if (resolvedDraft.command || compactCommand) {
-        if (compactCommand) {
-          await compactCurrentSession(sessionID);
-          finishPerf(perfEnabled, "session.prompt", "done", startedAt, {
-            sessionID,
-            mode: resolvedDraft.mode,
-            command: commandName,
-          });
-          return;
-        }
-
-        const command = resolvedDraft.command;
-        if (!command) {
-          throw new Error("Command was not resolved.");
-        }
-
-        // Slash command: route through session.command() API
-        const selected = selectedSessionModel();
-        const modelString = `${selected.providerID}/${selected.modelID}`;
-        const files = buildCommandFileParts(resolvedDraft);
-
-        // session.command() expects `model` as a provider/model string and only supports file parts.
-        unwrap(
-          await c.session.command({
-            sessionID,
-            command: command.name,
-            arguments: command.arguments,
-            agent: agent ?? undefined,
-            model: modelString,
-            variant: modelVariant() ?? undefined,
-            parts: files.length ? files : undefined,
-          }),
-        );
-
       } else {
-        const result = await c.session.promptAsync({
-          sessionID,
-          model,
-          agent: agent ?? undefined,
-          variant: modelVariant() ?? undefined,
-          parts,
-        });
-        assertNoClientError(result);
+        const c = client();
+        if (!c) {
+          throw new Error("OpenCode client is not connected.");
+        }
+        const model = selectedSessionModel();
+        const agent = selectedSessionAgent();
+        const parts = buildPromptParts(resolvedDraft);
 
-        setSessionModelById((current) => ({
-          ...current,
-          [sessionID]: model,
-        }));
+        if (resolvedDraft.mode === "shell") {
+          await shellInSession(c, sessionID, content);
+        } else if (resolvedDraft.command || compactCommand) {
+          if (compactCommand) {
+            await compactCurrentSession(sessionID);
+            finishPerf(perfEnabled, "session.prompt", "done", startedAt, {
+              sessionID,
+              mode: resolvedDraft.mode,
+              command: commandName,
+            });
+            return;
+          }
 
-        setSessionModelOverrideById((current) => {
-          if (!current[sessionID]) return current;
-          const copy = { ...current };
-          delete copy[sessionID];
-          return copy;
-        });
+          const command = resolvedDraft.command;
+          if (!command) {
+            throw new Error("Command was not resolved.");
+          }
+
+          // Slash command: route through session.command() API
+          const selected = selectedSessionModel();
+          const modelString = `${selected.providerID}/${selected.modelID}`;
+          const files = buildCommandFileParts(resolvedDraft);
+
+          // session.command() expects `model` as a provider/model string and only supports file parts.
+          unwrap(
+            await c.session.command({
+              sessionID,
+              command: command.name,
+              arguments: command.arguments,
+              agent: agent ?? undefined,
+              model: modelString,
+              variant: modelVariant() ?? undefined,
+              parts: files.length ? files : undefined,
+            }),
+          );
+        } else {
+          const result = await c.session.promptAsync({
+            sessionID,
+            model,
+            agent: agent ?? undefined,
+            variant: modelVariant() ?? undefined,
+            parts,
+          });
+          assertNoClientError(result);
+
+          setSessionModelById((current) => ({
+            ...current,
+            [sessionID]: model,
+          }));
+
+          setSessionModelOverrideById((current) => {
+            if (!current[sessionID]) return current;
+            const copy = { ...current };
+            delete copy[sessionID];
+            return copy;
+          });
+        }
       }
 
       finishPerf(perfEnabled, "session.prompt", "done", startedAt, {
@@ -1250,7 +1238,7 @@ export default function App() {
         error: e instanceof Error ? e.message : safeStringify(e),
       });
       const message = e instanceof Error ? e.message : safeStringify(e);
-      setError(addOpencodeCacheHint(message));
+      setError(runtime === "opencode" ? addOpencodeCacheHint(message) : message);
     } finally {
       setBusy(false);
       setBusyLabel(null);
@@ -1540,7 +1528,11 @@ export default function App() {
     const c = client();
     if (!c) return [];
     const list = unwrap(await c.app.agents());
-    return list.filter((agent) => !agent.hidden && agent.mode !== "subagent");
+    return list.filter((agent) => {
+      if (agent.hidden || agent.mode === "subagent") return false;
+      const name = agent.name?.trim().toLowerCase();
+      return name !== "openwork";
+    });
   }
 
   const BUILTIN_COMPACT_COMMAND = {
@@ -1581,10 +1573,22 @@ export default function App() {
     for (const provider of availableProviders ?? []) {
       const id = provider.id?.trim();
       if (!id || id === "opencode") continue;
-      if (!Array.isArray(provider.env) || provider.env.length === 0) continue;
       const existing = merged[id] ?? [];
-      if (existing.some((method) => method.type === "api")) continue;
-      merged[id] = [...existing, { type: "api", label: "API key" }];
+      let next = [...existing];
+
+      // OpenAI should continue to expose OAuth entry when available server-side.
+      // Some backends omit auth method metadata, so we keep the option discoverable.
+      if (id.toLowerCase() === "openai" && !next.some((method) => method.type === "oauth")) {
+        next = [{ type: "oauth", label: "OAuth" }, ...next];
+      }
+
+      if (Array.isArray(provider.env) && provider.env.length > 0 && !next.some((method) => method.type === "api")) {
+        next = [...next, { type: "api", label: "API key" }];
+      }
+
+      if (next.length) {
+        merged[id] = next;
+      }
     }
     return merged;
   };
@@ -1624,16 +1628,48 @@ export default function App() {
         throw new Error(`Unknown provider: ${resolved}`);
       }
 
-      const oauthIndex = methods.findIndex((method) => method.type === "oauth");
-      if (oauthIndex === -1) {
+      const isOpenAI = resolved.toLowerCase() === "openai";
+      const oauthIndices = methods
+        .map((method, index) => (method.type === "oauth" ? index : -1))
+        .filter((index) => index >= 0);
+
+      if (!oauthIndices.length && isOpenAI) {
+        // Fallback for servers that support OAuth but do not report methods reliably.
+        oauthIndices.push(0, 1, 2);
+      }
+
+      if (!oauthIndices.length) {
         throw new Error(`No OAuth flow available for ${resolved}. Use an API key instead.`);
       }
 
-      const auth = unwrap(await c.provider.oauth.authorize({ providerID: resolved, method: oauthIndex }));
-      return {
-        methodIndex: oauthIndex,
-        authorization: auth,
-      };
+      const tried = new Set<number>();
+      let lastError: unknown = null;
+      for (const methodIndex of oauthIndices) {
+        if (tried.has(methodIndex)) continue;
+        tried.add(methodIndex);
+        try {
+          const auth = unwrap(await c.provider.oauth.authorize({ providerID: resolved, method: methodIndex }));
+          return {
+            methodIndex,
+            authorization: auth,
+          };
+        } catch (error) {
+          lastError = error;
+        }
+      }
+
+      if (isOpenAI) {
+        const detail = lastError ? describeProviderError(lastError, "OpenAI OAuth unavailable") : "";
+        throw new Error(
+          detail
+            ? `OpenAI OAuth is unavailable right now.\n${detail}\nUse API key as fallback.`
+            : "OpenAI OAuth is unavailable right now. Use API key as fallback.",
+        );
+      }
+
+      throw (lastError instanceof Error
+        ? lastError
+        : new Error(`OAuth authorization failed for ${resolved}`));
     } catch (error) {
       const message = describeProviderError(error, "Failed to connect provider");
       setProviderAuthError(message);
@@ -3471,7 +3507,7 @@ export default function App() {
 
     if (typeof window !== "undefined" && currentView() === "session") {
       requestAnimationFrame(() => {
-        window.dispatchEvent(new CustomEvent("openwork:focusPrompt"));
+        window.dispatchEvent(new CustomEvent("dowhat:focusPrompt"));
       });
     }
   }

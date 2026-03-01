@@ -87,21 +87,12 @@ export function isWindowsPlatform() {
 }
 
 const STARTUP_PREF_KEY = "dowhat.startupPref";
-const LEGACY_PREF_KEY = "dowhat.modePref";
-const LEGACY_PREF_KEY_ALT = "dowhat_mode_pref";
-const LEGACY_OPENWORK_PREF_KEY = "openwork.modePref";
-const LEGACY_OPENWORK_PREF_KEY_ALT = "openwork_mode_pref";
 
 export function readStartupPreference(): "local" | "server" | null {
   if (typeof window === "undefined") return null;
 
   try {
-    const pref =
-      window.localStorage.getItem(STARTUP_PREF_KEY) ??
-      window.localStorage.getItem(LEGACY_PREF_KEY) ??
-      window.localStorage.getItem(LEGACY_PREF_KEY_ALT) ??
-      window.localStorage.getItem(LEGACY_OPENWORK_PREF_KEY) ??
-      window.localStorage.getItem(LEGACY_OPENWORK_PREF_KEY_ALT);
+    const pref = window.localStorage.getItem(STARTUP_PREF_KEY);
 
     if (pref === "local" || pref === "server") return pref;
     if (pref === "host") return "local";
@@ -118,10 +109,6 @@ export function writeStartupPreference(nextPref: "local" | "server") {
 
   try {
     window.localStorage.setItem(STARTUP_PREF_KEY, nextPref);
-    window.localStorage.removeItem(LEGACY_PREF_KEY);
-    window.localStorage.removeItem(LEGACY_PREF_KEY_ALT);
-    window.localStorage.removeItem(LEGACY_OPENWORK_PREF_KEY);
-    window.localStorage.removeItem(LEGACY_OPENWORK_PREF_KEY_ALT);
   } catch {
     // ignore
   }
@@ -132,10 +119,6 @@ export function clearStartupPreference() {
 
   try {
     window.localStorage.removeItem(STARTUP_PREF_KEY);
-    window.localStorage.removeItem(LEGACY_PREF_KEY);
-    window.localStorage.removeItem(LEGACY_PREF_KEY_ALT);
-    window.localStorage.removeItem(LEGACY_OPENWORK_PREF_KEY);
-    window.localStorage.removeItem(LEGACY_OPENWORK_PREF_KEY_ALT);
   } catch {
     // ignore
   }

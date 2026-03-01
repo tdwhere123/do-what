@@ -76,8 +76,8 @@ export function ServerProvider(props: ParentProps & { defaultUrl: string }) {
     const forceProxy =
       !isTauriRuntime() &&
       (import.meta.env.PROD ||
-        (typeof import.meta.env?.VITE_OPENWORK_URL === "string" &&
-          import.meta.env.VITE_OPENWORK_URL.trim().length > 0));
+        (typeof import.meta.env?.VITE_DOWHAT_URL === "string" &&
+          import.meta.env.VITE_DOWHAT_URL.trim().length > 0));
     if (forceProxy && fallback) {
       setList([fallback]);
       setActiveRaw(fallback);

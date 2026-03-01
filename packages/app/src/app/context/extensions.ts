@@ -33,6 +33,23 @@ import type {
 
 export type ExtensionsStore = ReturnType<typeof createExtensionsStore>;
 
+type HubSourceConfig = {
+  owner: string;
+  repo: string;
+  ref: string;
+  path: string;
+};
+
+function readHubSourceConfig(): HubSourceConfig | null {
+  const owner = String(import.meta.env?.VITE_DOWHAT_HUB_OWNER ?? "").trim();
+  const repo = String(import.meta.env?.VITE_DOWHAT_HUB_REPO ?? "").trim();
+  if (!owner || !repo) return null;
+
+  const ref = String(import.meta.env?.VITE_DOWHAT_HUB_REF ?? "main").trim() || "main";
+  const path = String(import.meta.env?.VITE_DOWHAT_HUB_PATH ?? "skills").trim() || "skills";
+  return { owner, repo, ref, path: path.replace(/^\/+|\/+$/g, "") };
+}
+
 export function createExtensionsStore(options: {
   client: () => Client | null;
   projectDir: () => string;
@@ -124,10 +141,24 @@ export function createExtensionsStore(options: {
         return;
       }
 
+      const hubSource = readHubSourceConfig();
+      if (!hubSource) {
+        setHubSkills([]);
+        setHubSkillsStatus(
+          "Hub source not configured. Set VITE_DOWHAT_HUB_OWNER and VITE_DOWHAT_HUB_REPO, or install from link.",
+        );
+        hubSkillsLoaded = true;
+        hubSkillsRoot = root;
+        return;
+      }
+
       // Browser fallback: fetch directly from GitHub (public catalog).
-      const listingRes = await fetch("https://api.github.com/repos/different-ai/openwork-hub/contents/skills?ref=main", {
+      const listingRes = await fetch(
+        `https://api.github.com/repos/${hubSource.owner}/${hubSource.repo}/contents/${hubSource.path}?ref=${hubSource.ref}`,
+        {
         headers: { Accept: "application/vnd.github+json" },
-      });
+        },
+      );
       if (!listingRes.ok) {
         throw new Error(`Failed to fetch hub catalog (${listingRes.status})`);
       }
@@ -140,7 +171,12 @@ export function createExtensionsStore(options: {
 
       const next: HubSkillCard[] = dirs.map((dirName) => ({
         name: dirName,
-        source: { owner: "different-ai", repo: "openwork-hub", ref: "main", path: `skills/${dirName}` },
+        source: {
+          owner: hubSource.owner,
+          repo: hubSource.repo,
+          ref: hubSource.ref,
+          path: `${hubSource.path}/${dirName}`,
+        },
       }));
 
       if (refreshHubSkillsAborted) return;
@@ -164,20 +200,20 @@ export function createExtensionsStore(options: {
 
     const isRemoteWorkspace = options.workspaceType() === "remote";
     const openworkClient = options.openworkServerClient();
-    const openworkWorkspaceId = options.openworkServerWorkspaceId();
+    const doWhatWorkspaceId = options.openworkServerWorkspaceId();
     const openworkCapabilities = options.openworkServerCapabilities();
     const canUseOpenworkServer =
       options.openworkServerStatus() === "connected" &&
       openworkClient &&
-      openworkWorkspaceId &&
+      doWhatWorkspaceId &&
       openworkCapabilities?.hub?.skills?.install &&
       typeof (openworkClient as any).installHubSkill === "function";
 
     if (!canUseOpenworkServer) {
       if (isRemoteWorkspace) {
-        return { ok: false, message: "OpenWork server unavailable. Connect to install skills." };
+        return { ok: false, message: "Do-What server unavailable. Connect to install skills." };
       }
-      return { ok: false, message: "Hub install requires OpenWork server." };
+      return { ok: false, message: "Hub install requires Do-What server." };
     }
 
     options.setBusy(true);
@@ -185,7 +221,7 @@ export function createExtensionsStore(options: {
     setSkillsStatus(null);
 
     try {
-      const result = await (openworkClient as any).installHubSkill(openworkWorkspaceId, trimmed);
+      const result = await (openworkClient as any).installHubSkill(doWhatWorkspaceId, trimmed);
       await refreshSkills({ force: true });
       await refreshHubSkills({ force: true });
       if (!result?.ok) {
@@ -213,12 +249,12 @@ export function createExtensionsStore(options: {
     const isRemoteWorkspace = options.workspaceType() === "remote";
     const isLocalWorkspace = options.workspaceType() === "local";
     const openworkClient = options.openworkServerClient();
-    const openworkWorkspaceId = options.openworkServerWorkspaceId();
+    const doWhatWorkspaceId = options.openworkServerWorkspaceId();
     const openworkCapabilities = options.openworkServerCapabilities();
     const canUseOpenworkServer =
       options.openworkServerStatus() === "connected" &&
       openworkClient &&
-      openworkWorkspaceId &&
+      doWhatWorkspaceId &&
       openworkCapabilities?.skills?.read;
 
     if (!root) {
@@ -227,7 +263,7 @@ export function createExtensionsStore(options: {
       return;
     }
 
-    // Prefer OpenWork server when available
+    // Prefer Do-What server when available
     if (canUseOpenworkServer) {
       if (root !== skillsRoot) {
         skillsLoaded = false;
@@ -246,7 +282,7 @@ export function createExtensionsStore(options: {
 
       try {
         setSkillsStatus(null);
-        const response = await openworkClient.listSkills(openworkWorkspaceId, {
+        const response = await openworkClient.listSkills(doWhatWorkspaceId, {
           includeGlobal: isLocalWorkspace,
         });
         if (refreshSkillsAborted) return;
@@ -327,7 +363,7 @@ export function createExtensionsStore(options: {
     const c = options.client();
     if (!c) {
       setSkills([]);
-      setSkillsStatus("OpenWork server unavailable. Connect to load skills.");
+      setSkillsStatus("Do-What server unavailable. Connect to load skills.");
       return;
     }
 
@@ -398,12 +434,12 @@ export function createExtensionsStore(options: {
     const isRemoteWorkspace = options.workspaceType() === "remote";
     const isLocalWorkspace = options.workspaceType() === "local";
     const openworkClient = options.openworkServerClient();
-    const openworkWorkspaceId = options.openworkServerWorkspaceId();
+    const doWhatWorkspaceId = options.openworkServerWorkspaceId();
     const openworkCapabilities = options.openworkServerCapabilities();
     const canUseOpenworkServer =
       options.openworkServerStatus() === "connected" &&
       openworkClient &&
-      openworkWorkspaceId &&
+      doWhatWorkspaceId &&
       openworkCapabilities?.plugins?.read;
 
     // Skip if already in flight
@@ -428,7 +464,7 @@ export function createExtensionsStore(options: {
 
     if (scope === "project" && canUseOpenworkServer) {
       setPluginConfig(null);
-      setPluginConfigPath(`opencode.json (${isRemoteWorkspace ? "remote" : "openwork"} server)`);
+      setPluginConfigPath(`opencode.json (${isRemoteWorkspace ? "remote" : "doWhat"} server)`);
 
       try {
         setPluginStatus(null);
@@ -436,7 +472,7 @@ export function createExtensionsStore(options: {
 
         if (refreshPluginsAborted) return;
 
-        const result = await openworkClient.listPlugins(openworkWorkspaceId, { includeGlobal: false });
+        const result = await openworkClient.listPlugins(doWhatWorkspaceId, { includeGlobal: false });
         if (refreshPluginsAborted) return;
 
         const configItems = result.items.filter((item) => item.source === "config" && item.scope === "project");
@@ -470,9 +506,9 @@ export function createExtensionsStore(options: {
     }
 
     if (!isLocalWorkspace && !canUseOpenworkServer) {
-      setPluginStatus("OpenWork server unavailable. Connect to manage plugins.");
+      setPluginStatus("Do-What server unavailable. Connect to manage plugins.");
       setPluginList([]);
-      setSidebarPluginStatus("Connect an OpenWork server to load plugins.");
+      setSidebarPluginStatus("Connect an Do-What server to load plugins.");
       setSidebarPluginList([]);
       refreshPluginsInFlight = false;
       return;
@@ -538,12 +574,12 @@ export function createExtensionsStore(options: {
     const isRemoteWorkspace = options.workspaceType() === "remote";
     const isLocalWorkspace = options.workspaceType() === "local";
     const openworkClient = options.openworkServerClient();
-    const openworkWorkspaceId = options.openworkServerWorkspaceId();
+    const doWhatWorkspaceId = options.openworkServerWorkspaceId();
     const openworkCapabilities = options.openworkServerCapabilities();
     const canUseOpenworkServer =
       options.openworkServerStatus() === "connected" &&
       openworkClient &&
-      openworkWorkspaceId &&
+      doWhatWorkspaceId &&
       openworkCapabilities?.plugins?.write;
 
     if (!pluginName) {
@@ -561,7 +597,7 @@ export function createExtensionsStore(options: {
     if (pluginScope() === "project" && canUseOpenworkServer) {
       try {
         setPluginStatus(null);
-        await openworkClient.addPlugin(openworkWorkspaceId, pluginName);
+        await openworkClient.addPlugin(doWhatWorkspaceId, pluginName);
         if (isManualInput) {
           setPluginInput("");
         }
@@ -578,7 +614,7 @@ export function createExtensionsStore(options: {
     }
 
     if (!isLocalWorkspace && !canUseOpenworkServer) {
-      setPluginStatus("OpenWork server unavailable. Connect to manage plugins.");
+      setPluginStatus("Do-What server unavailable. Connect to manage plugins.");
       return;
     }
 
@@ -691,22 +727,22 @@ export function createExtensionsStore(options: {
     const isRemoteWorkspace = options.workspaceType() === "remote";
     const isLocalWorkspace = options.workspaceType() === "local";
     const openworkClient = options.openworkServerClient();
-    const openworkWorkspaceId = options.openworkServerWorkspaceId();
+    const doWhatWorkspaceId = options.openworkServerWorkspaceId();
     const openworkCapabilities = options.openworkServerCapabilities();
     const canUseOpenworkServer =
       options.openworkServerStatus() === "connected" &&
       openworkClient &&
-      openworkWorkspaceId &&
+      doWhatWorkspaceId &&
       openworkCapabilities?.skills?.write;
 
-    // Use OpenWork server when available
+    // Use Do-What server when available
     if (canUseOpenworkServer) {
       options.setBusy(true);
       options.setError(null);
       setSkillsStatus(translate("skills.installing_skill_creator"));
 
       try {
-        await openworkClient.upsertSkill(openworkWorkspaceId, {
+        await openworkClient.upsertSkill(doWhatWorkspaceId, {
           name: "skill-creator",
           content: skillCreatorTemplate,
         });
@@ -729,7 +765,7 @@ export function createExtensionsStore(options: {
 
     // Remote workspace without server
     if (isRemoteWorkspace) {
-      const message = "OpenWork server unavailable. Connect to install skills.";
+      const message = "Do-What server unavailable. Connect to install skills.";
       setSkillsStatus(message);
       return { ok: false, message };
     }
@@ -886,12 +922,12 @@ export function createExtensionsStore(options: {
     const isRemoteWorkspace = options.workspaceType() === "remote";
     const isLocalWorkspace = options.workspaceType() === "local";
     const openworkClient = options.openworkServerClient();
-    const openworkWorkspaceId = options.openworkServerWorkspaceId();
+    const doWhatWorkspaceId = options.openworkServerWorkspaceId();
     const openworkCapabilities = options.openworkServerCapabilities();
     const canUseOpenworkServer =
       options.openworkServerStatus() === "connected" &&
       openworkClient &&
-      openworkWorkspaceId &&
+      doWhatWorkspaceId &&
       openworkCapabilities?.skills?.read &&
       typeof (openworkClient as any).getSkill === "function";
 
@@ -899,7 +935,7 @@ export function createExtensionsStore(options: {
       try {
         setSkillsStatus(null);
         const result = await (openworkClient as OpenworkServerClient & { getSkill: any }).getSkill(
-          openworkWorkspaceId,
+          doWhatWorkspaceId,
           trimmed,
           { includeGlobal: isLocalWorkspace },
         );
@@ -915,7 +951,7 @@ export function createExtensionsStore(options: {
     }
 
     if (isRemoteWorkspace) {
-      setSkillsStatus("OpenWork server unavailable. Connect to view skills.");
+      setSkillsStatus("Do-What server unavailable. Connect to view skills.");
       return null;
     }
 
@@ -952,12 +988,12 @@ export function createExtensionsStore(options: {
     const isRemoteWorkspace = options.workspaceType() === "remote";
     const isLocalWorkspace = options.workspaceType() === "local";
     const openworkClient = options.openworkServerClient();
-    const openworkWorkspaceId = options.openworkServerWorkspaceId();
+    const doWhatWorkspaceId = options.openworkServerWorkspaceId();
     const openworkCapabilities = options.openworkServerCapabilities();
     const canUseOpenworkServer =
       options.openworkServerStatus() === "connected" &&
       openworkClient &&
-      openworkWorkspaceId &&
+      doWhatWorkspaceId &&
       openworkCapabilities?.skills?.write;
 
     if (canUseOpenworkServer) {
@@ -965,7 +1001,7 @@ export function createExtensionsStore(options: {
       options.setError(null);
       setSkillsStatus(null);
       try {
-        await openworkClient.upsertSkill(openworkWorkspaceId, {
+        await openworkClient.upsertSkill(doWhatWorkspaceId, {
           name: trimmed,
           content: input.content,
           description: input.description,
@@ -983,7 +1019,7 @@ export function createExtensionsStore(options: {
     }
 
     if (isRemoteWorkspace) {
-      setSkillsStatus("OpenWork server unavailable. Connect to edit skills.");
+      setSkillsStatus("Do-What server unavailable. Connect to edit skills.");
       return;
     }
 
@@ -1055,3 +1091,4 @@ export function createExtensionsStore(options: {
     abortRefreshes,
   };
 }
+

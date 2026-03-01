@@ -3,7 +3,7 @@ import { isTauriRuntime } from "../utils";
 import type { ScheduledJob } from "./tauri";
 
 export type OpenworkServerCapabilities = {
-  skills: { read: boolean; write: boolean; source: "openwork" | "opencode" };
+  skills: { read: boolean; write: boolean; source: "dowhat" | "opencode" };
   hub?: {
     skills?: {
       read: boolean;
@@ -253,14 +253,11 @@ export type OpenworkReloadEvent = {
   timestamp: number;
 };
 
-export const DEFAULT_OPENWORK_SERVER_PORT = 8787;
+export const DEFAULT_DOWHAT_SERVER_PORT = 8787;
 
 const STORAGE_URL_OVERRIDE = "dowhat.server.urlOverride";
 const STORAGE_PORT_OVERRIDE = "dowhat.server.port";
 const STORAGE_TOKEN = "dowhat.server.token";
-const LEGACY_STORAGE_URL_OVERRIDE = "openwork.server.urlOverride";
-const LEGACY_STORAGE_PORT_OVERRIDE = "openwork.server.port";
-const LEGACY_STORAGE_TOKEN = "openwork.server.token";
 
 export function normalizeOpenworkServerUrl(input: string) {
   const trimmed = input.trim();
@@ -322,19 +319,11 @@ export function readOpenworkServerSettings(): OpenworkServerSettings {
   if (typeof window === "undefined") return {};
   try {
     const urlOverride = normalizeOpenworkServerUrl(
-      window.localStorage.getItem(STORAGE_URL_OVERRIDE) ??
-        window.localStorage.getItem(LEGACY_STORAGE_URL_OVERRIDE) ??
-        "",
+      window.localStorage.getItem(STORAGE_URL_OVERRIDE) ?? "",
     );
-    const portRaw =
-      window.localStorage.getItem(STORAGE_PORT_OVERRIDE) ??
-      window.localStorage.getItem(LEGACY_STORAGE_PORT_OVERRIDE) ??
-      "";
+    const portRaw = window.localStorage.getItem(STORAGE_PORT_OVERRIDE) ?? "";
     const portOverride = portRaw ? Number(portRaw) : undefined;
-    const token =
-      window.localStorage.getItem(STORAGE_TOKEN) ??
-      window.localStorage.getItem(LEGACY_STORAGE_TOKEN) ??
-      undefined;
+    const token = window.localStorage.getItem(STORAGE_TOKEN) ?? undefined;
     return {
       urlOverride: urlOverride ?? undefined,
       portOverride: Number.isNaN(portOverride) ? undefined : portOverride,
@@ -354,26 +343,20 @@ export function writeOpenworkServerSettings(next: OpenworkServerSettings): Openw
 
     if (urlOverride) {
       window.localStorage.setItem(STORAGE_URL_OVERRIDE, urlOverride);
-      window.localStorage.removeItem(LEGACY_STORAGE_URL_OVERRIDE);
     } else {
       window.localStorage.removeItem(STORAGE_URL_OVERRIDE);
-      window.localStorage.removeItem(LEGACY_STORAGE_URL_OVERRIDE);
     }
 
     if (typeof portOverride === "number" && !Number.isNaN(portOverride)) {
       window.localStorage.setItem(STORAGE_PORT_OVERRIDE, String(portOverride));
-      window.localStorage.removeItem(LEGACY_STORAGE_PORT_OVERRIDE);
     } else {
       window.localStorage.removeItem(STORAGE_PORT_OVERRIDE);
-      window.localStorage.removeItem(LEGACY_STORAGE_PORT_OVERRIDE);
     }
 
     if (token) {
       window.localStorage.setItem(STORAGE_TOKEN, token);
-      window.localStorage.removeItem(LEGACY_STORAGE_TOKEN);
     } else {
       window.localStorage.removeItem(STORAGE_TOKEN);
-      window.localStorage.removeItem(LEGACY_STORAGE_TOKEN);
     }
 
     return readOpenworkServerSettings();
@@ -385,14 +368,14 @@ export function writeOpenworkServerSettings(next: OpenworkServerSettings): Openw
 export function hydrateOpenworkServerSettingsFromEnv() {
   if (typeof window === "undefined") return;
 
-  const envUrl = typeof import.meta.env?.VITE_OPENWORK_URL === "string"
-    ? import.meta.env.VITE_OPENWORK_URL.trim()
+  const envUrl = typeof import.meta.env?.VITE_DOWHAT_URL === "string"
+    ? import.meta.env.VITE_DOWHAT_URL.trim()
     : "";
-  const envPort = typeof import.meta.env?.VITE_OPENWORK_PORT === "string"
-    ? import.meta.env.VITE_OPENWORK_PORT.trim()
+  const envPort = typeof import.meta.env?.VITE_DOWHAT_PORT === "string"
+    ? import.meta.env.VITE_DOWHAT_PORT.trim()
     : "";
-  const envToken = typeof import.meta.env?.VITE_OPENWORK_TOKEN === "string"
-    ? import.meta.env.VITE_OPENWORK_TOKEN.trim()
+  const envToken = typeof import.meta.env?.VITE_DOWHAT_TOKEN === "string"
+    ? import.meta.env.VITE_DOWHAT_TOKEN.trim()
     : "";
 
   if (!envUrl && !envPort && !envToken) return;
@@ -434,9 +417,6 @@ export function clearOpenworkServerSettings() {
     window.localStorage.removeItem(STORAGE_URL_OVERRIDE);
     window.localStorage.removeItem(STORAGE_PORT_OVERRIDE);
     window.localStorage.removeItem(STORAGE_TOKEN);
-    window.localStorage.removeItem(LEGACY_STORAGE_URL_OVERRIDE);
-    window.localStorage.removeItem(LEGACY_STORAGE_PORT_OVERRIDE);
-    window.localStorage.removeItem(LEGACY_STORAGE_TOKEN);
   } catch {
     // ignore
   }
@@ -455,7 +435,7 @@ export function deriveOpenworkServerUrl(
   if (!base) return null;
   try {
     const url = new URL(base);
-    const port = settings?.portOverride ?? DEFAULT_OPENWORK_SERVER_PORT;
+    const port = settings?.portOverride ?? DEFAULT_DOWHAT_SERVER_PORT;
     url.port = String(port);
     url.pathname = "";
     url.search = "";
@@ -489,7 +469,7 @@ function buildHeaders(
     headers.Authorization = `Bearer ${token}`;
   }
   if (hostToken) {
-    headers["X-OpenWork-Host-Token"] = hostToken;
+    headers["X-DoWhat-Host-Token"] = hostToken;
   }
   if (extra) {
     Object.assign(headers, extra);
@@ -503,7 +483,7 @@ function buildAuthHeaders(token?: string, hostToken?: string, extra?: Record<str
     headers.Authorization = `Bearer ${token}`;
   }
   if (hostToken) {
-    headers["X-OpenWork-Host-Token"] = hostToken;
+    headers["X-DoWhat-Host-Token"] = hostToken;
   }
   if (extra) {
     Object.assign(headers, extra);
@@ -514,7 +494,7 @@ function buildAuthHeaders(token?: string, hostToken?: string, extra?: Record<str
 // Use Tauri's fetch when running in the desktop app to avoid CORS issues
 const resolveFetch = () => (isTauriRuntime() ? tauriFetch : globalThis.fetch);
 
-const DEFAULT_OPENWORK_SERVER_TIMEOUT_MS = 10_000;
+const DEFAULT_DOWHAT_SERVER_TIMEOUT_MS = 10_000;
 
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
@@ -572,7 +552,7 @@ async function requestJson<T>(
       headers: buildHeaders(options.token, options.hostToken),
       body: options.body ? JSON.stringify(options.body) : undefined,
     },
-    options.timeoutMs ?? DEFAULT_OPENWORK_SERVER_TIMEOUT_MS,
+    options.timeoutMs ?? DEFAULT_DOWHAT_SERVER_TIMEOUT_MS,
   );
 
   const text = await response.text();
@@ -602,7 +582,7 @@ async function requestJsonRaw<T>(
       headers: buildHeaders(options.token, options.hostToken),
       body: options.body ? JSON.stringify(options.body) : undefined,
     },
-    options.timeoutMs ?? DEFAULT_OPENWORK_SERVER_TIMEOUT_MS,
+    options.timeoutMs ?? DEFAULT_DOWHAT_SERVER_TIMEOUT_MS,
   );
 
   const text = await response.text();
@@ -631,7 +611,7 @@ async function requestMultipartRaw(
       headers: buildAuthHeaders(options.token, options.hostToken),
       body: options.body,
     },
-    options.timeoutMs ?? DEFAULT_OPENWORK_SERVER_TIMEOUT_MS,
+    options.timeoutMs ?? DEFAULT_DOWHAT_SERVER_TIMEOUT_MS,
   );
   const text = await response.text();
   return { ok: response.ok, status: response.status, text };
@@ -651,7 +631,7 @@ async function requestBinary(
       method: options.method ?? "GET",
       headers: buildAuthHeaders(options.token, options.hostToken),
     },
-    options.timeoutMs ?? DEFAULT_OPENWORK_SERVER_TIMEOUT_MS,
+    options.timeoutMs ?? DEFAULT_DOWHAT_SERVER_TIMEOUT_MS,
   );
 
   if (!response.ok) {

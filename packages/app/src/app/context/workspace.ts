@@ -1584,7 +1584,7 @@ export function createWorkspaceStore(options: {
             if (stage === "docker.config") {
               const selected = String(payload.payload?.openworkDockerBin ?? "").trim();
               if (selected) {
-                pushSandboxCreateLog(`OPENWORK_DOCKER_BIN=${selected}`);
+                pushSandboxCreateLog(`DOWHAT_DOCKER_BIN=${selected}`);
               }
               const candidates = Array.isArray(payload.payload?.candidates)
                 ? payload.payload.candidates.filter((item: unknown) => String(item ?? "").trim())

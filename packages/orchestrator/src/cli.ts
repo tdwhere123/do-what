@@ -62,15 +62,15 @@ type OpencodeHotReload = {
 
 const FALLBACK_VERSION = "0.1.0";
 
-declare const __OPENWORK_ORCHESTRATOR_VERSION__: string | undefined;
-const DEFAULT_OPENWORK_PORT = 8787;
+declare const __DOWHAT_ORCHESTRATOR_VERSION__: string | undefined;
+const DEFAULT_DOWHAT_PORT = 8787;
 const DEFAULT_APPROVAL_TIMEOUT = 30000;
 const DEFAULT_OPENCODE_USERNAME = "opencode";
 const DEFAULT_OPENCODE_HOT_RELOAD_DEBOUNCE_MS = 700;
 const DEFAULT_OPENCODE_HOT_RELOAD_COOLDOWN_MS = 1500;
 
 const SANDBOX_INTERNAL_OPENCODE_PORT = 4096;
-const SANDBOX_INTERNAL_OPENWORK_PORT = DEFAULT_OPENWORK_PORT;
+const SANDBOX_INTERNAL_DOWHAT_PORT = DEFAULT_DOWHAT_PORT;
 
 const SANDBOX_OPENCODE_GLOBAL_CONFIG_CONTAINER_PATH = "/persist/.config/opencode";
 const SANDBOX_OPENCODE_GLOBAL_DATA_IMPORT_CONTAINER_PATH = "/persist/.openwork-host-opencode-data";
@@ -90,7 +90,7 @@ type VersionInfo = {
   sha256: string;
 };
 
-type SidecarName = "openwork-server" | "opencode";
+type SidecarName = "dowhat-server" | "opencode";
 
 type SidecarTarget =
   | "darwin-arm64"
@@ -295,7 +295,7 @@ function readFlag(flags: Map<string, string | boolean>, key: string): string | u
 }
 
 function readEnvValue(key: string): string | undefined {
-  if (key.startsWith("OPENWORK_")) {
+  if (key.startsWith("DOWHAT_")) {
     return readCompatEnv(key);
   }
   return process.env[key];
@@ -484,7 +484,7 @@ let cachedSandboxAllowlist: SandboxMountAllowlist | null | undefined;
 let cachedSandboxAllowlistError: string | null = null;
 
 function resolveSandboxAllowlistPath(): string {
-  const override = readCompatEnv("OPENWORK_SANDBOX_MOUNT_ALLOWLIST")?.trim();
+  const override = readCompatEnv("DOWHAT_SANDBOX_MOUNT_ALLOWLIST")?.trim();
   if (override) return resolve(override);
   return join(homedir(), ".config", "openwork", "sandbox-mount-allowlist.json");
 }
@@ -506,7 +506,7 @@ async function isDir(input: string): Promise<boolean> {
 }
 
 async function resolveHostOpencodeGlobalConfigDir(): Promise<string | null> {
-  const enabled = (readCompatEnv("OPENWORK_SANDBOX_MOUNT_OPENCODE_CONFIG") ?? "1").trim() !== "0";
+  const enabled = (readCompatEnv("DOWHAT_SANDBOX_MOUNT_OPENCODE_CONFIG") ?? "1").trim() !== "0";
   if (!enabled) return null;
 
   const candidates: string[] = [];
@@ -543,7 +543,7 @@ async function resolveHostOpencodeGlobalConfigDir(): Promise<string | null> {
 }
 
 async function resolveHostOpencodeGlobalDataDir(): Promise<string | null> {
-  const enabled = (readCompatEnv("OPENWORK_SANDBOX_MOUNT_OPENCODE_CONFIG") ?? "1").trim() !== "0";
+  const enabled = (readCompatEnv("DOWHAT_SANDBOX_MOUNT_OPENCODE_CONFIG") ?? "1").trim() !== "0";
   if (!enabled) return null;
 
   const candidates: string[] = [];
@@ -759,10 +759,10 @@ async function fileExists(path: string): Promise<boolean> {
 
 async function resolveCliVersion(): Promise<string> {
   if (
-    typeof __OPENWORK_ORCHESTRATOR_VERSION__ === "string" &&
-    __OPENWORK_ORCHESTRATOR_VERSION__.trim()
+    typeof __DOWHAT_ORCHESTRATOR_VERSION__ === "string" &&
+    __DOWHAT_ORCHESTRATOR_VERSION__.trim()
   ) {
-    return __OPENWORK_ORCHESTRATOR_VERSION__.trim();
+    return __DOWHAT_ORCHESTRATOR_VERSION__.trim();
   }
   const candidates = [
     join(dirname(process.execPath), "..", "package.json"),
@@ -966,7 +966,7 @@ function prefixStream(
 
 function shouldUseBun(bin: string): boolean {
   if (!bin.endsWith(`${join("dist", "cli.js")}`)) return false;
-  if (bin.includes("openwork-server")) return true;
+  if (bin.includes("dowhat-server")) return true;
   return bin.includes(`${join("packages", "server")}`);
 }
 
@@ -1099,19 +1099,19 @@ function shQuote(value: string): string {
 }
 
 function resolveSidecarDir(flags: Map<string, string | boolean>): string {
-  const override = readFlag(flags, "sidecar-dir") ?? readCompatEnv("OPENWORK_SIDECAR_DIR");
+  const override = readFlag(flags, "sidecar-dir") ?? readCompatEnv("DOWHAT_SIDECAR_DIR");
   if (override && override.trim()) return resolve(override.trim());
   return join(resolveOrchestratorDataDir(flags), "sidecars");
 }
 
 function resolveSidecarBaseUrl(flags: Map<string, string | boolean>, cliVersion: string): string {
-  const override = readFlag(flags, "sidecar-base-url") ?? readCompatEnv("OPENWORK_SIDECAR_BASE_URL");
+  const override = readFlag(flags, "sidecar-base-url") ?? readCompatEnv("DOWHAT_SIDECAR_BASE_URL");
   if (override && override.trim()) return override.trim();
   return `https://github.com/different-ai/openwork/releases/download/openwork-orchestrator-v${cliVersion}`;
 }
 
 function resolveSidecarManifestUrl(flags: Map<string, string | boolean>, baseUrl: string): string {
-  const override = readFlag(flags, "sidecar-manifest") ?? readCompatEnv("OPENWORK_SIDECAR_MANIFEST_URL");
+  const override = readFlag(flags, "sidecar-manifest") ?? readCompatEnv("DOWHAT_SIDECAR_MANIFEST_URL");
   if (override && override.trim()) return override.trim();
   return `${baseUrl.replace(/\/$/, "")}/openwork-orchestrator-sidecars.json`;
 }
@@ -1281,7 +1281,7 @@ async function resolveOpencodeDownload(sidecar: SidecarConfig, expectedVersion?:
   if (!expectedVersion) return null;
   if (!sidecar.target) return null;
 
-  const assetOverride = readCompatEnv("OPENWORK_OPENCODE_ASSET") ?? process.env.OPENCODE_ASSET;
+  const assetOverride = readCompatEnv("DOWHAT_OPENCODE_ASSET") ?? process.env.OPENCODE_ASSET;
   const asset = assetOverride?.trim() || resolveOpencodeAsset(sidecar.target);
   if (!asset) return null;
 
@@ -1308,7 +1308,7 @@ async function resolveOpencodeDownload(sidecar: SidecarConfig, expectedVersion?:
   await mkdir(targetDir, { recursive: true });
   const stamp = Date.now();
   const archivePath = join(tmpdir(), `openwork-orchestrator-opencode-${stamp}-${asset}`);
-  const extractDir = await mkdtemp(join(tmpdir(), "openwork-orchestrator-opencode-"));
+  const extractDir = await mkdtemp(join(tmpdir(), "dowhat-orchestrator-opencode-"));
 
   try {
     await downloadToPath(url, archivePath);
@@ -1411,7 +1411,7 @@ async function resolveExpectedVersion(
 
   try {
     const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
-    if (name === "openwork-server") {
+    if (name === "dowhat-server") {
       const localPath = join(root, "..", "server", "package.json");
       const localVersion = await readPackageVersion(localPath);
       if (localVersion) return localVersion;
@@ -1433,9 +1433,9 @@ async function resolveExpectedVersion(
   }
 
   const require = createRequire(import.meta.url);
-  if (name === "openwork-server") {
+  if (name === "dowhat-server") {
     try {
-      const pkgPath = require.resolve("openwork-server/package.json");
+      const pkgPath = require.resolve("dowhat-server/package.json");
       const version = await readPackageVersion(pkgPath);
       if (version) return version;
     } catch {
@@ -1601,13 +1601,13 @@ async function resolveOpenworkServerBin(options: {
   source: BinarySourcePreference;
 }): Promise<ResolvedBinary> {
   if (options.explicit && !options.allowExternal) {
-    throw new Error("openwork-server-bin requires --allow-external");
+    throw new Error("dowhat-server-bin requires --allow-external");
   }
   if (options.explicit && options.source !== "auto" && options.source !== "external") {
-    throw new Error("openwork-server-bin requires --sidecar-source external or auto");
+    throw new Error("dowhat-server-bin requires --sidecar-source external or auto");
   }
 
-  const expectedVersion = await resolveExpectedVersion(options.manifest, "openwork-server");
+  const expectedVersion = await resolveExpectedVersion(options.manifest, "dowhat-server");
   const resolveExternal = async (): Promise<ResolvedBinary> => {
     if (!options.allowExternal) {
       throw new Error("External openwork-server requires --allow-external");
@@ -1622,9 +1622,9 @@ async function resolveOpenworkServerBin(options: {
 
     const require = createRequire(import.meta.url);
     try {
-      const pkgPath = require.resolve("openwork-server/package.json");
+      const pkgPath = require.resolve("dowhat-server/package.json");
       const pkgDir = dirname(pkgPath);
-      const binaryPath = join(pkgDir, "dist", "bin", "openwork-server");
+      const binaryPath = join(pkgDir, "dist", "bin", "dowhat-server");
       if (await isExecutable(binaryPath)) {
         return { bin: binaryPath, source: "external", expectedVersion };
       }
@@ -1636,11 +1636,11 @@ async function resolveOpenworkServerBin(options: {
       // ignore
     }
 
-    return { bin: "openwork-server", source: "external", expectedVersion };
+    return { bin: "dowhat-server", source: "external", expectedVersion };
   };
 
   if (options.source === "bundled") {
-    const bundled = await resolveBundledBinary(options.manifest, "openwork-server");
+    const bundled = await resolveBundledBinary(options.manifest, "dowhat-server");
     if (!bundled) {
       throw new Error(
         "Bundled openwork-server binary missing. Build with pnpm --filter openwork-orchestrator build:bin:bundled.",
@@ -1650,9 +1650,9 @@ async function resolveOpenworkServerBin(options: {
   }
 
   if (options.source === "downloaded") {
-    const downloaded = await downloadSidecarBinary({ name: "openwork-server", sidecar: options.sidecar });
+    const downloaded = await downloadSidecarBinary({ name: "dowhat-server", sidecar: options.sidecar });
     if (!downloaded) {
-      throw new Error("openwork-server download failed. Check sidecar manifest or base URL.");
+      throw new Error("dowhat-server download failed. Check sidecar manifest or base URL.");
     }
     return downloaded;
   }
@@ -1661,7 +1661,7 @@ async function resolveOpenworkServerBin(options: {
     return resolveExternal();
   }
 
-  const bundled = await resolveBundledBinary(options.manifest, "openwork-server");
+  const bundled = await resolveBundledBinary(options.manifest, "dowhat-server");
   if (bundled && !(options.allowExternal && options.explicit)) {
     return { bin: bundled, source: "bundled", expectedVersion };
   }
@@ -1670,7 +1670,7 @@ async function resolveOpenworkServerBin(options: {
     return resolveExternal();
   }
 
-  const downloaded = await downloadSidecarBinary({ name: "openwork-server", sidecar: options.sidecar });
+  const downloaded = await downloadSidecarBinary({ name: "dowhat-server", sidecar: options.sidecar });
   if (downloaded) return downloaded;
 
   if (!options.allowExternal) {
@@ -1945,9 +1945,9 @@ function printHelp(): void {
     "  openwork daemon [run|start|stop|status] [options]",
     "  openwork workspace <action> [options]",
     "  openwork instance dispose <id> [options]",
-    "  openwork approvals list --openwork-url <url> --host-token <token>",
-    "  openwork approvals reply <id> --allow|--deny --openwork-url <url> --host-token <token>",
-    "  openwork status [--openwork-url <url>] [--opencode-url <url>]",
+    "  openwork approvals list --dowhat-url <url> --host-token <token>",
+    "  openwork approvals reply <id> --allow|--deny --dowhat-url <url> --host-token <token>",
+    "  openwork status [--dowhat-url <url>] [--opencode-url <url>]",
     "",
     "Commands:",
     "  start                   Start OpenCode + OpenWork server",
@@ -1975,16 +1975,16 @@ function printHelp(): void {
     "  --opencode-hot-reload-cooldown-ms <ms>  Minimum interval between hot reloads (default: 1500)",
     "  --opencode-username <u>   OpenCode basic auth username",
     "  --opencode-password <p>   OpenCode basic auth password",
-    "  --openwork-host <host>    Bind host for openwork-server (default: 0.0.0.0)",
-    "  --openwork-port <port>    Port for openwork-server (default: 8787)",
-    "  --openwork-token <token>  Client token for openwork-server",
-    "  --openwork-host-token <t> Host token for approvals",
+    "  --dowhat-host <host>    Bind host for openwork-server (default: 0.0.0.0)",
+    "  --dowhat-port <port>    Port for openwork-server (default: 8787)",
+    "  --dowhat-token <token>  Client token for openwork-server",
+    "  --dowhat-host-token <t> Host token for approvals",
     "  --approval <mode>         manual | auto (default: manual)",
     "  --approval-timeout <ms>   Approval timeout in ms",
     "  --read-only               Start OpenWork server in read-only mode",
     "  --cors <origins>          Comma-separated CORS origins or *",
     "  --connect-host <host>     Override LAN host used for pairing URLs",
-    "  --openwork-server-bin <p> Path to openwork-server binary (requires --allow-external)",
+    "  --dowhat-server-bin <p> Path to openwork-server binary (requires --allow-external)",
     "  --allow-external          Allow external sidecar binaries (dev only, required for custom bins)",
     "  --sidecar-dir <path>      Cache directory for downloaded sidecars",
     "  --sidecar-base-url <url>  Base URL for sidecar downloads",
@@ -2059,10 +2059,10 @@ async function startOpencode(options: {
     stdio: ["ignore", "pipe", "pipe"],
     env: {
       ...process.env,
-      OPENCODE_CLIENT: "openwork-orchestrator",
+      OPENCODE_CLIENT: "dowhat-orchestrator",
       OPENWORK: "1",
-      OPENWORK_RUN_ID: options.runId,
-      OPENWORK_LOG_FORMAT: options.logFormat,
+      DOWHAT_RUN_ID: options.runId,
+      DOWHAT_LOG_FORMAT: options.logFormat,
       OTEL_RESOURCE_ATTRIBUTES: mergeResourceAttributes(
         {
           "service.name": "opencode",
@@ -2151,26 +2151,26 @@ async function startOpenworkServer(options: {
     stdio: ["ignore", "pipe", "pipe"],
     env: {
       ...process.env,
-      OPENWORK_TOKEN: options.token,
-      OPENWORK_HOST_TOKEN: options.hostToken,
-      OPENWORK_RUN_ID: options.runId,
-      OPENWORK_LOG_FORMAT: options.logFormat,
+      DOWHAT_TOKEN: options.token,
+      DOWHAT_HOST_TOKEN: options.hostToken,
+      DOWHAT_RUN_ID: options.runId,
+      DOWHAT_LOG_FORMAT: options.logFormat,
       OTEL_RESOURCE_ATTRIBUTES: mergeResourceAttributes(
         {
-          "service.name": "openwork-server",
+          "service.name": "dowhat-server",
           "service.instance.id": options.runId,
         },
         process.env.OTEL_RESOURCE_ATTRIBUTES,
       ),
-      ...(options.opencodeBaseUrl ? { OPENWORK_OPENCODE_BASE_URL: options.opencodeBaseUrl } : {}),
-      ...(options.opencodeDirectory ? { OPENWORK_OPENCODE_DIRECTORY: options.opencodeDirectory } : {}),
-      ...(options.opencodeUsername ? { OPENWORK_OPENCODE_USERNAME: options.opencodeUsername } : {}),
-      ...(options.opencodePassword ? { OPENWORK_OPENCODE_PASSWORD: options.opencodePassword } : {}),
+      ...(options.opencodeBaseUrl ? { DOWHAT_OPENCODE_BASE_URL: options.opencodeBaseUrl } : {}),
+      ...(options.opencodeDirectory ? { DOWHAT_OPENCODE_DIRECTORY: options.opencodeDirectory } : {}),
+      ...(options.opencodeUsername ? { DOWHAT_OPENCODE_USERNAME: options.opencodeUsername } : {}),
+      ...(options.opencodePassword ? { DOWHAT_OPENCODE_PASSWORD: options.opencodePassword } : {}),
     },
   });
 
-  prefixStream(child.stdout, "openwork-server", "stdout", options.logger, child.pid ?? undefined);
-  prefixStream(child.stderr, "openwork-server", "stderr", options.logger, child.pid ?? undefined);
+  prefixStream(child.stdout, "dowhat-server", "stdout", options.logger, child.pid ?? undefined);
+  prefixStream(child.stderr, "dowhat-server", "stderr", options.logger, child.pid ?? undefined);
 
   return child;
 }
@@ -2250,7 +2250,7 @@ async function stageSandboxRuntime(options: {
   entrypointHostPath: string;
   cleanup: () => Promise<void>;
 }> {
-  const baseDir = join(options.persistDir, "openwork-orchestrator-sandbox", options.containerName);
+  const baseDir = join(options.persistDir, "dowhat-orchestrator-sandbox", options.containerName);
   await mkdir(baseDir, { recursive: true });
 
   const sidecarsDir = join(baseDir, "sidecars");
@@ -2258,7 +2258,7 @@ async function stageSandboxRuntime(options: {
   const entrypointHostPath = join(baseDir, "entrypoint.sh");
 
   const stagedOpencode = join(sidecarsDir, "opencode");
-  const stagedOpenwork = join(sidecarsDir, "openwork-server");
+  const stagedOpenwork = join(sidecarsDir, "dowhat-server");
   await copyFile(options.sidecars.opencode, stagedOpencode);
   await copyFile(options.sidecars.openworkServer, stagedOpenwork);
   await ensureExecutable(stagedOpencode);
@@ -2354,10 +2354,10 @@ async function writeSandboxEntrypoint(options: {
     `export OPENCODE_HOT_RELOAD_DEBOUNCE_MS=${shQuote(String(options.opencode.hotReload.debounceMs))}`,
     `export OPENCODE_HOT_RELOAD_COOLDOWN_MS=${shQuote(String(options.opencode.hotReload.cooldownMs))}`,
     `export OPENWORK=1`,
-    `export OPENWORK_RUN_ID=${shQuote(options.runId)}`,
-    `export OPENWORK_LOG_FORMAT=${shQuote(options.logFormat)}`,
-    `export OPENWORK_SANDBOX_ENABLED=1`,
-    `export OPENWORK_SANDBOX_BACKEND=${shQuote(options.backend)}`,
+    `export DOWHAT_RUN_ID=${shQuote(options.runId)}`,
+    `export DOWHAT_LOG_FORMAT=${shQuote(options.logFormat)}`,
+    `export DOWHAT_SANDBOX_ENABLED=1`,
+    `export DOWHAT_SANDBOX_BACKEND=${shQuote(options.backend)}`,
     opencodeAuthEnv,
     "opencode_pid=\"\"",
     "cleanup() {",
@@ -2366,7 +2366,7 @@ async function writeSandboxEntrypoint(options: {
     "trap cleanup INT TERM",
     `${shQuote(opencodeBin)} serve --hostname 127.0.0.1 --port ${shQuote(String(SANDBOX_INTERNAL_OPENCODE_PORT))} ${opencodeCors} &`,
     "opencode_pid=$!",
-    `exec ${shQuote(openworkBin)} --host 0.0.0.0 --port ${shQuote(String(SANDBOX_INTERNAL_OPENWORK_PORT))}` +
+    `exec ${shQuote(openworkBin)} --host 0.0.0.0 --port ${shQuote(String(SANDBOX_INTERNAL_DOWHAT_PORT))}` +
       ` --token ${shQuote(options.openwork.token)} --host-token ${shQuote(options.openwork.hostToken)}` +
       ` --workspace ${shQuote(workspaceDir)}` +
       ` --approval ${shQuote(options.openwork.approvalMode)}` +
@@ -2449,7 +2449,7 @@ async function startDockerSandbox(options: {
     "--name",
     options.containerName,
     "-p",
-    `${options.ports.openwork}:${SANDBOX_INTERNAL_OPENWORK_PORT}`,
+    `${options.ports.openwork}:${SANDBOX_INTERNAL_DOWHAT_PORT}`,
     "-v",
     `${options.workspace}:/workspace`,
     "-v",
@@ -2568,7 +2568,7 @@ async function startAppleContainerSandbox(options: {
     "--name",
     options.containerName,
     "-p",
-    `${options.ports.openwork}:${SANDBOX_INTERNAL_OPENWORK_PORT}`,
+    `${options.ports.openwork}:${SANDBOX_INTERNAL_DOWHAT_PORT}`,
     "-v",
     `${options.workspace}:/workspace`,
     "-v",
@@ -2658,7 +2658,7 @@ async function verifyOpenworkServer(input: {
 }): Promise<string | undefined> {
   const health = await fetchJson(`${input.baseUrl}/health`);
   const actualVersion = typeof health?.version === "string" ? health.version : undefined;
-  assertVersionMatch("openwork-server", input.expectedVersion, actualVersion, `${input.baseUrl}/health`);
+  assertVersionMatch("dowhat-server", input.expectedVersion, actualVersion, `${input.baseUrl}/health`);
 
   const headers = { Authorization: `Bearer ${input.token}` };
   const workspaces = await fetchJson(`${input.baseUrl}/workspaces`, { headers });
@@ -2702,7 +2702,7 @@ async function verifyOpenworkServer(input: {
     throw new Error("OpenWork server OpenCode password mismatch.");
   }
 
-  const hostHeaders = { "X-OpenWork-Host-Token": input.hostToken };
+  const hostHeaders = { "X-DoWhat-Host-Token": input.hostToken };
   await fetchJson(`${input.baseUrl}/approvals`, { headers: hostHeaders });
 
   return actualVersion;
@@ -2717,7 +2717,7 @@ async function runChecks(input: {
 }) {
   const baseUrl = input.openworkUrl.replace(/\/$/, "");
   const headers = { Authorization: `Bearer ${input.openworkToken}` };
-  const hostHeaders = { "X-OpenWork-Host-Token": input.hostToken };
+  const hostHeaders = { "X-DoWhat-Host-Token": input.hostToken };
   const workspaces = await fetchJson(`${baseUrl}/workspaces`, { headers });
   if (!workspaces?.items?.length) {
     throw new Error("OpenWork server returned no workspaces");
@@ -2771,18 +2771,18 @@ async function runSandboxChecks(input: {
 }) {
   const baseUrl = input.openworkUrl.replace(/\/$/, "");
   const headers = { Authorization: `Bearer ${input.openworkToken}` };
-  const hostHeaders = { "X-OpenWork-Host-Token": input.hostToken };
+  const hostHeaders = { "X-DoWhat-Host-Token": input.hostToken };
 
   // 1. Server health
   const health = await fetchJson(`${baseUrl}/health`);
   if (!health || typeof health !== "object") {
-    throw new Error("openwork-server /health returned invalid payload");
+    throw new Error("dowhat-server /health returned invalid payload");
   }
 
   // 2. Workspaces list
   const workspaces = await fetchJson(`${baseUrl}/workspaces`, { headers });
   if (!workspaces?.items?.length) {
-    throw new Error("openwork-server returned no workspaces");
+    throw new Error("dowhat-server returned no workspaces");
   }
   const workspaceId = workspaces.items[0].id as string;
 
@@ -2865,7 +2865,7 @@ function outputError(error: unknown, json: boolean): void {
   console.error(message);
 }
 
-function createVerboseLogger(enabled: boolean, logger?: Logger, component = "openwork-orchestrator") {
+function createVerboseLogger(enabled: boolean, logger?: Logger, component = "dowhat-orchestrator") {
   return (message: string) => {
     if (!enabled) return;
     if (logger) {
@@ -2950,9 +2950,9 @@ function createLogger(options: {
   const output = options.output ?? "stdout";
   const colorEnabled = options.color ?? false;
   const componentColors: Record<string, string> = {
-    "openwork-orchestrator": ANSI.gray,
+    "dowhat-orchestrator": ANSI.gray,
     opencode: ANSI.cyan,
-    "openwork-server": ANSI.green,
+    "dowhat-server": ANSI.green,
     "dowhat-orchestrator-daemon": ANSI.cyan,
   };
   const levelColors: Record<LogLevel, string> = {
@@ -3098,28 +3098,28 @@ async function spawnOrchestratorDaemon(args: ParsedArgs, dataDir: string, host: 
     String(port),
   ];
 
-  const opencodeBin = readFlag(args.flags, "opencode-bin") ?? readCompatEnv("OPENWORK_OPENCODE_BIN");
-  const opencodeHost = readFlag(args.flags, "opencode-host") ?? readCompatEnv("OPENWORK_OPENCODE_HOST");
-  const opencodePort = readFlag(args.flags, "opencode-port") ?? readCompatEnv("OPENWORK_OPENCODE_PORT");
-  const opencodeWorkdir = readFlag(args.flags, "opencode-workdir") ?? readCompatEnv("OPENWORK_OPENCODE_WORKDIR");
+  const opencodeBin = readFlag(args.flags, "opencode-bin") ?? readCompatEnv("DOWHAT_OPENCODE_BIN");
+  const opencodeHost = readFlag(args.flags, "opencode-host") ?? readCompatEnv("DOWHAT_OPENCODE_HOST");
+  const opencodePort = readFlag(args.flags, "opencode-port") ?? readCompatEnv("DOWHAT_OPENCODE_PORT");
+  const opencodeWorkdir = readFlag(args.flags, "opencode-workdir") ?? readCompatEnv("DOWHAT_OPENCODE_WORKDIR");
   const opencodeHotReload =
     readFlag(args.flags, "opencode-hot-reload") ??
-    readCompatEnv("OPENWORK_OPENCODE_HOT_RELOAD");
+    readCompatEnv("DOWHAT_OPENCODE_HOT_RELOAD");
   const opencodeHotReloadDebounceMs =
     readFlag(args.flags, "opencode-hot-reload-debounce-ms") ??
-    readCompatEnv("OPENWORK_OPENCODE_HOT_RELOAD_DEBOUNCE_MS");
+    readCompatEnv("DOWHAT_OPENCODE_HOT_RELOAD_DEBOUNCE_MS");
   const opencodeHotReloadCooldownMs =
     readFlag(args.flags, "opencode-hot-reload-cooldown-ms") ??
-    readCompatEnv("OPENWORK_OPENCODE_HOT_RELOAD_COOLDOWN_MS");
-  const opencodeUsername = readFlag(args.flags, "opencode-username") ?? readCompatEnv("OPENWORK_OPENCODE_USERNAME");
-  const opencodePassword = readFlag(args.flags, "opencode-password") ?? readCompatEnv("OPENWORK_OPENCODE_PASSWORD");
-  const corsValue = readFlag(args.flags, "cors") ?? readCompatEnv("OPENWORK_OPENCODE_CORS");
-  const allowExternal = readBool(args.flags, "allow-external", false, "OPENWORK_ALLOW_EXTERNAL");
-  const sidecarSource = readFlag(args.flags, "sidecar-source") ?? readCompatEnv("OPENWORK_SIDECAR_SOURCE");
-  const opencodeSource = readFlag(args.flags, "opencode-source") ?? readCompatEnv("OPENWORK_OPENCODE_SOURCE");
-  const verbose = readBool(args.flags, "verbose", false, "OPENWORK_VERBOSE");
-  const logFormat = readFlag(args.flags, "log-format") ?? readCompatEnv("OPENWORK_LOG_FORMAT");
-  const runId = readFlag(args.flags, "run-id") ?? readCompatEnv("OPENWORK_RUN_ID");
+    readCompatEnv("DOWHAT_OPENCODE_HOT_RELOAD_COOLDOWN_MS");
+  const opencodeUsername = readFlag(args.flags, "opencode-username") ?? readCompatEnv("DOWHAT_OPENCODE_USERNAME");
+  const opencodePassword = readFlag(args.flags, "opencode-password") ?? readCompatEnv("DOWHAT_OPENCODE_PASSWORD");
+  const corsValue = readFlag(args.flags, "cors") ?? readCompatEnv("DOWHAT_OPENCODE_CORS");
+  const allowExternal = readBool(args.flags, "allow-external", false, "DOWHAT_ALLOW_EXTERNAL");
+  const sidecarSource = readFlag(args.flags, "sidecar-source") ?? readCompatEnv("DOWHAT_SIDECAR_SOURCE");
+  const opencodeSource = readFlag(args.flags, "opencode-source") ?? readCompatEnv("DOWHAT_OPENCODE_SOURCE");
+  const verbose = readBool(args.flags, "verbose", false, "DOWHAT_VERBOSE");
+  const logFormat = readFlag(args.flags, "log-format") ?? readCompatEnv("DOWHAT_LOG_FORMAT");
+  const runId = readFlag(args.flags, "run-id") ?? readCompatEnv("DOWHAT_RUN_ID");
 
   if (opencodeBin) commandArgs.push("--opencode-bin", opencodeBin);
   if (opencodeHost) commandArgs.push("--opencode-host", opencodeHost);
@@ -3168,7 +3168,7 @@ async function ensureOrchestratorDaemon(args: ParsedArgs, autoStart = true): Pro
 
   const host = readFlag(args.flags, "daemon-host") ?? "127.0.0.1";
   const port = await resolvePort(
-    readNumber(args.flags, "daemon-port", undefined, "OPENWORK_DAEMON_PORT"),
+    readNumber(args.flags, "daemon-port", undefined, "DOWHAT_DAEMON_PORT"),
     "127.0.0.1",
   );
   const baseUrl = `http://${host}:${port}`;
@@ -3306,23 +3306,23 @@ async function runInstanceCommand(args: ParsedArgs) {
 
 async function runOrchestratorDaemon(args: ParsedArgs) {
   const outputJson = readBool(args.flags, "json", false);
-  const verbose = readBool(args.flags, "verbose", false, "OPENWORK_VERBOSE");
-  const logFormat = readLogFormat(args.flags, "log-format", "pretty", "OPENWORK_LOG_FORMAT");
+  const verbose = readBool(args.flags, "verbose", false, "DOWHAT_VERBOSE");
+  const logFormat = readLogFormat(args.flags, "log-format", "pretty", "DOWHAT_LOG_FORMAT");
   const colorEnabled =
-    readBool(args.flags, "color", process.stdout.isTTY, "OPENWORK_COLOR") && !process.env.NO_COLOR;
-  const runId = readFlag(args.flags, "run-id") ?? readCompatEnv("OPENWORK_RUN_ID") ?? randomUUID();
+    readBool(args.flags, "color", process.stdout.isTTY, "DOWHAT_COLOR") && !process.env.NO_COLOR;
+  const runId = readFlag(args.flags, "run-id") ?? readCompatEnv("DOWHAT_RUN_ID") ?? randomUUID();
   const cliVersion = await resolveCliVersion();
   const logger = createLogger({
     format: logFormat,
     runId,
-    serviceName: "openwork-orchestrator",
+    serviceName: "dowhat-orchestrator",
     serviceVersion: cliVersion,
     output: "stdout",
     color: colorEnabled,
   });
-  const logVerbose = createVerboseLogger(verbose && !outputJson, logger, "openwork-orchestrator");
-  const sidecarSourceInput = readBinarySource(args.flags, "sidecar-source", "auto", "OPENWORK_SIDECAR_SOURCE");
-  const opencodeSourceInput = readBinarySource(args.flags, "opencode-source", "auto", "OPENWORK_OPENCODE_SOURCE");
+  const logVerbose = createVerboseLogger(verbose && !outputJson, logger, "dowhat-orchestrator");
+  const sidecarSourceInput = readBinarySource(args.flags, "sidecar-source", "auto", "DOWHAT_SIDECAR_SOURCE");
+  const opencodeSourceInput = readBinarySource(args.flags, "opencode-source", "auto", "DOWHAT_OPENCODE_SOURCE");
   const sidecarSource = sidecarSourceInput;
   const opencodeSource = opencodeSourceInput;
   const dataDir = resolveOrchestratorDataDir(args.flags);
@@ -3331,27 +3331,27 @@ async function runOrchestratorDaemon(args: ParsedArgs) {
 
   const host = readFlag(args.flags, "daemon-host") ?? "127.0.0.1";
   const port = await resolvePort(
-    readNumber(args.flags, "daemon-port", undefined, "OPENWORK_DAEMON_PORT"),
+    readNumber(args.flags, "daemon-port", undefined, "DOWHAT_DAEMON_PORT"),
     "127.0.0.1",
   );
 
-  const opencodeBin = readFlag(args.flags, "opencode-bin") ?? readCompatEnv("OPENWORK_OPENCODE_BIN");
+  const opencodeBin = readFlag(args.flags, "opencode-bin") ?? readCompatEnv("DOWHAT_OPENCODE_BIN");
   const opencodeHost =
-    readFlag(args.flags, "opencode-host") ?? readCompatEnv("OPENWORK_OPENCODE_HOST") ?? "127.0.0.1";
+    readFlag(args.flags, "opencode-host") ?? readCompatEnv("DOWHAT_OPENCODE_HOST") ?? "127.0.0.1";
   const opencodePassword =
     readFlag(args.flags, "opencode-password") ??
-    readCompatEnv("OPENWORK_OPENCODE_PASSWORD") ??
+    readCompatEnv("DOWHAT_OPENCODE_PASSWORD") ??
     process.env.OPENCODE_SERVER_PASSWORD;
   const opencodeUsername =
     readFlag(args.flags, "opencode-username") ??
-    readCompatEnv("OPENWORK_OPENCODE_USERNAME") ??
+    readCompatEnv("DOWHAT_OPENCODE_USERNAME") ??
     process.env.OPENCODE_SERVER_USERNAME ??
     DEFAULT_OPENCODE_USERNAME;
   const authHeaders = opencodePassword
     ? { Authorization: `Basic ${encodeBasicAuth(opencodeUsername, opencodePassword)}` }
     : undefined;
   const opencodePort = await resolvePort(
-    readNumber(args.flags, "opencode-port", state.opencode?.port, "OPENWORK_OPENCODE_PORT"),
+    readNumber(args.flags, "opencode-port", state.opencode?.port, "DOWHAT_OPENCODE_PORT"),
     "127.0.0.1",
     state.opencode?.port,
   );
@@ -3363,18 +3363,18 @@ async function runOrchestratorDaemon(args: ParsedArgs) {
       cooldownMs: DEFAULT_OPENCODE_HOT_RELOAD_COOLDOWN_MS,
     },
     {
-      enabled: "OPENWORK_OPENCODE_HOT_RELOAD",
-      debounceMs: "OPENWORK_OPENCODE_HOT_RELOAD_DEBOUNCE_MS",
-      cooldownMs: "OPENWORK_OPENCODE_HOT_RELOAD_COOLDOWN_MS",
+      enabled: "DOWHAT_OPENCODE_HOT_RELOAD",
+      debounceMs: "DOWHAT_OPENCODE_HOT_RELOAD_DEBOUNCE_MS",
+      cooldownMs: "DOWHAT_OPENCODE_HOT_RELOAD_COOLDOWN_MS",
     },
   );
   const corsValue =
     readFlag(args.flags, "cors") ??
-    readCompatEnv("OPENWORK_OPENCODE_CORS") ??
+    readCompatEnv("DOWHAT_OPENCODE_CORS") ??
     "http://localhost:5173,tauri://localhost,http://tauri.localhost";
   const corsOrigins = parseList(corsValue);
   const opencodeWorkdirFlag =
-    readFlag(args.flags, "opencode-workdir") ?? readCompatEnv("OPENWORK_OPENCODE_WORKDIR");
+    readFlag(args.flags, "opencode-workdir") ?? readCompatEnv("DOWHAT_OPENCODE_WORKDIR");
   const activeWorkspace = state.workspaces.find((entry) => entry.id === state.activeId && entry.workspaceType === "local");
   const opencodeWorkdir = opencodeWorkdirFlag ?? activeWorkspace?.path ?? process.cwd();
   const resolvedWorkdir = await ensureWorkspace(opencodeWorkdir);
@@ -3382,11 +3382,11 @@ async function runOrchestratorDaemon(args: ParsedArgs) {
   logger.info(
     "Daemon starting",
     { runId, logFormat, workdir: resolvedWorkdir, host, port },
-    "openwork-orchestrator",
+    "dowhat-orchestrator",
   );
 
   const sidecar = resolveSidecarConfig(args.flags, cliVersion);
-  const allowExternal = readBool(args.flags, "allow-external", false, "OPENWORK_ALLOW_EXTERNAL");
+  const allowExternal = readBool(args.flags, "allow-external", false, "DOWHAT_ALLOW_EXTERNAL");
   const manifest = await readVersionManifest();
   logVerbose(`cli version: ${cliVersion}`);
   logVerbose(`sidecar target: ${sidecar.target ?? "unknown"}`);
@@ -3754,19 +3754,19 @@ async function runApprovals(args: ParsedArgs) {
   }
 
   const openworkUrl =
-    readFlag(args.flags, "openwork-url") ??
-    readCompatEnv("OPENWORK_URL") ??
-    readCompatEnv("OPENWORK_SERVER_URL") ??
+    readFlag(args.flags, "dowhat-url") ??
+    readCompatEnv("DOWHAT_URL") ??
+    readCompatEnv("DOWHAT_SERVER_URL") ??
     "";
-  const hostToken = readFlag(args.flags, "host-token") ?? readCompatEnv("OPENWORK_HOST_TOKEN") ?? "";
+  const hostToken = readFlag(args.flags, "host-token") ?? readCompatEnv("DOWHAT_HOST_TOKEN") ?? "";
 
   if (!openworkUrl || !hostToken) {
-    throw new Error("openwork-url and host-token are required for approvals");
+    throw new Error("dowhat-url and host-token are required for approvals");
   }
 
   const headers = {
     "Content-Type": "application/json",
-    "X-OpenWork-Host-Token": hostToken,
+    "X-DoWhat-Host-Token": hostToken,
   };
 
   if (subcommand === "list") {
@@ -3804,7 +3804,7 @@ async function runApprovals(args: ParsedArgs) {
 }
 
 async function runStatus(args: ParsedArgs) {
-  const openworkUrl = readFlag(args.flags, "openwork-url") ?? readCompatEnv("OPENWORK_URL") ?? "";
+  const openworkUrl = readFlag(args.flags, "dowhat-url") ?? readCompatEnv("DOWHAT_URL") ?? "";
   const opencodeUrl = readFlag(args.flags, "opencode-url") ?? process.env.OPENCODE_URL ?? "";
   const username = readFlag(args.flags, "opencode-username") ?? process.env.OPENCODE_SERVER_USERNAME;
   const password = readFlag(args.flags, "opencode-password") ?? process.env.OPENCODE_SERVER_PASSWORD;
@@ -3858,15 +3858,15 @@ async function runStart(args: ParsedArgs) {
   const outputJson = readBool(args.flags, "json", false);
   const checkOnly = readBool(args.flags, "check", false);
   const checkEvents = readBool(args.flags, "check-events", false);
-  const verbose = readBool(args.flags, "verbose", false, "OPENWORK_VERBOSE");
-  const logFormat = readLogFormat(args.flags, "log-format", "pretty", "OPENWORK_LOG_FORMAT");
-  const detachRequested = readBool(args.flags, "detach", false, "OPENWORK_DETACH");
+  const verbose = readBool(args.flags, "verbose", false, "DOWHAT_VERBOSE");
+  const logFormat = readLogFormat(args.flags, "log-format", "pretty", "DOWHAT_LOG_FORMAT");
+  const detachRequested = readBool(args.flags, "detach", false, "DOWHAT_DETACH");
   const defaultTui = process.stdout.isTTY && !outputJson && !checkOnly && !checkEvents;
   const tuiRequested = readBool(args.flags, "tui", defaultTui);
   let useTui = tuiRequested && !detachRequested && !outputJson && !checkOnly && !checkEvents && logFormat === "pretty";
   const colorPreferred =
-    readBool(args.flags, "color", process.stdout.isTTY, "OPENWORK_COLOR") && !process.env.NO_COLOR;
-  const runId = readFlag(args.flags, "run-id") ?? readCompatEnv("OPENWORK_RUN_ID") ?? randomUUID();
+    readBool(args.flags, "color", process.stdout.isTTY, "DOWHAT_COLOR") && !process.env.NO_COLOR;
+  const runId = readFlag(args.flags, "run-id") ?? readCompatEnv("DOWHAT_RUN_ID") ?? randomUUID();
   const cliVersion = await resolveCliVersion();
   const compiledBinary = isCompiledBunBinary();
   let tui: TuiHandle | undefined;
@@ -3874,11 +3874,11 @@ async function runStart(args: ParsedArgs) {
   const baseLoggerOptions = {
     format: logFormat,
     runId,
-    serviceName: "openwork-orchestrator",
+    serviceName: "dowhat-orchestrator",
     serviceVersion: cliVersion,
     onLog: (event: LogEvent) => {
       if (!tui) return;
-      const component = event.component ?? "openwork-orchestrator";
+      const component = event.component ?? "dowhat-orchestrator";
       tui.pushLog({
         time: event.time,
         level: event.level,
@@ -3892,7 +3892,7 @@ async function runStart(args: ParsedArgs) {
     output: useTui ? "silent" : "stdout",
     color: useTui ? false : colorPreferred,
   });
-  let logVerbose = createVerboseLogger(verbose && !outputJson, logger, "openwork-orchestrator");
+  let logVerbose = createVerboseLogger(verbose && !outputJson, logger, "dowhat-orchestrator");
   const switchToPlainOutput = (error: string) => {
     if (!useTui) return;
     useTui = false;
@@ -3905,26 +3905,26 @@ async function runStart(args: ParsedArgs) {
       output: "stdout",
       color: colorPreferred,
     });
-    logVerbose = createVerboseLogger(verbose && !outputJson, logger, "openwork-orchestrator");
+    logVerbose = createVerboseLogger(verbose && !outputJson, logger, "dowhat-orchestrator");
     logger.warn(
       "TUI failed to start; falling back to plain output. Use `openwork serve` for explicit non-TUI mode.",
       { error },
-      "openwork-orchestrator",
+      "dowhat-orchestrator",
     );
   };
-  const sidecarSourceInput = readBinarySource(args.flags, "sidecar-source", "auto", "OPENWORK_SIDECAR_SOURCE");
-  const opencodeSourceInput = readBinarySource(args.flags, "opencode-source", "auto", "OPENWORK_OPENCODE_SOURCE");
+  const sidecarSourceInput = readBinarySource(args.flags, "sidecar-source", "auto", "DOWHAT_SIDECAR_SOURCE");
+  const opencodeSourceInput = readBinarySource(args.flags, "opencode-source", "auto", "DOWHAT_OPENCODE_SOURCE");
 
-  const workspace = readFlag(args.flags, "workspace") ?? readCompatEnv("OPENWORK_WORKSPACE") ?? process.cwd();
+  const workspace = readFlag(args.flags, "workspace") ?? readCompatEnv("DOWHAT_WORKSPACE") ?? process.cwd();
   const resolvedWorkspace = await ensureWorkspace(workspace);
-  logger.info("Run starting", { workspace: resolvedWorkspace, logFormat, runId }, "openwork-orchestrator");
+  logger.info("Run starting", { workspace: resolvedWorkspace, logFormat, runId }, "dowhat-orchestrator");
 
-  const sandboxRequested = readSandboxMode(args.flags, "sandbox", "none", "OPENWORK_SANDBOX");
+  const sandboxRequested = readSandboxMode(args.flags, "sandbox", "none", "DOWHAT_SANDBOX");
   const sandboxMode = await resolveSandboxMode(sandboxRequested);
   const sandboxImage =
-    readFlag(args.flags, "sandbox-image") ?? readCompatEnv("OPENWORK_SANDBOX_IMAGE") ?? "debian:bookworm-slim";
+    readFlag(args.flags, "sandbox-image") ?? readCompatEnv("DOWHAT_SANDBOX_IMAGE") ?? "debian:bookworm-slim";
   const sandboxPersistOverride =
-    readFlag(args.flags, "sandbox-persist-dir") ?? readCompatEnv("OPENWORK_SANDBOX_PERSIST_DIR");
+    readFlag(args.flags, "sandbox-persist-dir") ?? readCompatEnv("DOWHAT_SANDBOX_PERSIST_DIR");
   const dataDir = resolveOrchestratorDataDir(args.flags);
   const opencodeConfigDir = await resolveOpencodeConfigDir(dataDir, resolvedWorkspace);
   const sandboxPersistDir = resolve(
@@ -3938,21 +3938,21 @@ async function runStart(args: ParsedArgs) {
 
   const sandboxMountValue =
     readFlag(args.flags, "sandbox-mount") ??
-    readCompatEnv("OPENWORK_SANDBOX_MOUNT");
+    readCompatEnv("DOWHAT_SANDBOX_MOUNT");
   const sandboxMountSpecs = parseList(sandboxMountValue);
   const sandboxExtraMounts =
     sandboxMode !== "none" && sandboxMountSpecs.length
       ? await resolveSandboxExtraMounts(sandboxMountSpecs, sandboxMode)
       : [];
 
-  const explicitOpencodeBin = readFlag(args.flags, "opencode-bin") ?? readCompatEnv("OPENWORK_OPENCODE_BIN");
-  const explicitOpenworkServerBin = readFlag(args.flags, "openwork-server-bin") ?? readCompatEnv("OPENWORK_SERVER_BIN");
-  const opencodeBindHost = readFlag(args.flags, "opencode-host") ?? readCompatEnv("OPENWORK_OPENCODE_BIND_HOST") ?? "0.0.0.0";
+  const explicitOpencodeBin = readFlag(args.flags, "opencode-bin") ?? readCompatEnv("DOWHAT_OPENCODE_BIN");
+  const explicitOpenworkServerBin = readFlag(args.flags, "dowhat-server-bin") ?? readCompatEnv("DOWHAT_SERVER_BIN");
+  const opencodeBindHost = readFlag(args.flags, "opencode-host") ?? readCompatEnv("DOWHAT_OPENCODE_BIND_HOST") ?? "0.0.0.0";
   const opencodePort =
     sandboxMode !== "none"
       ? SANDBOX_INTERNAL_OPENCODE_PORT
       : await resolvePort(
-          readNumber(args.flags, "opencode-port", undefined, "OPENWORK_OPENCODE_PORT"),
+          readNumber(args.flags, "opencode-port", undefined, "DOWHAT_OPENCODE_PORT"),
           "127.0.0.1",
         );
   const opencodeHotReload = readOpencodeHotReload(
@@ -3963,43 +3963,43 @@ async function runStart(args: ParsedArgs) {
       cooldownMs: DEFAULT_OPENCODE_HOT_RELOAD_COOLDOWN_MS,
     },
     {
-      enabled: "OPENWORK_OPENCODE_HOT_RELOAD",
-      debounceMs: "OPENWORK_OPENCODE_HOT_RELOAD_DEBOUNCE_MS",
-      cooldownMs: "OPENWORK_OPENCODE_HOT_RELOAD_COOLDOWN_MS",
+      enabled: "DOWHAT_OPENCODE_HOT_RELOAD",
+      debounceMs: "DOWHAT_OPENCODE_HOT_RELOAD_DEBOUNCE_MS",
+      cooldownMs: "DOWHAT_OPENCODE_HOT_RELOAD_COOLDOWN_MS",
     },
   );
-  const opencodeAuth = readBool(args.flags, "opencode-auth", true, "OPENWORK_OPENCODE_AUTH");
+  const opencodeAuth = readBool(args.flags, "opencode-auth", true, "DOWHAT_OPENCODE_AUTH");
   const opencodeUsername = opencodeAuth
-    ? readFlag(args.flags, "opencode-username") ?? readCompatEnv("OPENWORK_OPENCODE_USERNAME") ?? DEFAULT_OPENCODE_USERNAME
+    ? readFlag(args.flags, "opencode-username") ?? readCompatEnv("DOWHAT_OPENCODE_USERNAME") ?? DEFAULT_OPENCODE_USERNAME
     : undefined;
   const opencodePassword = opencodeAuth
-    ? readFlag(args.flags, "opencode-password") ?? readCompatEnv("OPENWORK_OPENCODE_PASSWORD") ?? randomUUID()
+    ? readFlag(args.flags, "opencode-password") ?? readCompatEnv("DOWHAT_OPENCODE_PASSWORD") ?? randomUUID()
     : undefined;
 
-  const openworkHost = readFlag(args.flags, "openwork-host") ?? readCompatEnv("OPENWORK_HOST") ?? "0.0.0.0";
+  const openworkHost = readFlag(args.flags, "dowhat-host") ?? readCompatEnv("DOWHAT_HOST") ?? "0.0.0.0";
   const openworkPort = await resolvePort(
-    readNumber(args.flags, "openwork-port", undefined, "OPENWORK_PORT"),
+    readNumber(args.flags, "dowhat-port", undefined, "DOWHAT_PORT"),
     "127.0.0.1",
   );
-  const openworkToken = readFlag(args.flags, "openwork-token") ?? readCompatEnv("OPENWORK_TOKEN") ?? randomUUID();
-  const openworkHostToken = readFlag(args.flags, "openwork-host-token") ?? readCompatEnv("OPENWORK_HOST_TOKEN") ?? randomUUID();
+  const openworkToken = readFlag(args.flags, "dowhat-token") ?? readCompatEnv("DOWHAT_TOKEN") ?? randomUUID();
+  const openworkHostToken = readFlag(args.flags, "dowhat-host-token") ?? readCompatEnv("DOWHAT_HOST_TOKEN") ?? randomUUID();
   const approvalMode =
     (readFlag(args.flags, "approval") as ApprovalMode | undefined) ??
-    (readCompatEnv("OPENWORK_APPROVAL_MODE") as ApprovalMode | undefined) ??
+    (readCompatEnv("DOWHAT_APPROVAL_MODE") as ApprovalMode | undefined) ??
     "manual";
   const approvalTimeoutMs = readNumber(
     args.flags,
     "approval-timeout",
     DEFAULT_APPROVAL_TIMEOUT,
-    "OPENWORK_APPROVAL_TIMEOUT_MS",
+    "DOWHAT_APPROVAL_TIMEOUT_MS",
   ) as number;
-  const readOnly = readBool(args.flags, "read-only", false, "OPENWORK_READONLY");
-  const corsValue = readFlag(args.flags, "cors") ?? readCompatEnv("OPENWORK_CORS_ORIGINS") ?? "*";
+  const readOnly = readBool(args.flags, "read-only", false, "DOWHAT_READONLY");
+  const corsValue = readFlag(args.flags, "cors") ?? readCompatEnv("DOWHAT_CORS_ORIGINS") ?? "*";
   const corsOrigins = parseList(corsValue);
   const connectHost = readFlag(args.flags, "connect-host");
 
   const manifest = await readVersionManifest();
-  const allowExternal = readBool(args.flags, "allow-external", false, "OPENWORK_ALLOW_EXTERNAL");
+  const allowExternal = readBool(args.flags, "allow-external", false, "DOWHAT_ALLOW_EXTERNAL");
   const sidecarTarget = resolveSandboxSidecarTarget(sandboxMode);
   const sidecar = resolveSidecarConfigForTarget(args.flags, cliVersion, sidecarTarget);
 
@@ -4080,7 +4080,7 @@ async function runStart(args: ParsedArgs) {
   if (sandboxMode !== "none") {
     // Ensure the binaries we stage into the container are actual files.
     await assertSandboxBinaryFile("opencode", opencodeBinary.bin);
-    await assertSandboxBinaryFile("openwork-server", openworkServerBinary.bin);
+    await assertSandboxBinaryFile("dowhat-server", openworkServerBinary.bin);
   }
   logVerbose(`opencode bin: ${opencodeBinary.bin} (${opencodeBinary.source})`);
   logVerbose(`openwork-server bin: ${openworkServerBinary.bin} (${openworkServerBinary.source})`);
@@ -4122,7 +4122,7 @@ async function runStart(args: ParsedArgs) {
     logger.info(
       "Shutting down",
       { children: children.map((handle) => handle.name) },
-      "openwork-orchestrator",
+      "dowhat-orchestrator",
     );
     if (sandboxContainerName && sandboxStop) {
       await sandboxStop(sandboxContainerName);
@@ -4220,7 +4220,7 @@ async function runStart(args: ParsedArgs) {
         },
         services: [
           { name: "opencode", label: "opencode", status: "starting", port: opencodePort },
-          { name: "openwork-server", label: "openwork-server", status: "starting", port: openworkPort },
+          { name: "dowhat-server", label: "dowhat-server", status: "starting", port: openworkPort },
         ],
         onQuit: handleQuit,
         onDetach: handleDetach,
@@ -4243,7 +4243,7 @@ async function runStart(args: ParsedArgs) {
     const reason = code !== null ? `code ${code}` : signal ? `signal ${signal}` : "unknown";
     const services =
       name === "sandbox"
-        ? ["opencode", "openwork-server"]
+        ? ["opencode", "dowhat-server"]
         : [tuiServiceName(name)];
     for (const service of services) {
       tui?.updateService(service, { status: "stopped", message: reason });
@@ -4313,7 +4313,7 @@ async function runStart(args: ParsedArgs) {
 
       sandboxCleanup = sandboxChild.cleanup;
       tui?.updateService("opencode", { status: "running", port: SANDBOX_INTERNAL_OPENCODE_PORT });
-      tui?.updateService("openwork-server", { status: "running", port: openworkPort });
+      tui?.updateService("dowhat-server", { status: "running", port: openworkPort });
 
       if (!detachRequested) {
         children.push({ name: "sandbox", child: sandboxChild.child });
@@ -4325,10 +4325,10 @@ async function runStart(args: ParsedArgs) {
         logger.info("Sandbox detached", { containerName }, "sandbox");
       }
 
-      logger.info("Waiting for health", { url: openworkBaseUrl }, "openwork-server");
+      logger.info("Waiting for health", { url: openworkBaseUrl }, "dowhat-server");
       await waitForHealthy(openworkBaseUrl);
-      logger.info("Healthy", { url: openworkBaseUrl }, "openwork-server");
-      tui?.updateService("openwork-server", { status: "healthy" });
+      logger.info("Healthy", { url: openworkBaseUrl }, "dowhat-server");
+      tui?.updateService("dowhat-server", { status: "healthy" });
 
       opencodeClient = createOpencodeClient({
         baseUrl: `${openworkBaseUrl.replace(/\/$/, "")}/opencode`,
@@ -4362,7 +4362,7 @@ async function runStart(args: ParsedArgs) {
         // expected version or lack capabilities we just added locally.  Log
         // the mismatch but don't abort — the health checks above already
         // proved the server is running and proxying correctly.
-        logger.warn("Sandbox server verification warning (non-fatal)", { error: String(verifyError) }, "openwork-server");
+        logger.warn("Sandbox server verification warning (non-fatal)", { error: String(verifyError) }, "dowhat-server");
       }
       logVerbose(`openwork-server version: ${openworkActualVersion ?? "unknown"}`);
     } else {
@@ -4424,20 +4424,20 @@ async function runStart(args: ParsedArgs) {
         runId,
         logFormat,
       });
-      children.push({ name: "openwork-server", child: openworkChild });
-      tui?.updateService("openwork-server", {
+      children.push({ name: "dowhat-server", child: openworkChild });
+      tui?.updateService("dowhat-server", {
         status: "running",
         pid: openworkChild.pid ?? undefined,
         port: openworkPort,
       });
-      logger.info("Process spawned", { pid: openworkChild.pid ?? 0 }, "openwork-server");
-      openworkChild.on("exit", (code, signal) => handleExit("openwork-server", code, signal));
-      openworkChild.on("error", (error) => handleSpawnError("openwork-server", error));
+      logger.info("Process spawned", { pid: openworkChild.pid ?? 0 }, "dowhat-server");
+      openworkChild.on("exit", (code, signal) => handleExit("dowhat-server", code, signal));
+      openworkChild.on("error", (error) => handleSpawnError("dowhat-server", error));
 
-      logger.info("Waiting for health", { url: openworkBaseUrl }, "openwork-server");
+      logger.info("Waiting for health", { url: openworkBaseUrl }, "dowhat-server");
       await waitForHealthy(openworkBaseUrl);
-      logger.info("Healthy", { url: openworkBaseUrl }, "openwork-server");
-      tui?.updateService("openwork-server", { status: "healthy" });
+      logger.info("Healthy", { url: openworkBaseUrl }, "dowhat-server");
+      tui?.updateService("dowhat-server", { status: "healthy" });
 
       openworkActualVersion = await verifyOpenworkServer({
         baseUrl: openworkBaseUrl,
@@ -4518,7 +4518,7 @@ async function runStart(args: ParsedArgs) {
           opencode: payload.opencode,
           openwork: payload.openwork,
         },
-        "openwork-orchestrator",
+        "dowhat-orchestrator",
       );
     } else if (logFormat === "json") {
       logger.info(
@@ -4528,7 +4528,7 @@ async function runStart(args: ParsedArgs) {
           opencode: payload.opencode,
           openwork: payload.openwork,
         },
-        "openwork-orchestrator",
+        "dowhat-orchestrator",
       );
     } else {
       console.log("OpenWork orchestrator running");
@@ -4571,12 +4571,12 @@ async function runStart(args: ParsedArgs) {
             checkEvents,
           });
         }
-        logger.info("Checks ok", { checkEvents }, "openwork-orchestrator");
+        logger.info("Checks ok", { checkEvents }, "dowhat-orchestrator");
         if (!outputJson && logFormat === "pretty") {
           console.log("Checks: ok");
         }
       } catch (error) {
-        logger.error("Checks failed", { error: String(error) }, "openwork-orchestrator");
+        logger.error("Checks failed", { error: String(error) }, "dowhat-orchestrator");
         await shutdown();
         tui?.stop();
         process.exit(1);
@@ -4595,7 +4595,7 @@ async function runStart(args: ParsedArgs) {
     logger.error(
       "Run failed",
       { error: error instanceof Error ? error.message : String(error) },
-      "openwork-orchestrator",
+      "dowhat-orchestrator",
     );
     process.exit(1);
   }

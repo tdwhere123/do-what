@@ -1,4 +1,4 @@
-﻿import { readFile, writeFile, rm, readdir, rename, stat } from "node:fs/promises";
+import { readFile, writeFile, rm, readdir, rename, stat } from "node:fs/promises";
 import { createHash, randomInt } from "node:crypto";
 import { homedir, hostname } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
@@ -45,7 +45,7 @@ function toUnixNano(): string {
 }
 
 export function createServerLogger(config: ServerConfig): ServerLogger {
-  const runId = readCompatEnv("OPENWORK_RUN_ID") ?? shortId();
+  const runId = readCompatEnv("DOWHAT_RUN_ID") ?? shortId();
   const host = hostname().trim();
   const resource: Record<string, string> = {
     "service.name": "openwork-server",
@@ -471,8 +471,8 @@ async function proxyOpencodeRequest(input: {
   const targetUrl = buildOpencodeProxyUrl(baseUrl, proxyPath, input.url.search);
   const headers = new Headers(input.request.headers);
   headers.delete("authorization");
-  headers.delete("x-openwork-host-token");
-  headers.delete("x-openwork-client-id");
+  headers.delete("x-dowhat-host-token");
+  headers.delete("x-dowhat-client-id");
   headers.delete("host");
   headers.delete("origin");
 
@@ -519,7 +519,7 @@ function withCors(response: Response, request: Request, config: ServerConfig) {
   headers.set("Access-Control-Allow-Origin", allowOrigin);
   headers.set(
     "Access-Control-Allow-Headers",
-    "Authorization, Content-Type, X-OpenWork-Host-Token, X-OpenWork-Client-Id, X-OpenCode-Directory, X-Opencode-Directory, x-opencode-directory",
+    "Authorization, Content-Type, X-DoWhat-Host-Token, X-DoWhat-Client-Id, X-OpenCode-Directory, X-Opencode-Directory, x-opencode-directory",
   );
   headers.set("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
   headers.set("Vary", "Origin");
@@ -537,12 +537,12 @@ async function requireClient(request: Request, config: ServerConfig, tokens: Tok
   if (!scope) {
     throw new ApiError(401, "unauthorized", "Invalid bearer token");
   }
-  const clientId = request.headers.get("x-openwork-client-id") ?? undefined;
+  const clientId = request.headers.get("x-dowhat-client-id") ?? undefined;
   return { type: "remote", clientId, tokenHash: hashToken(token), scope };
 }
 
 async function requireHost(request: Request, config: ServerConfig, tokens: TokenService): Promise<Actor> {
-  const hostToken = request.headers.get("x-openwork-host-token");
+  const hostToken = request.headers.get("x-dowhat-host-token");
   if (hostToken && hostToken === config.hostToken) {
     return { type: "host", tokenHash: hashToken(hostToken), scope: "owner" };
   }
@@ -557,12 +557,16 @@ async function requireHost(request: Request, config: ServerConfig, tokens: Token
   if (scope !== "owner") {
     throw new ApiError(401, "unauthorized", "Invalid host token");
   }
-  const clientId = request.headers.get("x-openwork-client-id") ?? undefined;
+  const clientId = request.headers.get("x-dowhat-client-id") ?? undefined;
   return { type: "remote", clientId, tokenHash: hashToken(bearer), scope };
 }
 
 function buildCapabilities(config: ServerConfig): Capabilities {
   const writeEnabled = !config.readOnly;
+  const hubOwner = (process.env.DOWHAT_HUB_OWNER ?? "").trim();
+  const hubRepo = (process.env.DOWHAT_HUB_REPO ?? "").trim();
+  const hubRef = (process.env.DOWHAT_HUB_REF ?? "main").trim() || "main";
+  const hasHubSource = hubOwner.length > 0 && hubRepo.length > 0;
   const schemaVersion = 1;
   const sandboxBackend = resolveSandboxBackend();
   const sandboxEnabled = resolveSandboxEnabled(sandboxBackend);
@@ -575,12 +579,12 @@ function buildCapabilities(config: ServerConfig): Capabilities {
   return {
     schemaVersion,
     serverVersion: SERVER_VERSION,
-    skills: { read: true, write: writeEnabled, source: "openwork" },
+    skills: { read: true, write: writeEnabled, source: "dowhat" },
     hub: {
       skills: {
-        read: true,
-        install: writeEnabled,
-        repo: { owner: "different-ai", name: "openwork-hub", ref: "main" },
+        read: hasHubSource,
+        install: hasHubSource && writeEnabled,
+        repo: { owner: hubOwner, name: hubRepo, ref: hubRef },
       },
     },
     plugins: { read: true, write: writeEnabled },
@@ -600,8 +604,8 @@ function buildCapabilities(config: ServerConfig): Capabilities {
       files: {
         injection: writeEnabled && inboxEnabled,
         outbox: outboxEnabled,
-        inboxPath: ".opencode/openwork/inbox/",
-        outboxPath: ".opencode/openwork/outbox/",
+        inboxPath: ".opencode/dowhat/inbox/",
+        outboxPath: ".opencode/dowhat/outbox/",
         maxBytes,
       },
     },
@@ -609,33 +613,33 @@ function buildCapabilities(config: ServerConfig): Capabilities {
 }
 
 function resolveSandboxBackend(): Capabilities["sandbox"]["backend"] {
-  const raw = (readCompatEnv("OPENWORK_SANDBOX_BACKEND") ?? "").trim().toLowerCase();
+  const raw = (readCompatEnv("DOWHAT_SANDBOX_BACKEND") ?? "").trim().toLowerCase();
   if (raw === "docker") return "docker";
   if (raw === "container") return "container";
   return "none";
 }
 
 function resolveSandboxEnabled(backend: Capabilities["sandbox"]["backend"]): boolean {
-  const raw = (readCompatEnv("OPENWORK_SANDBOX_ENABLED") ?? "").trim().toLowerCase();
+  const raw = (readCompatEnv("DOWHAT_SANDBOX_ENABLED") ?? "").trim().toLowerCase();
   if (["1", "true", "yes", "on"].includes(raw)) return true;
   if (["0", "false", "no", "off"].includes(raw)) return false;
   return backend !== "none";
 }
 
 function resolveInboxEnabled(): boolean {
-  const raw = (readCompatEnv("OPENWORK_INBOX_ENABLED") ?? "").trim().toLowerCase();
+  const raw = (readCompatEnv("DOWHAT_INBOX_ENABLED") ?? "").trim().toLowerCase();
   if (!raw) return true;
   return ["1", "true", "yes", "on"].includes(raw);
 }
 
 function resolveOutboxEnabled(): boolean {
-  const raw = (readCompatEnv("OPENWORK_OUTBOX_ENABLED") ?? "").trim().toLowerCase();
+  const raw = (readCompatEnv("DOWHAT_OUTBOX_ENABLED") ?? "").trim().toLowerCase();
   if (!raw) return true;
   return ["1", "true", "yes", "on"].includes(raw);
 }
 
 function resolveInboxMaxBytes(): number {
-  const raw = (readCompatEnv("OPENWORK_INBOX_MAX_BYTES") ?? "").trim();
+  const raw = (readCompatEnv("DOWHAT_INBOX_MAX_BYTES") ?? "").trim();
   const parsed = raw ? Number(raw) : NaN;
   if (Number.isFinite(parsed) && parsed > 0) {
     return Math.min(Math.trunc(parsed), 250_000_000);
@@ -644,13 +648,13 @@ function resolveInboxMaxBytes(): number {
 }
 
 function resolveToyUiEnabled(): boolean {
-  const raw = (readCompatEnv("OPENWORK_TOY_UI") ?? "").trim().toLowerCase();
+  const raw = (readCompatEnv("DOWHAT_TOY_UI") ?? "").trim().toLowerCase();
   if (!raw) return true;
   return ["1", "true", "yes", "on"].includes(raw);
 }
 
 function resolveBrowserProvider(): Capabilities["toolProviders"]["browser"] {
-  const raw = (readCompatEnv("OPENWORK_BROWSER_PROVIDER") ?? "").trim().toLowerCase();
+  const raw = (readCompatEnv("DOWHAT_BROWSER_PROVIDER") ?? "").trim().toLowerCase();
   if (raw === "sandbox-headless") {
     return { enabled: true, placement: "in-sandbox", mode: "headless" };
   }
@@ -664,15 +668,15 @@ function resolveBrowserProvider(): Capabilities["toolProviders"]["browser"] {
 }
 
 function resolveInboxDir(workspaceRoot: string): string {
-  return join(workspaceRoot, ".opencode", "openwork", "inbox");
+  return join(workspaceRoot, ".opencode", "dowhat", "inbox");
 }
 
 function resolveOutboxDir(workspaceRoot: string): string {
-  return join(workspaceRoot, ".opencode", "openwork", "outbox");
+  return join(workspaceRoot, ".opencode", "dowhat", "outbox");
 }
 
 function resolveAgentLabDir(workspaceRoot: string): string {
-  return join(workspaceRoot, ".opencode", "openwork", "agentlab");
+  return join(workspaceRoot, ".opencode", "dowhat", "agentlab");
 }
 
 function resolveAgentLabAutomationsPath(workspaceRoot: string): string {

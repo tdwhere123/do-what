@@ -75,7 +75,6 @@ execSync(
     env: {
       ...process.env,
       DOWHAT_DATA_DIR: dataDir,
-      OPENWORK_DATA_DIR: dataDir,
       ...(linkerPath
         ? { CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER: linkerPath }
         : {}),

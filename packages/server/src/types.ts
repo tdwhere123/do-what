@@ -63,7 +63,7 @@ export interface ServerConfig {
 export interface Capabilities {
   schemaVersion: number;
   serverVersion: string;
-  skills: { read: boolean; write: boolean; source: "openwork" | "opencode" };
+  skills: { read: boolean; write: boolean; source: "dowhat" | "opencode" };
   hub: {
     skills: {
       read: boolean;

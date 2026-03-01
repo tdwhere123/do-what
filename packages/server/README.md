@@ -23,18 +23,25 @@ pnpm --filter @do-what/server typecheck
 - `scheduled`：任务配置与落盘支持
 - `soul/skills/extensions`：本地资源与配置存取能力
 
-> v0.6 起优先读取 `DOWHAT_*`，并继续兼容 `OPENWORK_*`。
-> 若使用旧变量（`OPENWORK_*`）会打印一次 deprecated 提示，但不阻塞启动。
+> v0.6 起优先读取 `DOWHAT_*`，并继续兼容 `DOWHAT_*`。
+> 若使用旧变量（`DOWHAT_*`）会打印一次 deprecated 提示，但不阻塞启动。
 
-- `DOWHAT_HOST` / `OPENWORK_HOST`
-- `DOWHAT_PORT` / `OPENWORK_PORT`
-- `DOWHAT_TOKEN` / `OPENWORK_TOKEN`
-- `DOWHAT_HOST_TOKEN` / `OPENWORK_HOST_TOKEN`
-- `DOWHAT_APPROVAL_MODE` / `OPENWORK_APPROVAL_MODE`
-- `DOWHAT_OPENCODE_BASE_URL` / `OPENWORK_OPENCODE_BASE_URL`
-- `DOWHAT_OPENCODE_DIRECTORY` / `OPENWORK_OPENCODE_DIRECTORY`
-- `DOWHAT_OPENCODE_USERNAME` / `OPENWORK_OPENCODE_USERNAME`
-- `DOWHAT_OPENCODE_PASSWORD` / `OPENWORK_OPENCODE_PASSWORD`
+- `DOWHAT_HOST` / `DOWHAT_HOST`
+- `DOWHAT_PORT` / `DOWHAT_PORT`
+- `DOWHAT_TOKEN` / `DOWHAT_TOKEN`
+- `DOWHAT_HOST_TOKEN` / `DOWHAT_HOST_TOKEN`
+- `DOWHAT_APPROVAL_MODE` / `DOWHAT_APPROVAL_MODE`
+- `DOWHAT_OPENCODE_BASE_URL` / `DOWHAT_OPENCODE_BASE_URL`
+- `DOWHAT_OPENCODE_DIRECTORY` / `DOWHAT_OPENCODE_DIRECTORY`
+- `DOWHAT_OPENCODE_USERNAME` / `DOWHAT_OPENCODE_USERNAME`
+- `DOWHAT_OPENCODE_PASSWORD` / `DOWHAT_OPENCODE_PASSWORD`
 
 - 保持 local-first，不把云端作为必需依赖。
 - router 连接链路已从主线摘除，本包不再将其作为能力入口。
+
+
+## v0.10 Update (2026-03-01)
+- Server now treats hub source as optional and empty by default.
+- Set DOWHAT_HUB_OWNER + DOWHAT_HUB_REPO (+ optional DOWHAT_HUB_REF) to enable Hub listing/install.
+- Legacy OpenWork env compatibility mapping has been removed; server reads DOWHAT_* only.
+

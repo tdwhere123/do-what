@@ -6,11 +6,11 @@ use tauri::AppHandle;
 use tauri_plugin_shell::process::{CommandChild, CommandEvent};
 use tauri_plugin_shell::ShellExt;
 
-const DEFAULT_OPENWORK_PORT: u16 = 8787;
+const DEFAULT_DOWHAT_PORT: u16 = 8787;
 
 pub fn resolve_openwork_port() -> Result<u16, String> {
-    if TcpListener::bind(("0.0.0.0", DEFAULT_OPENWORK_PORT)).is_ok() {
-        return Ok(DEFAULT_OPENWORK_PORT);
+    if TcpListener::bind(("0.0.0.0", DEFAULT_DOWHAT_PORT)).is_ok() {
+        return Ok(DEFAULT_DOWHAT_PORT);
     }
     let listener = TcpListener::bind(("0.0.0.0", 0)).map_err(|e| e.to_string())?;
     let port = listener.local_addr().map_err(|e| e.to_string())?.port();
@@ -104,13 +104,13 @@ pub fn spawn_openwork_server(
 
     if let Some(username) = opencode_username {
         if !username.trim().is_empty() {
-            command = command.env("OPENWORK_OPENCODE_USERNAME", username);
+            command = command.env("DOWHAT_OPENCODE_USERNAME", username);
         }
     }
 
     if let Some(password) = opencode_password {
         if !password.trim().is_empty() {
-            command = command.env("OPENWORK_OPENCODE_PASSWORD", password);
+            command = command.env("DOWHAT_OPENCODE_PASSWORD", password);
         }
     }
 

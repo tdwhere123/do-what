@@ -1,11 +1,11 @@
-import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+﻿import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import type { Agent } from "@opencode-ai/sdk/v2/client";
 import fuzzysort from "fuzzysort";
-import { ArrowUp, AtSign, Check, ChevronDown, File as FileIcon, Paperclip, Square, Terminal, X, Zap } from "lucide-solid";
+import { ArrowUp, AtSign, Check, ChevronDown, File as FileIcon, Paperclip, Square, Terminal, X } from "lucide-solid";
 
 import type { ComposerAttachment, ComposerDraft, ComposerPart, PromptMode, SlashCommandOption } from "../../types";
 import { perfNow, recordPerfLog } from "../../lib/perf-log";
-import { createProject, useProjects } from "../../state/sessions";
+import { getRuntimeCapabilities, runtimeFeatureHint, type RuntimeID } from "../../lib/runtime-capabilities";
 
 type MentionOption = {
   id: string;
@@ -126,10 +126,10 @@ const parseClipboardLinks = (clipboard: DataTransfer) => {
 const inboxPathToLink = (path: string) => {
   const normalized = path.trim().replace(/\\/g, "/").replace(/^\.\/+/, "").replace(/^\/+/, "");
   if (!normalized) return "";
-  if (normalized.startsWith(".opencode/openwork/inbox/")) {
+  if (normalized.startsWith(".opencode/dowhat/inbox/")) {
     return normalized;
   }
-  return `.opencode/openwork/inbox/${normalized}`;
+  return `.opencode/dowhat/inbox/${normalized}`;
 };
 
 const formatLinks = (links: Array<{ name: string; target: string }>) =>
@@ -478,41 +478,42 @@ export default function Composer(props: ComposerProps) {
   const [historyIndex, setHistoryIndex] = createSignal({ prompt: -1, shell: -1 });
   const [history, setHistory] = createSignal({ prompt: [] as ComposerDraft[], shell: [] as ComposerDraft[] });
   const [variantMenuOpen, setVariantMenuOpen] = createSignal(false);
-  const [selectedRuntime, setSelectedRuntime] = createSignal<"opencode" | "claude-code" | "codex">("opencode");
-  const { projects } = useProjects();
-  const [selectedProjectId, setSelectedProjectId] = createSignal<string | null>(null);
-  const [parentSessionIds, setParentSessionIds] = createSignal<string[]>([]);
+  const [selectedRuntime, setSelectedRuntime] = createSignal<RuntimeID>("opencode");
   const [showInboxUploadAction, setShowInboxUploadAction] = createSignal(false);
   const activeVariant = createMemo(() => props.modelVariant ?? "none");
-  const attachmentsDisabled = createMemo(() => !props.attachmentsEnabled);
+  const runtimeCapabilities = createMemo(() => getRuntimeCapabilities(selectedRuntime()));
+  const runtimeAttachmentsDisabledReason = createMemo(() =>
+    runtimeCapabilities().supportsAttachments ? null : runtimeFeatureHint(selectedRuntime(), "attachments"),
+  );
+  const attachmentsDisabledReason = createMemo(
+    () => props.attachmentsDisabledReason ?? runtimeAttachmentsDisabledReason(),
+  );
+  const attachmentsDisabled = createMemo(
+    () => !props.attachmentsEnabled || !runtimeCapabilities().supportsAttachments,
+  );
+  const agentPickerDisabled = createMemo(() => !runtimeCapabilities().supportsAgentPicker);
   const hasDraftContent = createMemo(() => draftText().trim().length > 0 || attachments().length > 0);
 
-  const selectedProject = createMemo(() => projects.find((project) => project.id === selectedProjectId()) ?? null);
-  const projectSessionOptions = createMemo(() => selectedProject()?.sessionIds ?? []);
-
-  const handleProjectChange = (value: string) => {
-    if (value === "") {
-      setSelectedProjectId(null);
-      setParentSessionIds([]);
-      return;
+  const handleRuntimeChange = (value: RuntimeID) => {
+    setSelectedRuntime(value);
+    const next = getRuntimeCapabilities(value);
+    if (!next.supportsAttachments && attachments().length > 0) {
+      setAttachments([]);
+      props.onToast(runtimeFeatureHint(value, "attachments"));
+      emitDraftChange();
     }
-    if (value === "__new__") {
-      const name = window.prompt("Project name");
-      if (!name?.trim()) return;
-      const workdir = window.prompt("Project workdir", "") ?? "";
-      const created = createProject(name.trim(), workdir.trim());
-      setSelectedProjectId(created.id);
-      setParentSessionIds([]);
-      return;
+    if (!next.supportsShellMode && mode() === "shell") {
+      setMode("prompt");
+      emitDraftChange();
     }
-    setSelectedProjectId(value);
-    setParentSessionIds([]);
-  };
-
-  const toggleParentSession = (sessionId: string) => {
-    setParentSessionIds((current) =>
-      current.includes(sessionId) ? current.filter((id) => id !== sessionId) : [...current, sessionId],
-    );
+    if (!next.supportsAgentPicker) {
+      setMentionOpen(false);
+      setMentionQuery("");
+    }
+    if (!next.supportsSlashCommands) {
+      setSlashOpen(false);
+      setSlashQuery("");
+    }
   };
 
   onCleanup(() => {
@@ -547,7 +548,7 @@ export default function Composer(props: ComposerProps) {
     queueMicrotask(() => focusEditorEnd());
 
     // Bind composition events directly via addEventListener because SolidJS
-    // does not delegate compositionstart/compositionend — the camelCase JSX
+    // does not delegate compositionstart/compositionend 鈥?the camelCase JSX
     // form (onCompositionStart) may silently fail to attach.
     if (editorRef) {
       editorRef.addEventListener("compositionstart", () => {
@@ -759,8 +760,6 @@ export default function Composer(props: ComposerProps) {
       text,
       resolvedText,
       runtime: selectedRuntime(),
-      projectId: selectedProjectId(),
-      parentSessionIds: parentSessionIds(),
     });
     const draftChangeMs = Math.round((perfNow() - draftChangeStartedAt) * 100) / 100;
     const totalMs = Math.round((perfNow() - flushStartedAt) * 100) / 100;
@@ -864,6 +863,11 @@ export default function Composer(props: ComposerProps) {
 
   const updateMentionQuery = (currentText?: string) => {
     if (!editorRef) return;
+    if (!runtimeCapabilities().supportsAgentPicker) {
+      setMentionOpen(false);
+      setMentionQuery("");
+      return;
+    }
     if (mode() === "shell") {
       setMentionOpen(false);
       setMentionQuery("");
@@ -889,6 +893,11 @@ export default function Composer(props: ComposerProps) {
 
   const updateSlashQuery = (currentText?: string) => {
     if (!editorRef) return;
+    if (!runtimeCapabilities().supportsSlashCommands) {
+      setSlashOpen(false);
+      setSlashQuery("");
+      return;
+    }
     if (mode() === "shell") {
       setSlashOpen(false);
       setSlashQuery("");
@@ -961,8 +970,6 @@ export default function Composer(props: ComposerProps) {
       attachments: attachments(),
       text,
       runtime: selectedRuntime(),
-      projectId: selectedProjectId(),
-      parentSessionIds: parentSessionIds(),
     });
     queueMicrotask(() => {
       suppressPromptSync = false;
@@ -1071,12 +1078,10 @@ export default function Composer(props: ComposerProps) {
       text,
       resolvedText,
       runtime: selectedRuntime(),
-      projectId: selectedProjectId(),
-      parentSessionIds: parentSessionIds(),
     };
 
     // Detect slash command: text like "/commandname arg1 arg2"
-    if (text.startsWith("/")) {
+    if (runtimeCapabilities().supportsSlashCommands && text.startsWith("/")) {
       const [cmdToken, ...argTokens] = text.split(" ");
       const commandName = cmdToken.slice(1); // strip leading /
       if (commandName) {
@@ -1110,7 +1115,7 @@ export default function Composer(props: ComposerProps) {
 
   const addAttachments = async (files: File[]) => {
     if (attachmentsDisabled()) {
-      props.onToast(props.attachmentsDisabledReason ?? "Attachments are unavailable.");
+      props.onToast(attachmentsDisabledReason() ?? "Attachments are unavailable.");
       return;
     }
     const next: ComposerAttachment[] = [];
@@ -1392,9 +1397,9 @@ export default function Composer(props: ComposerProps) {
       return;
     }
     // Block Enter while IME is composing. We check three signals:
-    // 1. event.isComposing — standard API (unreliable in some WebKit builds)
-    // 2. imeComposing — manual flag from compositionstart/end
-    // 3. event.keyCode === 229 — legacy but reliable IME indicator across all browsers
+    // 1. event.isComposing 鈥?standard API (unreliable in some WebKit builds)
+    // 2. imeComposing 鈥?manual flag from compositionstart/end
+    // 3. event.keyCode === 229 鈥?legacy but reliable IME indicator across all browsers
     const imeActive = event.isComposing || imeComposing || event.keyCode === 229;
     if (event.key === "Enter" && imeActive) return;
 
@@ -1470,6 +1475,9 @@ export default function Composer(props: ComposerProps) {
     }
 
     if (event.key === "!" && mode() === "prompt") {
+      if (!runtimeCapabilities().supportsShellMode) {
+        return;
+      }
       const offsets = editorRef ? getSelectionOffsets(editorRef) : null;
       if (offsets && offsets.start === 0 && offsets.end === 0) {
         event.preventDefault();
@@ -1502,6 +1510,14 @@ export default function Composer(props: ComposerProps) {
   };
 
   createEffect(() => {
+    if (!runtimeCapabilities().supportsAgentPicker) {
+      setMentionOpen(false);
+      setMentionQuery("");
+      if (props.agentPickerOpen) {
+        props.onToggleAgentPicker();
+      }
+      return;
+    }
     if (!mentionOpen() || agentLoaded()) return;
     props
       .listAgents()
@@ -1546,6 +1562,12 @@ export default function Composer(props: ComposerProps) {
     setSlashQuery("");
   });
 
+  createEffect(() => {
+    if (runtimeCapabilities().supportsShellMode || mode() !== "shell") return;
+    setMode("prompt");
+    emitDraftChange();
+  });
+
 
 
   createEffect(() => {
@@ -1563,8 +1585,8 @@ export default function Composer(props: ComposerProps) {
     const handler = () => {
       editorRef?.focus();
     };
-    window.addEventListener("openwork:focusPrompt", handler);
-    onCleanup(() => window.removeEventListener("openwork:focusPrompt", handler));
+    window.addEventListener("dowhat:focusPrompt", handler);
+    onCleanup(() => window.removeEventListener("dowhat:focusPrompt", handler));
   });
 
   onCleanup(() => {
@@ -1703,7 +1725,7 @@ export default function Composer(props: ComposerProps) {
                 onClick={props.onNotionBannerClick}
               >
                 <span>立即体验：在 Notion 中建立我的 CRM</span>
-                <span class="text-xs text-green-12 font-medium">插入提词</span>
+                <span class="text-xs text-green-12 font-medium">插入提示词</span>
               </button>
             </Show>
 
@@ -1771,7 +1793,7 @@ export default function Composer(props: ComposerProps) {
                   <div class="relative">
                     <Show when={!hasDraftContent()}>
                       <div class="absolute left-0 top-0 text-dls-secondary text-sm leading-relaxed pointer-events-none">
-                        询问 OpenWork...
+                        询问 do-what...
                       </div>
                     </Show>
                     <div
@@ -1827,7 +1849,7 @@ export default function Composer(props: ComposerProps) {
                           disabled={attachmentsDisabled()}
                           title={
                             attachmentsDisabled()
-                              ? props.attachmentsDisabledReason ?? "附件不可用。"
+                              ? attachmentsDisabledReason() ?? "附件不可用。"
                               : "添加附件"
                           }
                         >
@@ -1838,10 +1860,16 @@ export default function Composer(props: ComposerProps) {
                           <button
                             type="button"
                             class="flex items-center gap-1.5 px-2 py-1 hover:bg-dls-hover rounded-md text-xs font-medium text-dls-secondary hover:text-dls-text"
-                            onClick={props.onToggleAgentPicker}
-                            disabled={props.busy}
+                            onClick={() => {
+                              if (agentPickerDisabled()) {
+                                props.onToast(runtimeFeatureHint(selectedRuntime(), "agent"));
+                                return;
+                              }
+                              props.onToggleAgentPicker();
+                            }}
+                            disabled={props.busy || agentPickerDisabled()}
                             aria-expanded={props.agentPickerOpen}
-                            title="Agent"
+                            title={agentPickerDisabled() ? runtimeFeatureHint(selectedRuntime(), "agent") : "Agent"}
                           >
                             <AtSign size={14} />
                             <span class="max-w-[140px] truncate">{props.agentLabel}</span>
@@ -1913,44 +1941,10 @@ export default function Composer(props: ComposerProps) {
                               </div>
                             </div>
                           </Show>
-                        </div>
-
-                        <select
-                          value={selectedProjectId() ?? ""}
-                          onChange={(event) => handleProjectChange(event.currentTarget.value)}
-                          class="text-xs border rounded px-1 py-0.5 bg-transparent max-w-[11rem]"
-                          disabled={props.busy}
-                        >
-                          <option value="">无工作区</option>
-                          <For each={projects}>
-                            {(project) => <option value={project.id}>{project.name}</option>}
-                          </For>
-                          <option value="__new__">+ 新建工作区</option>
-                        </select>
-
-                        <Show when={selectedProject()}>
-                          <div class="flex items-center gap-1 max-w-[14rem] overflow-x-auto">
-                            <For each={projectSessionOptions()}>
-                              {(sessionId) => {
-                                const active = () => parentSessionIds().includes(sessionId);
-                                return (
-                                  <button
-                                    type="button"
-                                    class={`px-2 py-0.5 rounded border text-[10px] ${active() ? "bg-dls-active text-dls-text border-dls-border" : "text-dls-secondary border-dls-border"}`}
-                                    onClick={() => toggleParentSession(sessionId)}
-                                    title={sessionId}
-                                  >
-                                    {sessionId.slice(0, 8)}
-                                  </button>
-                                );
-                              }}
-                            </For>
-                          </div>
-                        </Show>
-
+                        </div>
                         <select
                           value={selectedRuntime()}
-                          onChange={(event) => setSelectedRuntime(event.currentTarget.value as "opencode" | "claude-code" | "codex")}
+                          onChange={(event) => handleRuntimeChange(event.currentTarget.value as RuntimeID)}
                           class="text-xs border rounded px-1 py-0.5 bg-transparent"
                           disabled={props.busy}
                         >
@@ -1982,7 +1976,7 @@ export default function Composer(props: ComposerProps) {
                           <Show when={variantMenuOpen()}>
                             <div class="absolute left-0 bottom-full mb-2 w-48 rounded-xl border border-dls-border bg-dls-surface shadow-xl backdrop-blur-md overflow-hidden z-40">
                               <div class="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-dls-secondary border-b border-dls-border">
-                                思考深度 (Thinking effort)
+                                思考深度(Thinking effort)
                               </div>
                               <div class="p-2 space-y-1">
                                 <For each={MODEL_VARIANT_OPTIONS}>
@@ -2049,3 +2043,6 @@ export default function Composer(props: ComposerProps) {
     </div>
   );
 }
+
+
+

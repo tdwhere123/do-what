@@ -1,8 +1,11 @@
+use std::io::ErrorKind;
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
 use tauri::{AppHandle, Emitter, State};
+
+use crate::platform::configure_hidden;
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub enum AgentRuntime {
@@ -27,6 +30,90 @@ pub struct AgentRunChunk {
 }
 
 pub type RunMap = Arc<Mutex<std::collections::HashMap<String, u32>>>;
+
+fn runtime_binaries(runtime: &AgentRuntime) -> &'static [&'static str] {
+    match runtime {
+        AgentRuntime::ClaudeCode => &["claude", "claude.cmd", "claude-code", "claude-code.cmd"],
+        AgentRuntime::Codex => &["codex", "codex.cmd"],
+    }
+}
+
+fn command_for_candidate(binary: &str) -> Command {
+    #[cfg(windows)]
+    {
+        let lower = binary.to_ascii_lowercase();
+        if lower.ends_with(".cmd") || lower.ends_with(".bat") {
+            let mut command = Command::new("cmd");
+            command.arg("/C").arg(binary);
+            configure_hidden(&mut command);
+            return command;
+        }
+    }
+
+    let mut command = Command::new(binary);
+    configure_hidden(&mut command);
+    command
+}
+
+fn resolve_runtime_binary(runtime: &AgentRuntime) -> Result<String, String> {
+    let binaries = runtime_binaries(runtime);
+    let mut details: Vec<String> = Vec::new();
+
+    for binary in binaries {
+        let probe = command_for_candidate(binary).arg("--version").output();
+        match probe {
+            Ok(_) => return Ok((*binary).to_string()),
+            Err(error) if error.kind() == ErrorKind::NotFound => continue,
+            Err(error) => details.push(format!("{binary}: {error}")),
+        }
+    }
+
+    let names = binaries.join(", ");
+    if details.is_empty() {
+        Err(format!("Runtime executable not found in PATH ({names})"))
+    } else {
+        Err(format!(
+            "Runtime executable not found in PATH ({names}). Probe errors: {}",
+            details.join("; ")
+        ))
+    }
+}
+
+fn build_runtime_command(
+    runtime: &AgentRuntime,
+    prompt: &str,
+    workdir: Option<&String>,
+) -> Result<Command, String> {
+    let binary = resolve_runtime_binary(runtime)?;
+    let mut command = command_for_candidate(&binary);
+
+    match runtime {
+        AgentRuntime::ClaudeCode => {
+            command.args(["-p", prompt, "--output-format", "stream-json"]);
+            if let Some(dir) = workdir {
+                command.args(["--cwd", dir]);
+                command.current_dir(dir);
+            }
+        }
+        AgentRuntime::Codex => {
+            command.arg(prompt);
+            if let Some(dir) = workdir {
+                command.args(["--cwd", dir]);
+                command.current_dir(dir);
+            }
+        }
+    }
+
+    Ok(command)
+}
+
+fn summarize_output(bytes: &[u8]) -> Option<String> {
+    let text = String::from_utf8_lossy(bytes);
+    text.lines()
+        .map(str::trim)
+        .find(|line| !line.is_empty())
+        .map(ToString::to_string)
+}
 
 fn terminate_pid(pid: u32) {
     #[cfg(unix)]
@@ -70,26 +157,7 @@ pub async fn agent_run_start(
 ) -> Result<(), String> {
     let event_name = format!("agent-run-output/{run_id}");
 
-    let mut cmd = match runtime {
-        AgentRuntime::ClaudeCode => {
-            let mut c = Command::new("claude");
-            c.args(["-p", &prompt, "--output-format", "stream-json"]);
-            if let Some(ref dir) = workdir {
-                c.args(["--cwd", dir]);
-                c.current_dir(dir);
-            }
-            c
-        }
-        AgentRuntime::Codex => {
-            let mut c = Command::new("codex");
-            c.arg(&prompt);
-            if let Some(ref dir) = workdir {
-                c.args(["--cwd", dir]);
-                c.current_dir(dir);
-            }
-            c
-        }
-    };
+    let mut cmd = build_runtime_command(&runtime, &prompt, workdir.as_ref())?;
 
     cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
 
@@ -160,19 +228,18 @@ pub async fn agent_run_abort(run_id: String, run_map: State<'_, RunMap>) -> Resu
 
 #[tauri::command]
 pub async fn check_runtime_available(runtime: AgentRuntime) -> Result<String, String> {
-    let bin = match runtime {
-        AgentRuntime::ClaudeCode => "claude",
-        AgentRuntime::Codex => "codex",
-    };
-
-    let output = Command::new(bin)
+    let bin = resolve_runtime_binary(&runtime)?;
+    let output = command_for_candidate(&bin)
         .arg("--version")
         .output()
-        .map_err(|_| format!("{bin} not found in PATH"))?;
+        .map_err(|error| format!("Failed to execute {bin}: {error}"))?;
 
     if !output.status.success() {
-        return Err(format!("Failed to query {bin} version"));
+        let code = output.status.code().unwrap_or(-1);
+        return Err(format!("Failed to query {bin} version (exit code {code})"));
     }
 
-    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    Ok(summarize_output(&output.stdout)
+        .or_else(|| summarize_output(&output.stderr))
+        .unwrap_or_else(|| "available".to_string()))
 }

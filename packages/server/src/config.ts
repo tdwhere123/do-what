@@ -206,12 +206,12 @@ async function loadFileConfig(configPath: string): Promise<FileConfig> {
 }
 
 export async function resolveServerConfig(cli: CliArgs): Promise<ServerConfig> {
-  const envConfigPath = readCompatEnv("OPENWORK_SERVER_CONFIG");
-  const configPath = cli.configPath ?? envConfigPath ?? resolve(homedir(), ".config", "openwork", "server.json");
+  const envConfigPath = readCompatEnv("DOWHAT_SERVER_CONFIG");
+  const configPath = cli.configPath ?? envConfigPath ?? resolve(homedir(), ".config", "do-what", "server.json");
   const fileConfig = await loadFileConfig(configPath);
   const configDir = dirname(configPath);
 
-  const envWorkspaces = parseList(readCompatEnv("OPENWORK_WORKSPACES"));
+  const envWorkspaces = parseList(readCompatEnv("DOWHAT_WORKSPACES"));
   let workspaceConfigs: WorkspaceConfig[] =
     cli.workspaces.length > 0
       ? cli.workspaces.map((path) => ({ path }))
@@ -219,10 +219,10 @@ export async function resolveServerConfig(cli: CliArgs): Promise<ServerConfig> {
         ? envWorkspaces.map((path) => ({ path }))
         : fileConfig.workspaces ?? [];
 
-  const envOpencodeBaseUrl = readCompatEnv("OPENWORK_OPENCODE_BASE_URL");
-  const envOpencodeDirectory = readCompatEnv("OPENWORK_OPENCODE_DIRECTORY");
-  const envOpencodeUsername = readCompatEnv("OPENWORK_OPENCODE_USERNAME");
-  const envOpencodePassword = readCompatEnv("OPENWORK_OPENCODE_PASSWORD");
+  const envOpencodeBaseUrl = readCompatEnv("DOWHAT_OPENCODE_BASE_URL");
+  const envOpencodeDirectory = readCompatEnv("DOWHAT_OPENCODE_DIRECTORY");
+  const envOpencodeUsername = readCompatEnv("DOWHAT_OPENCODE_USERNAME");
+  const envOpencodePassword = readCompatEnv("DOWHAT_OPENCODE_PASSWORD");
   const opencodeBaseUrl = cli.opencodeBaseUrl ?? envOpencodeBaseUrl;
   const opencodeDirectory = cli.opencodeDirectory ?? envOpencodeDirectory;
   const opencodeUsername = cli.opencodeUsername ?? envOpencodeUsername ?? fileConfig.opencodeUsername;
@@ -245,8 +245,8 @@ export async function resolveServerConfig(cli: CliArgs): Promise<ServerConfig> {
 
   const workspaces = buildWorkspaceInfos(workspaceConfigs, configDir);
 
-  const tokenFromEnv = readCompatEnv("OPENWORK_TOKEN");
-  const hostTokenFromEnv = readCompatEnv("OPENWORK_HOST_TOKEN");
+  const tokenFromEnv = readCompatEnv("DOWHAT_TOKEN");
+  const hostTokenFromEnv = readCompatEnv("DOWHAT_HOST_TOKEN");
 
   const token = cli.token ?? tokenFromEnv ?? fileConfig.token ?? shortId();
   const hostToken = cli.hostToken ?? hostTokenFromEnv ?? fileConfig.hostToken ?? shortId();
@@ -269,11 +269,11 @@ export async function resolveServerConfig(cli: CliArgs): Promise<ServerConfig> {
 
   const approvalMode =
     cli.approvalMode ??
-    (readCompatEnv("OPENWORK_APPROVAL_MODE") as ApprovalMode | undefined) ??
+    (readCompatEnv("DOWHAT_APPROVAL_MODE") as ApprovalMode | undefined) ??
     fileConfig.approval?.mode ??
     "manual";
 
-  const envApprovalTimeoutMs = readCompatEnv("OPENWORK_APPROVAL_TIMEOUT_MS");
+  const envApprovalTimeoutMs = readCompatEnv("DOWHAT_APPROVAL_TIMEOUT_MS");
   const approvalTimeoutMs =
     cli.approvalTimeoutMs ??
     (envApprovalTimeoutMs ? Number(envApprovalTimeoutMs) : undefined) ??
@@ -285,24 +285,24 @@ export async function resolveServerConfig(cli: CliArgs): Promise<ServerConfig> {
     timeoutMs: Number.isNaN(approvalTimeoutMs) ? DEFAULT_TIMEOUT_MS : approvalTimeoutMs,
   };
 
-  const envCorsOrigins = readCompatEnv("OPENWORK_CORS_ORIGINS");
+  const envCorsOrigins = readCompatEnv("DOWHAT_CORS_ORIGINS");
   const parsedEnvCors = envCorsOrigins ? parseList(envCorsOrigins) : null;
   const corsOrigins = cli.corsOrigins ?? parsedEnvCors ?? fileConfig.corsOrigins ?? ["*"];
 
-  const envReadOnly = readCompatEnv("OPENWORK_READONLY");
+  const envReadOnly = readCompatEnv("DOWHAT_READONLY");
   const parsedReadOnly = envReadOnly
     ? ["true", "1", "yes"].includes(envReadOnly.toLowerCase())
     : undefined;
   const readOnly = cli.readOnly ?? parsedReadOnly ?? fileConfig.readOnly ?? false;
 
-  const envLogFormat = readCompatEnv("OPENWORK_LOG_FORMAT");
+  const envLogFormat = readCompatEnv("DOWHAT_LOG_FORMAT");
   const logFormat =
     cli.logFormat ??
     normalizeLogFormat(envLogFormat) ??
     normalizeLogFormat(fileConfig.logFormat) ??
     DEFAULT_LOG_FORMAT;
 
-  const envLogRequests = parseBoolean(readCompatEnv("OPENWORK_LOG_REQUESTS"));
+  const envLogRequests = parseBoolean(readCompatEnv("DOWHAT_LOG_REQUESTS"));
   const logRequests = cli.logRequests ?? envLogRequests ?? fileConfig.logRequests ?? DEFAULT_LOG_REQUESTS;
 
   const authorizedRoots =
@@ -310,8 +310,8 @@ export async function resolveServerConfig(cli: CliArgs): Promise<ServerConfig> {
       ? fileConfig.authorizedRoots.map((root) => resolve(configDir, root))
       : workspaces.map((workspace) => workspace.path);
 
-  const envHost = readCompatEnv("OPENWORK_HOST");
-  const envPort = readCompatEnv("OPENWORK_PORT");
+  const envHost = readCompatEnv("DOWHAT_HOST");
+  const envPort = readCompatEnv("DOWHAT_PORT");
   const host = cli.host ?? envHost ?? fileConfig.host ?? DEFAULT_HOST;
   const port = cli.port ?? (envPort ? Number(envPort) : undefined) ?? fileConfig.port ?? DEFAULT_PORT;
 

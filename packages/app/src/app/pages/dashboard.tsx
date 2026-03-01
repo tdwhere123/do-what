@@ -1,4 +1,4 @@
-import { For, Match, Show, Switch, createEffect, createMemo, createSignal, on, onCleanup, onMount } from "solid-js";
+﻿import { For, Match, Show, Switch, createEffect, createMemo, createSignal, on, onCleanup, onMount } from "solid-js";
 import type {
   DashboardTab,
   McpServerEntry,
@@ -509,7 +509,7 @@ export default function DashboardView(props: DashboardViewProps) {
     const active = () => props.tab === t;
     return (
       <button
-        class={`w - full h - 10 flex items - center gap - 3 px - 3 rounded - lg text - sm font - medium transition - colors ${active()
+        class={`w-full h-10 flex items-center gap-3 px-3 rounded-lg text-sm font-medium transition-colors ${active()
           ? "bg-dls-active text-dls-text"
           : "text-dls-secondary hover:text-dls-text hover:bg-dls-hover"
           } `}
@@ -992,7 +992,7 @@ export default function DashboardView(props: DashboardViewProps) {
                                   class="group/empty w-full px-3 py-2 text-xs text-dls-secondary ml-2 text-left rounded-lg hover:bg-dls-hover hover:text-dls-text transition-colors"
                                   onClick={() => createTaskInWorkspace(workspace().id)}
                                   disabled={props.newTaskDisabled || !hasAnyConnectedRuntime()}
-                                  title={!hasAnyConnectedRuntime() ? "请先连接一个 AI 助手" : undefined}
+                                  title={!hasAnyConnectedRuntime() ? "璇峰厛杩炴帴涓€涓?AI 鍔╂墜" : undefined}
                                 >
                                   <span class="group-hover/empty:hidden">No tasks yet.</span>
                                   <span class="hidden group-hover/empty:inline font-medium">+ New task</span>
@@ -1066,7 +1066,7 @@ export default function DashboardView(props: DashboardViewProps) {
                   }}
                 >
                   <Plus size={12} />
-                  导入配置
+                  瀵煎叆閰嶇疆
                 </button>
               </div>
             </Show>
@@ -1085,7 +1085,7 @@ export default function DashboardView(props: DashboardViewProps) {
               <Show when={props.activeSoulStatus?.enabled}>
                 <div class="inline-flex items-center gap-1 rounded-full border border-rose-7/40 bg-rose-3/40 px-2 py-1 text-[11px] text-rose-11">
                   <img src="/icons/soul.svg" class="w-2.5 h-2.5 opacity-70" alt="" aria-hidden="true" />
-                  记忆开启
+                  记忆寮€鍚?
                 </div>
               </Show>
               <h1 class="text-lg font-medium">{title()}</h1>
@@ -1432,12 +1432,12 @@ export default function DashboardView(props: DashboardViewProps) {
       </main>
 
       <aside class="w-44 hidden md:flex flex-col bg-dls-sidebar border-l border-dls-border py-3 px-2 gap-0.5 shrink-0">
-        {/* 顶部闪烁星星装饰 */}
+        {/* 顶部星形装饰 */}
         <div class="flex justify-center pb-2.5 pt-1.5">
           <img src="/svg/organic/shape/star/Elements-organic-shape-star-wink.svg" class="w-[22px] h-[22px] animate-star-twinkle" alt="" aria-hidden="true" />
         </div>
 
-        {/* 组 1：核心工作 */}
+        {/* 分组 1：核心*/}
         <button
           type="button"
           title="会话 (Sessions)"
@@ -1465,7 +1465,7 @@ export default function DashboardView(props: DashboardViewProps) {
 
         <div class="w-full h-px bg-[var(--color-border-subtle)] my-1" />
 
-        {/* 组 2：能力 */}
+        {/* 分组 2：能力*/}
         <button
           type="button"
           title="记忆 (Soul)"
@@ -1493,7 +1493,7 @@ export default function DashboardView(props: DashboardViewProps) {
 
         <div class="w-full h-px bg-[var(--color-border-subtle)] my-1" />
 
-        {/* 组 3：配置 */}
+        {/* 分组 3：配置*/}
         <button
           type="button"
           title="扩展 (Extensions)"
@@ -1519,5 +1519,6 @@ export default function DashboardView(props: DashboardViewProps) {
     </div>
   );
 }
+
 
 

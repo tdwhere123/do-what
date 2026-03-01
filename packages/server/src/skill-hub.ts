@@ -10,11 +10,13 @@ import { projectSkillsDir } from "./workspace-files.js";
 
 type HubRepo = { owner: string; repo: string; ref: string };
 
-const DEFAULT_HUB_REPO: HubRepo = {
-  owner: "different-ai",
-  repo: "openwork-hub",
-  ref: "main",
-};
+function resolveHubRepoFromEnv(): HubRepo | null {
+  const owner = (process.env.DOWHAT_HUB_OWNER ?? "").trim();
+  const repo = (process.env.DOWHAT_HUB_REPO ?? "").trim();
+  if (!owner || !repo) return null;
+  const ref = (process.env.DOWHAT_HUB_REF ?? "main").trim() || "main";
+  return { owner, repo, ref };
+}
 
 const CATALOG_TTL_MS = 5 * 60 * 1000;
 let cachedCatalog: { at: number; items: HubSkillItem[] } | null = null;
@@ -31,7 +33,7 @@ async function fetchJson(url: string): Promise<any> {
   const res = await fetch(url, {
     headers: {
       Accept: "application/vnd.github+json",
-      "User-Agent": "openwork-server",
+      "User-Agent": "dowhat-server",
     },
   });
   if (!res.ok) {
@@ -45,7 +47,7 @@ async function fetchText(url: string): Promise<string> {
   const res = await fetch(url, {
     headers: {
       Accept: "text/plain",
-      "User-Agent": "openwork-server",
+      "User-Agent": "dowhat-server",
     },
   });
   if (!res.ok) {
@@ -96,20 +98,25 @@ async function mapWithConcurrency<T, R>(
   return results;
 }
 
-export async function listHubSkills(repo: HubRepo = DEFAULT_HUB_REPO): Promise<HubSkillItem[]> {
+export async function listHubSkills(repo?: HubRepo): Promise<HubSkillItem[]> {
+  const resolvedRepo = repo ?? resolveHubRepoFromEnv();
+  if (!resolvedRepo) return [];
+
   const now = Date.now();
   if (cachedCatalog && now - cachedCatalog.at < CATALOG_TTL_MS) {
     return cachedCatalog.items;
   }
 
-  const listing = await fetchJson(`${hubApiBase(repo)}/contents/skills?ref=${encodeURIComponent(repo.ref)}`);
+  const listing = await fetchJson(
+    `${hubApiBase(resolvedRepo)}/contents/skills?ref=${encodeURIComponent(resolvedRepo.ref)}`,
+  );
   const dirs = Array.isArray(listing)
     ? listing
         .filter((entry) => entry && typeof entry === "object" && entry.type === "dir" && typeof entry.name === "string")
         .map((entry) => String(entry.name))
     : [];
 
-  const rawBase = hubRawBase(repo);
+  const rawBase = hubRawBase(resolvedRepo);
   const items = await mapWithConcurrency<string, HubSkillItem | null>(dirs, 6, async (dirName) => {
     try {
       const skillName = dirName.trim();
@@ -136,9 +143,9 @@ export async function listHubSkills(repo: HubRepo = DEFAULT_HUB_REPO): Promise<H
         description,
         ...(trigger ? { trigger } : {}),
         source: {
-          owner: repo.owner,
-          repo: repo.repo,
-          ref: repo.ref,
+          owner: resolvedRepo.owner,
+          repo: resolvedRepo.repo,
+          ref: resolvedRepo.ref,
           path: `skills/${skillName}`,
         },
       };
@@ -181,11 +188,18 @@ export async function installHubSkill(
   validateSkillName(name);
   const overwrite = Boolean(input.overwrite);
 
-  const repo: HubRepo = {
-    owner: input.repo?.owner?.trim() || DEFAULT_HUB_REPO.owner,
-    repo: input.repo?.repo?.trim() || DEFAULT_HUB_REPO.repo,
-    ref: input.repo?.ref?.trim() || DEFAULT_HUB_REPO.ref,
-  };
+  const envRepo = resolveHubRepoFromEnv();
+  const owner = input.repo?.owner?.trim() || envRepo?.owner || "";
+  const repoName = input.repo?.repo?.trim() || envRepo?.repo || "";
+  const ref = input.repo?.ref?.trim() || envRepo?.ref || "main";
+  if (!owner || !repoName) {
+    throw new ApiError(
+      400,
+      "hub_source_not_configured",
+      "Hub source not configured. Set DOWHAT_HUB_OWNER and DOWHAT_HUB_REPO.",
+    );
+  }
+  const repo: HubRepo = { owner, repo: repoName, ref };
 
   const prefix = `skills/${name}/`;
   const baseDir = join(projectSkillsDir(workspaceRoot), name);
@@ -225,7 +239,7 @@ export async function installHubSkill(
 
     await mkdir(dirname(destPath), { recursive: true });
     const res = await fetch(`${rawBase}/${file.path}`, {
-      headers: { "User-Agent": "openwork-server" },
+      headers: { "User-Agent": "dowhat-server" },
     });
     if (!res.ok) {
       const text = await res.text().catch(() => "");

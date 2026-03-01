@@ -46,17 +46,8 @@ impl Drop for EnvVarGuard {
     }
 }
 
-fn read_compat_env(openwork_key: &str) -> Option<String> {
-    if let Some(suffix) = openwork_key.strip_prefix("OPENWORK_") {
-        let dowhat_key = format!("DOWHAT_{suffix}");
-        if let Ok(value) = std::env::var(&dowhat_key) {
-            if !value.trim().is_empty() {
-                return Some(value);
-            }
-        }
-    }
-
-    std::env::var(openwork_key)
+fn read_compat_env(key: &str) -> Option<String> {
+    std::env::var(key)
         .ok()
         .filter(|value| !value.trim().is_empty())
 }
@@ -280,11 +271,11 @@ pub fn engine_start(
     workspace_paths.retain(|path| path.trim() != project_dir);
     workspace_paths.insert(0, project_dir.clone());
 
-    let bind_host = read_compat_env("OPENWORK_OPENCODE_BIND_HOST")
+    let bind_host = read_compat_env("DOWHAT_OPENCODE_BIND_HOST")
         .unwrap_or_else(|| "0.0.0.0".to_string());
     let client_host = "127.0.0.1".to_string();
     let port = find_free_port()?;
-    let enable_auth = read_compat_env("OPENWORK_OPENCODE_AUTH")
+    let enable_auth = read_compat_env("DOWHAT_OPENCODE_AUTH")
         .map(|value| value == "1" || value.eq_ignore_ascii_case("true"))
         .unwrap_or(true);
     let opencode_username = if enable_auth {
@@ -420,7 +411,7 @@ pub fn engine_start(
         //
         // If we give up too early, the desktop app reports the engine as offline even though the
         // orchestrator is still booting in the background.
-        let health_timeout_ms = read_compat_env("OPENWORK_ORCHESTRATOR_START_TIMEOUT_MS")
+        let health_timeout_ms = read_compat_env("DOWHAT_ORCHESTRATOR_START_TIMEOUT_MS")
             .and_then(|value| value.trim().parse::<u64>().ok())
             .filter(|value| *value >= 1_000)
             .unwrap_or(180_000);

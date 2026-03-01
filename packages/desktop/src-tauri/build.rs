@@ -91,7 +91,7 @@ fn ensure_versions_manifest() {
 }
 
 fn emit_build_info() {
-    let sha = env::var("OPENWORK_GIT_SHA")
+    let sha = env::var("DOWHAT_GIT_SHA")
         .ok()
         .and_then(|value| {
             let trimmed = value.trim().to_string();
@@ -117,7 +117,7 @@ fn emit_build_info() {
             }
         });
     if let Some(value) = sha {
-        println!("cargo:rustc-env=OPENWORK_GIT_SHA={}", value);
+        println!("cargo:rustc-env=DOWHAT_GIT_SHA={}", value);
     }
 
     let build_epoch = env::var("SOURCE_DATE_EPOCH")
@@ -140,7 +140,7 @@ fn emit_build_info() {
         });
 
     if let Some(value) = build_epoch {
-        println!("cargo:rustc-env=OPENWORK_BUILD_EPOCH={}", value);
+        println!("cargo:rustc-env=DOWHAT_BUILD_EPOCH={}", value);
     }
 }
 
@@ -189,7 +189,7 @@ fn ensure_orchestrator_sidecar() {
         }
     }
 
-    let source_path = env::var("OPENWORK_ORCHESTRATOR_BIN_PATH")
+    let source_path = env::var("DOWHAT_ORCHESTRATOR_BIN_PATH")
         .ok()
         .map(PathBuf::from)
         .filter(|path| path.is_file())
@@ -203,7 +203,7 @@ fn ensure_orchestrator_sidecar() {
 
     let Some(source_path) = source_path else {
         println!(
-            "cargo:warning=orchestrator sidecar missing at {} (set OPENWORK_ORCHESTRATOR_BIN_PATH or install openwork-orchestrator)",
+            "cargo:warning=orchestrator sidecar missing at {} (set DOWHAT_ORCHESTRATOR_BIN_PATH or install openwork-orchestrator)",
             dest_path.display()
         );
         create_debug_stub(&dest_path, &sidecar_dir, &profile, &target);
@@ -368,7 +368,7 @@ fn ensure_openwork_server_sidecar() {
         }
     }
 
-    let source_path = env::var("OPENWORK_SERVER_BIN_PATH")
+    let source_path = env::var("DOWHAT_SERVER_BIN_PATH")
         .ok()
         .map(PathBuf::from)
         .filter(|path| path.is_file())
@@ -384,7 +384,7 @@ fn ensure_openwork_server_sidecar() {
 
     let Some(source_path) = source_path else {
         println!(
-      "cargo:warning=OpenWork server sidecar missing at {} (set OPENWORK_SERVER_BIN_PATH or install openwork-server)",
+      "cargo:warning=OpenWork server sidecar missing at {} (set DOWHAT_SERVER_BIN_PATH or install openwork-server)",
       dest_path.display()
     );
 

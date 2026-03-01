@@ -225,7 +225,6 @@ export default function ProviderAuthModal(props: ProviderAuthModalProps) {
       }
 
       setView("oauth-auto");
-      await submitOauth(entry.id, started.methodIndex);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to start OAuth";
       setLocalError(message);
@@ -643,19 +642,19 @@ export default function ProviderAuthModal(props: ProviderAuthModalProps) {
                     <div class="flex items-center justify-between gap-4">
                       <div>
                         <div class="text-sm font-medium text-gray-12">{selectedEntry()!.name}</div>
-                        <div class="text-xs text-gray-10 mt-1">Waiting for browser confirmation.</div>
+                        <div class="text-xs text-gray-10 mt-1">Complete sign-in in your browser, then finish here.</div>
                       </div>
                       <Button variant="ghost" onClick={handleBack} disabled={actionDisabled()}>
                         Back
                       </Button>
                     </div>
-                    <div class="text-xs text-gray-9">Sign in in the browser tab we just opened. We will complete the connection automatically.</div>
+                    <div class="text-xs text-gray-9">Sign in in the browser tab we just opened. After that, click Complete connection.</div>
                     <Show when={oauthDisplayCode()}>
                       <TextInput label="Confirmation code" value={oauthDisplayCode()} readOnly class="font-mono" />
                     </Show>
                     <div class="flex items-center gap-2 text-xs text-gray-9">
                       <Loader2 size={14} class={props.submitting ? "animate-spin" : ""} />
-                      <span>{props.submitting ? "Waiting for confirmation..." : "Ready to retry completion."}</span>
+                      <span>{props.submitting ? "Verifying..." : "Ready to complete connection."}</span>
                     </div>
                     <div class="flex items-center justify-between gap-3">
                       <Button
@@ -669,7 +668,7 @@ export default function ProviderAuthModal(props: ProviderAuthModalProps) {
                         Open browser again
                       </Button>
                       <Button variant="secondary" onClick={() => void handleOauthAutoRetry()} disabled={actionDisabled()}>
-                        {props.submitting ? "Waiting..." : "Retry completion"}
+                        {props.submitting ? "Verifying..." : "Complete connection"}
                       </Button>
                     </div>
                   </div>

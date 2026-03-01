@@ -13,9 +13,9 @@ function expandHome(value: string): string {
 }
 
 function resolveOpenworkDataDir(): string {
-  const override = readCompatEnv("OPENWORK_DATA_DIR")?.trim();
+  const override = readCompatEnv("DOWHAT_DATA_DIR")?.trim();
   if (override) return expandHome(override);
-  return join(homedir(), ".openwork", "openwork-server");
+  return join(homedir(), ".do-what", "do-what-server");
 }
 
 export function auditLogPath(workspaceId: string): string {
@@ -23,7 +23,7 @@ export function auditLogPath(workspaceId: string): string {
 }
 
 export function legacyAuditLogPath(workspaceRoot: string): string {
-  return join(workspaceRoot, ".opencode", "openwork", "audit.jsonl");
+  return join(workspaceRoot, ".opencode", "dowhat", "audit.jsonl");
 }
 
 async function resolveReadableAuditPath(workspaceRoot: string, workspaceId: string): Promise<string | null> {

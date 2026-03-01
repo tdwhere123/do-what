@@ -266,8 +266,8 @@ pub fn reset_dowhat_state(app: tauri::AppHandle, mode: String) -> Result<(), Str
 #[tauri::command]
 pub fn app_build_info(app: AppHandle) -> AppBuildInfo {
     let version = app.package_info().version.to_string();
-    let git_sha = option_env!("OPENWORK_GIT_SHA").map(|value| value.to_string());
-    let build_epoch = option_env!("OPENWORK_BUILD_EPOCH").map(|value| value.to_string());
+    let git_sha = option_env!("DOWHAT_GIT_SHA").map(|value| value.to_string());
+    let build_epoch = option_env!("DOWHAT_BUILD_EPOCH").map(|value| value.to_string());
     AppBuildInfo {
         version,
         git_sha,

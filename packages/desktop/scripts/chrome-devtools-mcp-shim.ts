@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 import { readCompatEnv } from "./env-compat.mjs";
 
 const packageSpec =
-  readCompatEnv("OPENWORK_CHROME_DEVTOOLS_MCP_SPEC")?.trim() ||
+  readCompatEnv("DOWHAT_CHROME_DEVTOOLS_MCP_SPEC")?.trim() ||
   process.env.CHROME_DEVTOOLS_MCP_SPEC?.trim() ||
   "chrome-devtools-mcp@0.17.0";
 

@@ -6,37 +6,7 @@ import { ServerProvider } from "./context/server";
 import { isTauriRuntime } from "./utils";
 
 function migrateLocalStorage() {
-  if (typeof window === "undefined") return;
-  const markerKey = "dowhat.__migrated";
-  try {
-    if (window.localStorage.getItem(markerKey)) return;
-
-    const keys = Object.keys(window.localStorage);
-    for (const key of keys) {
-      const value = window.localStorage.getItem(key);
-      if (value === null) continue;
-
-      if (key.startsWith("openwork.")) {
-        window.localStorage.setItem(key.replace("openwork.", "dowhat."), value);
-        continue;
-      }
-      if (key === "openwork_mode_pref") {
-        window.localStorage.setItem("dowhat_mode_pref", value);
-        continue;
-      }
-      if (key.startsWith("openwork.global.dat:")) {
-        window.localStorage.setItem(key.replace("openwork.global.dat:", "dowhat.global.dat:"), value);
-        continue;
-      }
-      if (key.startsWith("openwork.workspace.")) {
-        window.localStorage.setItem(key.replace("openwork.workspace.", "dowhat.workspace."), value);
-      }
-    }
-
-    window.localStorage.setItem(markerKey, "1");
-  } catch {
-    // ignore migration failures to avoid blocking app startup.
-  }
+  // Compatibility migration intentionally removed in do-what hard-cut mode.
 }
 
 export default function AppEntry() {
@@ -49,8 +19,8 @@ export default function AppEntry() {
     // When running the web UI against a do-what server (e.g. Docker dev stack),
     // use the server's `/opencode` proxy instead of loopback.
     const doWhatUrl =
-      typeof import.meta.env?.VITE_OPENWORK_URL === "string"
-        ? import.meta.env.VITE_OPENWORK_URL.trim()
+      typeof import.meta.env?.VITE_DOWHAT_URL === "string"
+        ? import.meta.env.VITE_DOWHAT_URL.trim()
         : "";
     if (doWhatUrl) {
       return `${doWhatUrl.replace(/\/+$/, "")}/opencode`;
