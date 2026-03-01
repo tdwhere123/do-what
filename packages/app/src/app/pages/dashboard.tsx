@@ -1295,6 +1295,7 @@ export default function DashboardView(props: DashboardViewProps) {
                   notionError={props.notionError}
                   notionBusy={props.notionBusy}
                   connectNotion={props.connectNotion}
+                  onBack={() => props.setTab("sessions")}
                 />
 
               </Match>

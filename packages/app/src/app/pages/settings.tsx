@@ -103,10 +103,19 @@ export type SettingsViewProps = {
   notionBusy: boolean;
   connectNotion: () => void;
   engineDoctorVersion: string | null;
+  onBack?: () => void;
 };
 
 export default function SettingsView(props: SettingsViewProps) {
   const tabs: SettingsTab[] = ["general", "workspace", "model", "runtimes", "advanced", "debug"];
+  const tabLabels: Record<SettingsTab, string> = {
+    general: "通用",
+    workspace: "工作区",
+    model: "模型",
+    runtimes: "运行时",
+    advanced: "高级",
+    debug: "调试",
+  };
   const activeTab = () => props.settingsTab;
   const connectedProviderCount = createMemo(() => props.providerConnectedIds.length);
   const [runtimeMap, setRuntimeMap] = createSignal<Record<string, RuntimeAssistantStatus>>({});
@@ -140,17 +149,27 @@ export default function SettingsView(props: SettingsViewProps) {
 
   return (
     <div class="space-y-5">
-      <div class="flex flex-wrap gap-2">
-        <For each={tabs}>
-          {(tab) => (
-            <button
-              class={`px-3 py-1.5 text-xs rounded-md border ${activeTab() === tab ? "bg-dls-active text-dls-text" : "text-dls-secondary"}`}
-              onClick={() => props.setSettingsTab(tab)}
-            >
-              {tab}
-            </button>
-          )}
-        </For>
+      <div class="flex items-center gap-3">
+        <Show when={props.onBack}>
+          <button
+            class="px-2 py-1 text-xs rounded-md border text-dls-secondary hover:text-dls-text hover:bg-dls-surface transition-colors"
+            onClick={() => props.onBack?.()}
+          >
+            ← 返回
+          </button>
+        </Show>
+        <div class="flex flex-wrap gap-2">
+          <For each={tabs}>
+            {(tab) => (
+              <button
+                class={`px-3 py-1.5 text-xs rounded-md border ${activeTab() === tab ? "bg-dls-active text-dls-text" : "text-dls-secondary"}`}
+                onClick={() => props.setSettingsTab(tab)}
+              >
+                {tabLabels[tab]}
+              </button>
+            )}
+          </For>
+        </div>
       </div>
 
       <Switch>

@@ -4722,7 +4722,7 @@ export default function App() {
     const normalizedVersion = openworkVersion.startsWith("v")
       ? openworkVersion
       : `v${openworkVersion}`;
-    return `OpenWork ${normalizedVersion}`;
+    return `do-what ${normalizedVersion}`;
   });
 
   const headerStatus = createMemo(() => {

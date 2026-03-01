@@ -175,16 +175,26 @@ fn codex_auth_paths() -> Vec<PathBuf> {
     dedupe_paths(paths)
 }
 
+fn version_probe_multi(binaries: &[&str], args: &[&str], details: &mut Vec<String>) -> (bool, Option<String>, String) {
+    for binary in binaries {
+        let (installed, version) = version_probe(binary, args, details);
+        if installed {
+            return (true, version, binary.to_string());
+        }
+    }
+    (false, None, binaries.first().unwrap_or(&"unknown").to_string())
+}
+
 fn build_runtime_status(
     id: &str,
     name: &str,
-    binary: &str,
+    binaries: &[&str],
     version_args: &[&str],
     login_env_keys: &[&str],
     login_paths: Vec<PathBuf>,
 ) -> RuntimeAssistantStatus {
     let mut details = Vec::<String>::new();
-    let (installed, version) = version_probe(binary, version_args, &mut details);
+    let (installed, version, resolved_binary) = version_probe_multi(binaries, version_args, &mut details);
 
     let logged_in = if installed {
         has_env_login(login_env_keys, &mut details) || has_file_login(&login_paths, &mut details)
@@ -199,7 +209,7 @@ fn build_runtime_status(
     RuntimeAssistantStatus {
         id: id.to_string(),
         name: name.to_string(),
-        binary: binary.to_string(),
+        binary: resolved_binary,
         installed,
         install_state: if installed {
             RuntimeInstallState::Installed
@@ -221,7 +231,7 @@ fn probe_opencode_status() -> RuntimeAssistantStatus {
     build_runtime_status(
         "opencode",
         "OpenCode",
-        "opencode",
+        &["opencode", "opencode.cmd"],
         &["--version"],
         &["OPENCODE_API_KEY", "OPENAI_API_KEY"],
         opencode_auth_paths(),
@@ -232,7 +242,7 @@ fn probe_claude_code_status() -> RuntimeAssistantStatus {
     build_runtime_status(
         "claude-code",
         "Claude Code",
-        "claude",
+        &["claude", "claude.cmd", "claude-code", "claude-code.cmd"],
         &["--version"],
         &["ANTHROPIC_API_KEY"],
         claude_auth_paths(),
@@ -243,7 +253,7 @@ fn probe_codex_status() -> RuntimeAssistantStatus {
     build_runtime_status(
         "codex",
         "Codex",
-        "codex",
+        &["codex", "codex.cmd"],
         &["--version"],
         &["OPENAI_API_KEY"],
         codex_auth_paths(),
