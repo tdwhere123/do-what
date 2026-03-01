@@ -10,9 +10,7 @@ const [runtimeSnapshot, setRuntimeSnapshot] = createSignal<RuntimeAssistantStatu
 export { runtimeSnapshot };
 
 export const connectedRuntimes = createMemo<RuntimeAssistantStatus[]>(() =>
-  runtimeSnapshot().assistants.filter(
-    (assistant) => assistant.installed && (assistant.id === "opencode" || assistant.loggedIn),
-  ),
+  runtimeSnapshot().assistants.filter((assistant) => assistant.installed),
 );
 
 export const hasAnyConnectedRuntime = createMemo(() => connectedRuntimes().length > 0);

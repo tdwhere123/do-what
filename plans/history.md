@@ -91,4 +91,10 @@
 - Fixed UI issues: composer placeholder -> do-what, broken dashboard Tailwind class repaired, Skills branding cleanup.
 - Cleared default hub source (no built-in openwork-hub). Hub now relies on optional DOWHAT_HUB_* config or external install flows.
 - Hard-cut compatibility: removed OPENWORK_* mapping branches, unified env/header/flag prefixes to DOWHAT_* / X-DoWhat-* / --dowhat-*.
+- Follow-up hotfix:
+  - removed session branch/DAG UI and project-parent-session linking logic from app state;
+  - OpenAI OAuth flow fallback improved and modal flow stabilized;
+  - workspace bootstrap no longer injects enterprise skills/default plugins/default chrome MCP;
+  - runtime availability probing now supports Windows `.cmd/.bat` in status checks too;
+  - do-what logo switched to circle style (desktop icon + UI logo).
 - Detailed record: plans/v0.10-record.md.

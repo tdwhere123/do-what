@@ -42,9 +42,9 @@ pnpm run setup:windows
 ## 5. 环境变量兼容（v0.6）
 
 - 新变量前缀：`DOWHAT_*`（优先读取）
-- 兼容前缀：`DOWHAT_*`（兼容期保留）
-- 使用旧变量时会打印一次 deprecated 提示（不会阻塞脚本）
-- 开发脚本默认注入 `DOWHAT_DATA_DIR`，并同时写入 `DOWHAT_DATA_DIR` 以保持兼容
+- 旧 `OPENWORK_*` 兼容映射已在 v0.10 主线移除
+- 桌面侧仅读取 `DOWHAT_*`
+- 开发脚本默认注入 `DOWHAT_DATA_DIR`
 
 ## 5. 常用命令
 
@@ -64,4 +64,6 @@ pnpm run setup:windows
 ## v0.10 Update (2026-03-01)
 - agent_run now resolves Windows CLI shims (.cmd/.bat) for Codex/Claude to prevent program-not-found.
 - Desktop env compatibility mapper was simplified to direct DOWHAT_* reads only.
+- Runtime status probing (`check_assistant_statuses`) now also supports Windows shim execution (`cmd /C`) for `.cmd/.bat`.
+- Workspace bootstrap removed automatic enterprise skills/default plugin/default chrome MCP injection.
 

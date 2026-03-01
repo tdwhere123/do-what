@@ -48,4 +48,7 @@ pnpm --filter @do-what/ui dev
 - Composer placeholder updated to do-what branding.
 - Dashboard broken Tailwind class fixed (navigation button sizing/alignment).
 - Skills Hub no longer pulls a built-in repository by default; use Install from link or configure VITE_DOWHAT_HUB_*.
+- Session branch/DAG widget removed; conversation flow no longer depends on project/parent-session linkage.
+- OpenAI OAuth modal flow updated to manual completion with fallback method probing.
+- Runtime availability UI now treats `opencode/claude-code/codex` with consistent installed-based gating.
 

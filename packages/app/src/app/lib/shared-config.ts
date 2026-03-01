@@ -1,7 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
 import { buildSystemMemoryPrefix } from "./memory";
-import { listAgentRunTextEvents } from "../state/sessions";
 
 export type McpEntry = {
   name: string;
@@ -69,22 +68,4 @@ export async function buildPromptPrefix(): Promise<string> {
     parts.push(`<rules>\n${rules.trim()}\n</rules>`);
   }
   return parts.length ? parts.join("\n\n") + "\n\n" : "";
-}
-
-
-export async function buildContextPrefix(
-  parentSessionIds: string[],
-  options?: { maxLength?: number },
-): Promise<string> {
-  const ids = parentSessionIds.map((id) => id.trim()).filter(Boolean);
-  if (!ids.length) return "";
-
-  const snippets = listAgentRunTextEvents(ids, 8);
-  if (!snippets.length) return "";
-
-  const maxLength = options?.maxLength ?? 1000;
-  const combined = snippets.join("\n");
-  const summary = combined.length > maxLength ? `${combined.slice(0, Math.max(0, maxLength - 3))}...` : combined;
-
-  return `--- Context from previous sessions ---\n${summary}\n--- End context ---\n\n`;
 }

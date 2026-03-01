@@ -98,4 +98,7 @@ router 连接链路已从主线代码中摘除，不再作为可配置能力存�
 ## v0.10 Update (2026-03-01)
 - OpenWork compatibility branches were hard-removed in core runtime/env/header paths; current prefix is DOWHAT_*.
 - Hub default source is now empty by design. Use external install flows or configure custom hub source via DOWHAT_HUB_* / VITE_DOWHAT_HUB_*.
+- Session “branch/DAG” widget and project-parent-session linking logic were removed from the main conversation flow.
+- Workspace bootstrap no longer auto-downloads enterprise skills or injects default plugins/MCP.
+- Runtime status probing on desktop is Windows-shim aware for all three runtimes.
 - Detailed implementation record: plans/v0.10-record.md.

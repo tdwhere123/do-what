@@ -4,6 +4,8 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use crate::platform::configure_hidden;
+
 #[derive(serde::Serialize, Clone, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum RuntimeInstallState {
@@ -46,6 +48,23 @@ fn now_ms() -> u64 {
         .as_millis() as u64
 }
 
+fn command_for_candidate(binary: &str) -> Command {
+    #[cfg(windows)]
+    {
+        let lower = binary.to_ascii_lowercase();
+        if lower.ends_with(".cmd") || lower.ends_with(".bat") {
+            let mut command = Command::new("cmd");
+            command.arg("/C").arg(binary);
+            configure_hidden(&mut command);
+            return command;
+        }
+    }
+
+    let mut command = Command::new(binary);
+    configure_hidden(&mut command);
+    command
+}
+
 fn summarize_output(bytes: &[u8]) -> Option<String> {
     let text = String::from_utf8_lossy(bytes);
     text.lines()
@@ -62,7 +81,7 @@ fn summarize_output(bytes: &[u8]) -> Option<String> {
 }
 
 fn version_probe(binary: &str, args: &[&str], details: &mut Vec<String>) -> (bool, Option<String>) {
-    match Command::new(binary).args(args).output() {
+    match command_for_candidate(binary).args(args).output() {
         Ok(output) => {
             if output.status.success() {
                 let version = summarize_output(&output.stdout).or_else(|| summarize_output(&output.stderr));

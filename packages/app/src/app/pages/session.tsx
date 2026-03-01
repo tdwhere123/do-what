@@ -78,8 +78,7 @@ import AgentRunView from "../components/agent-run";
 import FlyoutItem from "../components/flyout-item";
 import QuestionModal from "../components/question-modal";
 import ArtifactMarkdownEditor from "../components/session/artifact-markdown-editor";
-import SessionDagWidget from "../components/session-dag";
-import { useAgentRuns, useProjects } from "../state/sessions";
+import { useAgentRuns } from "../state/sessions";
 
 export type SessionViewProps = {
   themeMode: "light" | "dark" | "system";
@@ -258,11 +257,7 @@ export default function SessionView(props: SessionViewProps) {
   const [agentPickerOpen, setAgentPickerOpen] = createSignal(false);
   const [agentPickerBusy, setAgentPickerBusy] = createSignal(false);
 
-  const { projects } = useProjects();
   const { agentRuns } = useAgentRuns();
-  const activeProjectId = createMemo(() =>
-    projects.find((project) => props.selectedSessionId && project.sessionIds.includes(props.selectedSessionId))?.id ?? null,
-  );
   const selectedAgentRun = createMemo(() =>
     agentRuns.find((run) => run.id === props.selectedSessionId) ?? null
   );
@@ -2755,10 +2750,6 @@ export default function SessionView(props: SessionViewProps) {
       </aside>
 
       <main class="relative flex-1 flex flex-col overflow-hidden bg-dls-surface">
-        <SessionDagWidget
-          projectId={activeProjectId()}
-          onSelectSession={(id) => void props.selectSession(id)}
-        />
         <header class="h-14 border-b border-dls-border flex items-center justify-between px-6 bg-dls-surface z-10 shrink-0">
           <div class="flex items-center gap-3 min-w-0">
             <h1 class="text-sm font-semibold text-dls-text truncate">{selectedSessionTitle() || "新任务"}</h1>

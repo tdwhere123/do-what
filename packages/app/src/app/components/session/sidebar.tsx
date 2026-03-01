@@ -3,7 +3,6 @@ import { Check, ChevronDown, GripVertical, Loader2, Plus, RefreshCcw, Settings, 
 
 import type { TodoItem, WorkspaceConnectionState } from "../../types";
 import type { WorkspaceInfo } from "../../lib/tauri";
-import { useProjects } from "../../state/sessions";
 
 type SessionSummary = {
   id: string;
@@ -54,7 +53,6 @@ export type SidebarProps = {
 
 export default function SessionSidebar(props: SidebarProps) {
   const MAX_SESSIONS_PREVIEW = 8;
-  const { projects } = useProjects();
   const realTodos = createMemo(() => props.todos.filter((todo) => todo.content.trim()));
   const WORKSPACE_COLLAPSE_KEY = "openwork.workspace-collapse.v1";
   const readWorkspaceCollapse = () => {
@@ -83,7 +81,6 @@ export default function SessionSidebar(props: SidebarProps) {
   const [showAllSessionsByWorkspaceId, setShowAllSessionsByWorkspaceId] = createSignal<
     Record<string, boolean>
   >({});
-  const [collapsedProjectById, setCollapsedProjectById] = createSignal<Record<string, boolean>>({});
   const [addWorkspaceMenuOpen, setAddWorkspaceMenuOpen] = createSignal(false);
   let addWorkspaceMenuRef: HTMLDivElement | undefined;
 
@@ -333,21 +330,6 @@ export default function SessionSidebar(props: SidebarProps) {
                   const visibleWorkspaceSessions = () =>
                     showingAll() ? sessions() : sessions().slice(0, MAX_SESSIONS_PREVIEW);
                   const hasMoreSessions = () => sessions().length > MAX_SESSIONS_PREVIEW;
-                  const projectGroups = () =>
-                    projects
-                      .map((project) => ({
-                        project,
-                        sessions: visibleWorkspaceSessions().filter((session) => project.sessionIds.includes(session.id)),
-                      }))
-                      .filter((entry) => entry.sessions.length > 0);
-                  const quickChats = () =>
-                    visibleWorkspaceSessions().filter(
-                      (session) => !projects.some((project) => project.sessionIds.includes(session.id)),
-                    );
-                  const isProjectCollapsed = (projectId: string) => Boolean(collapsedProjectById()[projectId]);
-                  const toggleProjectCollapse = (projectId: string) => {
-                    setCollapsedProjectById((prev) => ({ ...prev, [projectId]: !prev[projectId] }));
-                  };
 
                   return (
                     <div
@@ -494,48 +476,7 @@ export default function SessionSidebar(props: SidebarProps) {
                               </div>
                             }
                           >
-                            <For each={projectGroups()}>
-                              {(entry) => (
-                                <div class="px-1 py-1 space-y-1">
-                                  <button
-                                    type="button"
-                                    class="w-full flex items-center justify-between px-2 py-1 rounded text-[11px] text-gray-10 bg-gray-2/60"
-                                    onClick={() => toggleProjectCollapse(entry.project.id)}
-                                    title={entry.project.workdir}
-                                  >
-                                    <span class="truncate">{entry.project.name}</span>
-                                    <ChevronDown size={12} class={`${isProjectCollapsed(entry.project.id) ? "-rotate-90" : "rotate-0"} transition-transform`} />
-                                  </button>
-                                  <Show when={!isProjectCollapsed(entry.project.id)}>
-                                    <For each={entry.sessions}>
-                                      {(session) => (
-                                        <button
-                                          class={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                                            session.id === props.selectedSessionId
-                                              ? "bg-gray-3 text-gray-12 font-medium"
-                                              : "text-gray-11 hover:text-gray-12 hover:bg-gray-2"
-                                          } ${!allowActions() ? "opacity-70" : ""}`}
-                                          onClick={() => {
-                                            if (!allowActions()) return;
-                                            props.onSelectSession(group.workspace.id, session.id);
-                                          }}
-                                          onContextMenu={(event) => {
-                                            if (!isActive()) return;
-                                            openContextMenu(event, session.id);
-                                          }}
-                                          disabled={!allowActions()}
-                                        >
-                                          <div class="truncate">{session.title}</div>
-                                        </button>
-                                      )}
-                                    </For>
-                                  </Show>
-                                </div>
-                              )}
-                            </For>
-
-                            <div class="px-2 pt-1 text-[10px] uppercase tracking-wide text-[var(--color-text-tertiary)]">Quick Chats</div>
-                            <For each={quickChats()}>
+                            <For each={visibleWorkspaceSessions()}>
                               {(session) => (
                                 <button
                                   class={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${

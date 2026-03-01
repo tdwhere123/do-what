@@ -47,13 +47,16 @@ export async function spawnOpencodeServe({
     args.push("--cors", origin);
   }
 
-  const child = spawn("opencode", args, {
+  const command = process.platform === "win32" ? "cmd" : "opencode";
+  const commandArgs = process.platform === "win32" ? ["/C", "opencode", ...args] : args;
+
+  const child = spawn(command, commandArgs, {
     cwd,
     stdio: ["ignore", "ignore", "pipe"],
     env: {
       ...process.env,
       // Make it explicit we're a non-TUI client.
-      OPENCODE_CLIENT: "openwork-test",
+      OPENCODE_CLIENT: "dowhat-test",
     },
   });
 
