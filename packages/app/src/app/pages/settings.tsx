@@ -12,7 +12,7 @@ import type {
 import type {
   EngineInfo,
   OrchestratorStatus,
-  OpenworkServerInfo,
+  DoWhatServerInfo,
   RuntimeAssistantStatus,
 } from "../lib/tauri";
 import { checkAssistantStatuses } from "../lib/tauri";
@@ -33,7 +33,7 @@ export type SettingsViewProps = {
   openworkServerUrl: string;
   openworkReconnectBusy: boolean;
   reconnectOpenworkServer: () => Promise<boolean>;
-  openworkServerHostInfo: OpenworkServerInfo | null;
+  openworkServerHostInfo: DoWhatServerInfo | null;
   openworkServerCapabilities: OpenworkServerCapabilities | null;
   openworkServerDiagnostics: OpenworkServerDiagnostics | null;
   openworkServerWorkspaceId: string | null;
@@ -63,8 +63,8 @@ export type SettingsViewProps = {
   setEngineSource: (value: "path" | "sidecar" | "custom") => void;
   engineCustomBinPath: string;
   setEngineCustomBinPath: (value: string) => void;
-  engineRuntime: "direct" | "openwork-orchestrator";
-  setEngineRuntime: (value: "direct" | "openwork-orchestrator") => void;
+  engineRuntime: "direct" | "dowhat-orchestrator";
+  setEngineRuntime: (value: "direct" | "dowhat-orchestrator") => void;
   isWindows: boolean;
   defaultModelLabel: string;
   defaultModelRef: string;
@@ -114,12 +114,12 @@ export default function SettingsView(props: SettingsViewProps) {
 
   const runtimeStatus = (id: "opencode" | "claude-code" | "codex") => runtimeMap()[id];
   const runtimeInstallText = (status: RuntimeAssistantStatus | undefined) => {
-    if (!status) return "Checking...";
-    return status.installState === "installed" ? "Installed" : "Not Installed";
+    if (!status) return "检查中...";
+    return status.installState === "installed" ? "已安装" : "未安装";
   };
   const runtimeLoginText = (status: RuntimeAssistantStatus | undefined) => {
-    if (!status) return "Checking...";
-    return status.loginState === "logged-in" ? "Logged In" : "Logged Out";
+    if (!status) return "检查中...";
+    return status.loginState === "logged-in" ? "已登录" : "未登录";
   };
 
   const refreshRuntimes = async () => {
@@ -132,7 +132,7 @@ export default function SettingsView(props: SettingsViewProps) {
       setRuntimeMap(next);
       setRuntimeRefreshError(null);
     } catch (error) {
-      setRuntimeRefreshError(error instanceof Error ? error.message : "Failed to check runtime statuses");
+      setRuntimeRefreshError(error instanceof Error ? error.message : "检查运行时状态失败");
     }
   };
 
@@ -156,32 +156,32 @@ export default function SettingsView(props: SettingsViewProps) {
       <Switch>
         <Match when={activeTab() === "general"}>
           <div class="space-y-3 rounded-xl border border-dls-border p-4">
-            <div class="text-sm font-medium">General</div>
+            <div class="text-sm font-medium">通用 (General)</div>
             <div class="text-xs text-dls-secondary">{t("status.connected", currentLocale())}: {props.headerStatus}</div>
-            <div class="text-xs text-dls-secondary">Providers connected: {connectedProviderCount()}</div>
-            <Button onClick={() => props.openProviderAuthModal()} disabled={props.providerAuthBusy}>Manage providers</Button>
+            <div class="text-xs text-dls-secondary">已连接服务商: {connectedProviderCount()}</div>
+            <Button onClick={() => props.openProviderAuthModal()} disabled={props.providerAuthBusy}>管理服务商</Button>
           </div>
         </Match>
 
         <Match when={activeTab() === "workspace"}>
           <div class="space-y-3 rounded-xl border border-dls-border p-4">
-            <div class="text-sm font-medium">Workspace</div>
-            <div class="text-xs text-dls-secondary">Server: {props.openworkServerUrl || "Not configured"}</div>
+            <div class="text-sm font-medium">工作区 (Workspace)</div>
+            <div class="text-xs text-dls-secondary">服务器: {props.openworkServerUrl || "未配置"}</div>
             <div class="flex gap-2">
-              <Button onClick={() => props.reconnectOpenworkServer()} disabled={props.openworkReconnectBusy}>Reconnect server</Button>
-              <Button variant="secondary" onClick={() => props.reloadWorkspaceEngine()} disabled={!props.canReloadWorkspace || props.reloadBusy}>Reload workspace engine</Button>
+              <Button onClick={() => props.reconnectOpenworkServer()} disabled={props.openworkReconnectBusy}>重新连接服务器</Button>
+              <Button variant="secondary" onClick={() => props.reloadWorkspaceEngine()} disabled={!props.canReloadWorkspace || props.reloadBusy}>重新加载工作区引擎</Button>
             </div>
           </div>
         </Match>
 
         <Match when={activeTab() === "model"}>
           <div class="space-y-3 rounded-xl border border-dls-border p-4">
-            <div class="text-sm font-medium">Model</div>
-            <div class="text-xs text-dls-secondary">Default: {props.defaultModelLabel}</div>
-            <div class="text-xs text-dls-secondary">Variant: {props.modelVariantLabel}</div>
+            <div class="text-sm font-medium">模型 (Model)</div>
+            <div class="text-xs text-dls-secondary">默认模型: {props.defaultModelLabel}</div>
+            <div class="text-xs text-dls-secondary">配置变体: {props.modelVariantLabel}</div>
             <div class="flex gap-2">
-              <Button onClick={props.openDefaultModelPicker}>Choose default model</Button>
-              <Button variant="secondary" onClick={props.editModelVariant}>Edit variant</Button>
+              <Button onClick={props.openDefaultModelPicker}>选择默认模型</Button>
+              <Button variant="secondary" onClick={props.editModelVariant}>编辑配置</Button>
             </div>
           </div>
         </Match>
@@ -189,66 +189,74 @@ export default function SettingsView(props: SettingsViewProps) {
         <Match when={activeTab() === "runtimes"}>
           <div class="space-y-3 rounded-xl border border-dls-border p-4">
             <div class="flex items-center justify-between">
-              <div class="text-sm font-medium">Runtimes</div>
-              <Button variant="secondary" onClick={refreshRuntimes}>Refresh</Button>
+              <div class="text-sm font-medium">运行时 (Runtimes)</div>
+              <Button variant="secondary" onClick={refreshRuntimes}>刷新状态</Button>
             </div>
             <div class="rounded-lg border border-dls-border p-3 space-y-2">
-              <div>
-                <div class="text-sm">OpenCode</div>
-                <div class="text-xs text-dls-secondary">Desktop engine runtime availability and local auth signal</div>
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="text-sm">OpenCode</div>
+                  <div class="text-xs text-dls-secondary">桌面端原生引擎和本地认证支持</div>
+                </div>
+                <Button variant="outline" onClick={props.openDefaultModelPicker}>选择模型</Button>
               </div>
-              <div class="text-xs text-dls-secondary">Install: {runtimeInstallText(runtimeStatus("opencode"))}</div>
-              <div class="text-xs text-dls-secondary">Login: {runtimeLoginText(runtimeStatus("opencode"))}</div>
-              <div class="text-xs text-dls-secondary">Version: {runtimeStatus("opencode")?.version ?? "N/A"}</div>
+              <div class="text-xs text-dls-secondary">安装状态: {runtimeInstallText(runtimeStatus("opencode"))}</div>
+              <div class="text-xs text-dls-secondary">登录状态: {runtimeLoginText(runtimeStatus("opencode"))}</div>
+              <div class="text-xs text-dls-secondary">版本: {runtimeStatus("opencode")?.version ?? "未知"}</div>
             </div>
             <div class="rounded-lg border border-dls-border p-3 space-y-2">
-              <div>
-                <div class="text-sm">Claude Code</div>
-                <div class="text-xs text-dls-secondary">Requires `claude login` on this machine</div>
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="text-sm">Claude Code</div>
+                  <div class="text-xs text-dls-secondary">Claude 终端助手 (Terminal Companion)</div>
+                </div>
+                <div class="text-xs text-dls-secondary bg-dls-surface px-2 py-1 rounded">claude login</div>
               </div>
-              <div class="text-xs text-dls-secondary">Install: {runtimeInstallText(runtimeStatus("claude-code"))}</div>
-              <div class="text-xs text-dls-secondary">Login: {runtimeLoginText(runtimeStatus("claude-code"))}</div>
-              <div class="text-xs text-dls-secondary">Version: {runtimeStatus("claude-code")?.version ?? "N/A"}</div>
+              <div class="text-xs text-dls-secondary">安装状态: {runtimeInstallText(runtimeStatus("claude-code"))}</div>
+              <div class="text-xs text-dls-secondary">登录状态: {runtimeLoginText(runtimeStatus("claude-code"))}</div>
+              <div class="text-xs text-dls-secondary">版本: {runtimeStatus("claude-code")?.version ?? "未知"}</div>
             </div>
             <div class="rounded-lg border border-dls-border p-3 space-y-2">
               <div class="flex items-center justify-between">
                 <div>
                   <div class="text-sm">Codex</div>
-                  <div class="text-xs text-dls-secondary">Requires Codex CLI and OpenAI auth</div>
+                  <div class="text-xs text-dls-secondary">需要命令行 Codex 和 OpenAI API 认证</div>
                 </div>
-                <Button variant="outline" onClick={() => props.setSettingsTab("advanced")}>Configure API Key</Button>
+                <Button variant="outline" onClick={props.openProviderAuthModal}>配置 API Key</Button>
               </div>
-              <div class="text-xs text-dls-secondary">Install: {runtimeInstallText(runtimeStatus("codex"))}</div>
-              <div class="text-xs text-dls-secondary">Login: {runtimeLoginText(runtimeStatus("codex"))}</div>
-              <div class="text-xs text-dls-secondary">Version: {runtimeStatus("codex")?.version ?? "N/A"}</div>
+              <div class="text-xs text-dls-secondary">安装状态: {runtimeInstallText(runtimeStatus("codex"))}</div>
+              <div class="text-xs text-dls-secondary">登录状态: {runtimeLoginText(runtimeStatus("codex"))}</div>
+              <div class="text-xs text-dls-secondary">版本: {runtimeStatus("codex")?.version ?? "未知"}</div>
             </div>
             <Show when={runtimeRefreshError()}>
               <div class="text-xs text-red-11">{runtimeRefreshError()}</div>
             </Show>
             <div class="text-xs text-dls-secondary">
-              Login state is inferred from local env vars or credential files.
+              登录状态是通过分析本地环境变量和授权文件自动推断的。
             </div>
           </div>
         </Match>
 
         <Match when={activeTab() === "advanced"}>
           <div class="space-y-3 rounded-xl border border-dls-border p-4">
-            <div class="text-sm font-medium">Advanced</div>
+            <div class="text-sm font-medium">高级设置 (Advanced)</div>
             <div class="flex gap-2">
-              <Button variant="secondary" onClick={props.toggleDeveloperMode}>Toggle developer mode</Button>
-              <Button variant="outline" onClick={() => props.openResetModal("onboarding")} disabled={props.resetModalBusy}>Reset onboarding</Button>
+              <Button variant="secondary" onClick={props.toggleDeveloperMode}>切换开发者模式</Button>
+              <Button variant="outline" onClick={() => props.openResetModal("onboarding")} disabled={props.resetModalBusy}>重置新手引导</Button>
             </div>
           </div>
         </Match>
 
         <Match when={activeTab() === "debug"}>
           <div class="space-y-3 rounded-xl border border-dls-border p-4">
-            <div class="text-sm font-medium">Debug</div>
-            <div class="text-xs text-dls-secondary">Engine runtime: {props.engineRuntime}</div>
-            <div class="text-xs text-dls-secondary">Engine source: {props.engineSource}</div>
+            <div class="text-sm font-medium">调试信息 (Debug)</div>
+            <div class="text-xs text-dls-secondary">引擎运行时: {props.engineRuntime}</div>
+            <div class="text-xs text-dls-secondary">引擎源: {props.engineSource}</div>
           </div>
         </Match>
       </Switch>
     </div>
   );
 }
+
+

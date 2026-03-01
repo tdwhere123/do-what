@@ -255,9 +255,12 @@ export type OpenworkReloadEvent = {
 
 export const DEFAULT_OPENWORK_SERVER_PORT = 8787;
 
-const STORAGE_URL_OVERRIDE = "openwork.server.urlOverride";
-const STORAGE_PORT_OVERRIDE = "openwork.server.port";
-const STORAGE_TOKEN = "openwork.server.token";
+const STORAGE_URL_OVERRIDE = "dowhat.server.urlOverride";
+const STORAGE_PORT_OVERRIDE = "dowhat.server.port";
+const STORAGE_TOKEN = "dowhat.server.token";
+const LEGACY_STORAGE_URL_OVERRIDE = "openwork.server.urlOverride";
+const LEGACY_STORAGE_PORT_OVERRIDE = "openwork.server.port";
+const LEGACY_STORAGE_TOKEN = "openwork.server.token";
 
 export function normalizeOpenworkServerUrl(input: string) {
   const trimmed = input.trim();
@@ -319,11 +322,19 @@ export function readOpenworkServerSettings(): OpenworkServerSettings {
   if (typeof window === "undefined") return {};
   try {
     const urlOverride = normalizeOpenworkServerUrl(
-      window.localStorage.getItem(STORAGE_URL_OVERRIDE) ?? "",
+      window.localStorage.getItem(STORAGE_URL_OVERRIDE) ??
+        window.localStorage.getItem(LEGACY_STORAGE_URL_OVERRIDE) ??
+        "",
     );
-    const portRaw = window.localStorage.getItem(STORAGE_PORT_OVERRIDE) ?? "";
+    const portRaw =
+      window.localStorage.getItem(STORAGE_PORT_OVERRIDE) ??
+      window.localStorage.getItem(LEGACY_STORAGE_PORT_OVERRIDE) ??
+      "";
     const portOverride = portRaw ? Number(portRaw) : undefined;
-    const token = window.localStorage.getItem(STORAGE_TOKEN) ?? undefined;
+    const token =
+      window.localStorage.getItem(STORAGE_TOKEN) ??
+      window.localStorage.getItem(LEGACY_STORAGE_TOKEN) ??
+      undefined;
     return {
       urlOverride: urlOverride ?? undefined,
       portOverride: Number.isNaN(portOverride) ? undefined : portOverride,
@@ -343,20 +354,26 @@ export function writeOpenworkServerSettings(next: OpenworkServerSettings): Openw
 
     if (urlOverride) {
       window.localStorage.setItem(STORAGE_URL_OVERRIDE, urlOverride);
+      window.localStorage.removeItem(LEGACY_STORAGE_URL_OVERRIDE);
     } else {
       window.localStorage.removeItem(STORAGE_URL_OVERRIDE);
+      window.localStorage.removeItem(LEGACY_STORAGE_URL_OVERRIDE);
     }
 
     if (typeof portOverride === "number" && !Number.isNaN(portOverride)) {
       window.localStorage.setItem(STORAGE_PORT_OVERRIDE, String(portOverride));
+      window.localStorage.removeItem(LEGACY_STORAGE_PORT_OVERRIDE);
     } else {
       window.localStorage.removeItem(STORAGE_PORT_OVERRIDE);
+      window.localStorage.removeItem(LEGACY_STORAGE_PORT_OVERRIDE);
     }
 
     if (token) {
       window.localStorage.setItem(STORAGE_TOKEN, token);
+      window.localStorage.removeItem(LEGACY_STORAGE_TOKEN);
     } else {
       window.localStorage.removeItem(STORAGE_TOKEN);
+      window.localStorage.removeItem(LEGACY_STORAGE_TOKEN);
     }
 
     return readOpenworkServerSettings();
@@ -417,6 +434,9 @@ export function clearOpenworkServerSettings() {
     window.localStorage.removeItem(STORAGE_URL_OVERRIDE);
     window.localStorage.removeItem(STORAGE_PORT_OVERRIDE);
     window.localStorage.removeItem(STORAGE_TOKEN);
+    window.localStorage.removeItem(LEGACY_STORAGE_URL_OVERRIDE);
+    window.localStorage.removeItem(LEGACY_STORAGE_PORT_OVERRIDE);
+    window.localStorage.removeItem(LEGACY_STORAGE_TOKEN);
   } catch {
     // ignore
   }

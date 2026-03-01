@@ -21,10 +21,10 @@ import {
   type OpenworkServerStatus,
 } from "../lib/openwork-server";
 import {
-  openworkServerInfo,
+  doWhatServerInfo,
   orchestratorStatus,
   type OrchestratorStatus,
-  type OpenworkServerInfo,
+  type DoWhatServerInfo,
 } from "../lib/tauri";
 import { isTauriRuntime } from "../utils";
 import type { StartupPreference } from "../types";
@@ -43,7 +43,7 @@ export function createOpenworkServerStore(options: {
   const [capabilities, setCapabilities] = createSignal<OpenworkServerCapabilities | null>(null);
   const [checkedAt, setCheckedAt] = createSignal<number | null>(null);
   const [workspaceId, setWorkspaceId] = createSignal<string | null>(null);
-  const [hostInfo, setHostInfo] = createSignal<OpenworkServerInfo | null>(null);
+  const [hostInfo, setHostInfo] = createSignal<DoWhatServerInfo | null>(null);
   const [diagnostics, setDiagnostics] = createSignal<OpenworkServerDiagnostics | null>(null);
   const [reconnectBusy, setReconnectBusy] = createSignal(false);
   const [orchStatus, setOrchStatus] = createSignal<OrchestratorStatus | null>(null);
@@ -182,7 +182,7 @@ export function createOpenworkServerStore(options: {
 
     const run = async () => {
       try {
-        const info = await openworkServerInfo();
+        const info = await doWhatServerInfo();
         if (active) setHostInfo(info);
       } catch {
         if (active) setHostInfo(null);

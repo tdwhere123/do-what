@@ -3,12 +3,17 @@ import { invoke } from "@tauri-apps/api/core";
 import { isTauriRuntime } from "../utils";
 
 const SYSTEM_MEMORY_PATH = "~/.config/do-what/shared/system.md";
-const WEB_SYSTEM_MEMORY_KEY = "openwork.system-memory.v1";
+const WEB_SYSTEM_MEMORY_KEY = "dowhat.system-memory.v1";
+const LEGACY_WEB_SYSTEM_MEMORY_KEY = "openwork.system-memory.v1";
 
 export async function readSystemMemory(): Promise<string> {
   if (!isTauriRuntime()) {
     if (typeof window === "undefined") return "";
-    return window.localStorage.getItem(WEB_SYSTEM_MEMORY_KEY) ?? "";
+    return (
+      window.localStorage.getItem(WEB_SYSTEM_MEMORY_KEY) ??
+      window.localStorage.getItem(LEGACY_WEB_SYSTEM_MEMORY_KEY) ??
+      ""
+    );
   }
 
   try {
@@ -22,6 +27,7 @@ export async function writeSystemMemory(content: string): Promise<void> {
   if (!isTauriRuntime()) {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(WEB_SYSTEM_MEMORY_KEY, content);
+    window.localStorage.removeItem(LEGACY_WEB_SYSTEM_MEMORY_KEY);
     return;
   }
 

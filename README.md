@@ -74,11 +74,22 @@ router 连接链路已从主线代码中摘除，不再作为可配置能力存�
 - 常见故障：`docs/TROUBLESHOOTING.md`
 - 运行时矩阵：`docs/RUNTIME_MATRIX.md`
 
-## 维护要求（v0.6）
+## 维护要求（v0.8）
 
 文档或行为变更后，必须同步更新：
 
-1. `plans/v0.6.md`
-2. `plans/history.md`
-3. 受影响模块 README
-4. 结构瘦身/模块拆分时同步 `plans/v0.6-slimming-spec.md`
+1. `plans/history.md`
+2. 受影响模块 README
+3. 更新涉及的小版本计划文件
+
+## v0.8 完成记录 (2026-03-01)
+
+- Web 安全 Tauri invoke fallback（`packages/app/src/app/lib/tauri.ts`）
+- localStorage 迁移：`openwork.* → dowhat.*`（`packages/app/src/app/entry.tsx`）
+- 移除遗留 `openwork_*` 桥接命令，桌面端仅暴露 `dowhat_*` 命令
+- orchestrator `opencode-config` 目录处理（NUL 过滤 + 目录创建）
+- 暗色主题改为暖棕色方案，默认浅色主题
+- 底栏主题切换按钮 + 汉化
+- do-what-logo + 星星闪烁动画
+- 系统通知文本全部汉化
+- `theme.ts` key: `dowhat.themePref`

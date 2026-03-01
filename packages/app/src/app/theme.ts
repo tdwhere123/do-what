@@ -1,6 +1,6 @@
 export type ThemeMode = "light" | "dark" | "system";
 
-const THEME_PREF_KEY = "openwork.themePref";
+const THEME_PREF_KEY = "dowhat.themePref";
 
 const mediaQuery = "(prefers-color-scheme: dark)";
 
@@ -8,7 +8,7 @@ const getMediaQueryList = () =>
   typeof window === "undefined" ? null : window.matchMedia(mediaQuery);
 
 const readStoredMode = (): ThemeMode => {
-  if (typeof window === "undefined") return "system";
+  if (typeof window === "undefined") return "light";
   try {
     const stored = window.localStorage.getItem(THEME_PREF_KEY);
     if (stored === "light" || stored === "dark" || stored === "system") {
@@ -17,7 +17,7 @@ const readStoredMode = (): ThemeMode => {
   } catch {
     // ignore
   }
-  return "system";
+  return "light";
 };
 
 const resolveMode = (mode: ThemeMode) => {

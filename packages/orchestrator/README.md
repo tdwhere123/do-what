@@ -33,3 +33,10 @@ do-what 主线已移除 router 连接链路，不再提供该能力入口。
 1. 主链路优先可运行。
 2. 可选能力失败不阻塞核心流程。
 3. 与 desktop/server 通过明确 CLI 与协议交互。
+
+## v0.8 完成记录 (2026-03-01)
+
+- `opencode-config` 路径生成现在会过滤 NUL 字节并提前创建目标目录
+- 防止守护进程/启动流程中因无效路径字符导致的 ENOENT 错误
+- 移除守护进程内部遗留的 router 命名，状态文件改为 `dowhat-orchestrator-state.json`
+

@@ -28,6 +28,13 @@ type ServerContextValue = {
 
 const ServerContext = createContext<ServerContextValue | undefined>(undefined);
 
+const SERVER_LIST_KEY = "dowhat.server.list";
+const SERVER_ACTIVE_KEY = "dowhat.server.active";
+const SERVER_TOKEN_KEY = "dowhat.server.token";
+const LEGACY_SERVER_LIST_KEY = "openwork.server.list";
+const LEGACY_SERVER_ACTIVE_KEY = "openwork.server.active";
+const LEGACY_SERVER_TOKEN_KEY = "openwork.server.token";
+
 export function ServerProvider(props: ParentProps & { defaultUrl: string }) {
   const [list, setList] = createSignal<string[]>([]);
   const [active, setActiveRaw] = createSignal("");
@@ -36,7 +43,9 @@ export function ServerProvider(props: ParentProps & { defaultUrl: string }) {
 
   const readStoredList = () => {
     try {
-      const raw = window.localStorage.getItem("openwork.server.list");
+      const raw =
+        window.localStorage.getItem(SERVER_LIST_KEY) ??
+        window.localStorage.getItem(LEGACY_SERVER_LIST_KEY);
       const parsed = raw ? (JSON.parse(raw) as unknown) : [];
       return Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : [];
     } catch {
@@ -46,7 +55,9 @@ export function ServerProvider(props: ParentProps & { defaultUrl: string }) {
 
   const readStoredActive = () => {
     try {
-      const stored = window.localStorage.getItem("openwork.server.active");
+      const stored =
+        window.localStorage.getItem(SERVER_ACTIVE_KEY) ??
+        window.localStorage.getItem(LEGACY_SERVER_ACTIVE_KEY);
       return typeof stored === "string" ? stored : "";
     } catch {
       return "";
@@ -90,8 +101,10 @@ export function ServerProvider(props: ParentProps & { defaultUrl: string }) {
     if (typeof window === "undefined") return;
 
     try {
-      window.localStorage.setItem("openwork.server.list", JSON.stringify(list()));
-      window.localStorage.setItem("openwork.server.active", active());
+      window.localStorage.setItem(SERVER_LIST_KEY, JSON.stringify(list()));
+      window.localStorage.setItem(SERVER_ACTIVE_KEY, active());
+      window.localStorage.removeItem(LEGACY_SERVER_LIST_KEY);
+      window.localStorage.removeItem(LEGACY_SERVER_ACTIVE_KEY);
     } catch {
       // ignore
     }
@@ -101,7 +114,11 @@ export function ServerProvider(props: ParentProps & { defaultUrl: string }) {
 
   const readOpenworkToken = () => {
     try {
-      return (window.localStorage.getItem("openwork.server.token") ?? "").trim();
+      return (
+        window.localStorage.getItem(SERVER_TOKEN_KEY) ??
+        window.localStorage.getItem(LEGACY_SERVER_TOKEN_KEY) ??
+        ""
+      ).trim();
     } catch {
       return "";
     }

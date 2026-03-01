@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::types::{
-    ExecResult, RemoteType, WorkspaceInfo, WorkspaceList, WorkspaceOpenworkConfig, WorkspaceType,
+    ExecResult, RemoteType, WorkspaceInfo, WorkspaceList, WorkspaceDoWhatConfig, WorkspaceType,
 };
 use crate::workspace::files::ensure_workspace_files;
 use crate::workspace::state::{
@@ -490,12 +490,12 @@ pub fn workspace_add_authorized_root(
             .map_err(|e| format!("Failed to create {}: {e}", parent.display()))?;
     }
 
-    let mut config: WorkspaceOpenworkConfig = if openwork_path.exists() {
+    let mut config: WorkspaceDoWhatConfig = if openwork_path.exists() {
         let raw = fs::read_to_string(&openwork_path)
             .map_err(|e| format!("Failed to read {}: {e}", openwork_path.display()))?;
         serde_json::from_str(&raw).unwrap_or_default()
     } else {
-        let mut cfg = WorkspaceOpenworkConfig::default();
+        let mut cfg = WorkspaceDoWhatConfig::default();
         if !cfg.authorized_roots.iter().any(|p| p == &workspace_path) {
             cfg.authorized_roots.push(workspace_path.clone());
         }
@@ -520,11 +520,10 @@ pub fn workspace_add_authorized_root(
     })
 }
 
-#[tauri::command]
-pub fn workspace_openwork_read(
+fn workspace_read_impl(
     _app: tauri::AppHandle,
     workspace_path: String,
-) -> Result<WorkspaceOpenworkConfig, String> {
+) -> Result<WorkspaceDoWhatConfig, String> {
     let workspace_path = workspace_path.trim().to_string();
     if workspace_path.is_empty() {
         return Err("workspacePath is required".to_string());
@@ -535,7 +534,7 @@ pub fn workspace_openwork_read(
         .join("openwork.json");
 
     if !openwork_path.exists() {
-        let mut cfg = WorkspaceOpenworkConfig::default();
+        let mut cfg = WorkspaceDoWhatConfig::default();
         cfg.authorized_roots.push(workspace_path);
         return Ok(cfg);
     }
@@ -543,15 +542,14 @@ pub fn workspace_openwork_read(
     let raw = fs::read_to_string(&openwork_path)
         .map_err(|e| format!("Failed to read {}: {e}", openwork_path.display()))?;
 
-    serde_json::from_str::<WorkspaceOpenworkConfig>(&raw)
+    serde_json::from_str::<WorkspaceDoWhatConfig>(&raw)
         .map_err(|e| format!("Failed to parse {}: {e}", openwork_path.display()))
 }
 
-#[tauri::command]
-pub fn workspace_openwork_write(
+fn workspace_write_impl(
     _app: tauri::AppHandle,
     workspace_path: String,
-    config: WorkspaceOpenworkConfig,
+    config: WorkspaceDoWhatConfig,
 ) -> Result<ExecResult, String> {
     let workspace_path = workspace_path.trim().to_string();
     if workspace_path.is_empty() {
@@ -579,6 +577,23 @@ pub fn workspace_openwork_write(
         stdout: format!("Wrote {}", openwork_path.display()),
         stderr: String::new(),
     })
+}
+
+#[tauri::command]
+pub fn workspace_dowhat_read(
+    app: tauri::AppHandle,
+    workspace_path: String,
+) -> Result<WorkspaceDoWhatConfig, String> {
+    workspace_read_impl(app, workspace_path)
+}
+
+#[tauri::command]
+pub fn workspace_dowhat_write(
+    app: tauri::AppHandle,
+    workspace_path: String,
+    config: WorkspaceDoWhatConfig,
+) -> Result<ExecResult, String> {
+    workspace_write_impl(app, workspace_path, config)
 }
 
 #[derive(Debug, Serialize)]
@@ -846,7 +861,7 @@ pub fn workspace_import_config(
     if openwork_path.exists() {
         let raw = fs::read_to_string(&openwork_path)
             .map_err(|e| format!("Failed to read {}: {e}", openwork_path.display()))?;
-        if let Ok(mut config) = serde_json::from_str::<WorkspaceOpenworkConfig>(&raw) {
+        if let Ok(mut config) = serde_json::from_str::<WorkspaceDoWhatConfig>(&raw) {
             config.authorized_roots = vec![target_dir.clone()];
             if let Some(workspace) = &config.workspace {
                 if workspace_name.is_none() {
@@ -868,7 +883,7 @@ pub fn workspace_import_config(
             .map_err(|e| format!("Failed to write {}: {e}", openwork_path.display()))?;
         }
     } else {
-        let config = WorkspaceOpenworkConfig::new(&target_dir, &preset, now_ms());
+        let config = WorkspaceDoWhatConfig::new(&target_dir, &preset, now_ms());
         if let Some(parent) = openwork_path.parent() {
             fs::create_dir_all(parent)
                 .map_err(|e| format!("Failed to create {}: {e}", parent.display()))?;

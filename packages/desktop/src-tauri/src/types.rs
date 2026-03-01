@@ -2,16 +2,16 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct WorkspaceOpenworkConfig {
+pub struct WorkspaceDoWhatConfig {
     pub version: u32,
-    pub workspace: Option<WorkspaceOpenworkWorkspace>,
+    pub workspace: Option<WorkspaceDoWhatWorkspace>,
     #[serde(default, alias = "authorizedRoots")]
     pub authorized_roots: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub reload: Option<WorkspaceOpenworkReload>,
+    pub reload: Option<WorkspaceDoWhatReload>,
 }
 
-impl Default for WorkspaceOpenworkConfig {
+impl Default for WorkspaceDoWhatConfig {
     fn default() -> Self {
         Self {
             version: 1,
@@ -24,14 +24,14 @@ impl Default for WorkspaceOpenworkConfig {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct WorkspaceOpenworkReload {
+pub struct WorkspaceDoWhatReload {
     pub auto: Option<bool>,
     pub resume: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct WorkspaceOpenworkWorkspace {
+pub struct WorkspaceDoWhatWorkspace {
     pub name: Option<String>,
     #[serde(default, alias = "createdAt")]
     pub created_at: Option<u64>,
@@ -39,7 +39,7 @@ pub struct WorkspaceOpenworkWorkspace {
     pub preset: Option<String>,
 }
 
-impl WorkspaceOpenworkConfig {
+impl WorkspaceDoWhatConfig {
     pub fn new(workspace_path: &str, preset: &str, now_ms: u64) -> Self {
         let root = std::path::PathBuf::from(workspace_path);
         let inferred_name = root
@@ -50,7 +50,7 @@ impl WorkspaceOpenworkConfig {
 
         Self {
             version: 1,
-            workspace: Some(WorkspaceOpenworkWorkspace {
+            workspace: Some(WorkspaceDoWhatWorkspace {
                 name: Some(inferred_name),
                 created_at: Some(now_ms),
                 preset: Some(preset.to_string()),
@@ -65,7 +65,7 @@ impl WorkspaceOpenworkConfig {
 #[serde(rename_all = "lowercase")]
 pub enum EngineRuntime {
     Direct,
-    #[serde(rename = "openwork-orchestrator")]
+    #[serde(rename = "dowhat-orchestrator")]
     Orchestrator,
 }
 
@@ -93,7 +93,7 @@ pub struct EngineInfo {
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct OpenworkServerInfo {
+pub struct DoWhatServerInfo {
     pub running: bool,
     pub host: Option<String>,
     pub port: Option<u16>,

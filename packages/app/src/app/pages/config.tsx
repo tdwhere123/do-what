@@ -10,7 +10,7 @@ import { RefreshCcw } from "lucide-solid";
 
 import { buildOpenworkWorkspaceBaseUrl, parseOpenworkWorkspaceIdFromUrl } from "../lib/openwork-server";
 import type { OpenworkServerSettings, OpenworkServerStatus } from "../lib/openwork-server";
-import type { OpenworkServerInfo } from "../lib/tauri";
+import type { DoWhatServerInfo } from "../lib/tauri";
 
 export type ConfigViewProps = {
   busy: boolean;
@@ -20,7 +20,7 @@ export type ConfigViewProps = {
   openworkServerStatus: OpenworkServerStatus;
   openworkServerUrl: string;
   openworkServerSettings: OpenworkServerSettings;
-  openworkServerHostInfo: OpenworkServerInfo | null;
+  openworkServerHostInfo: DoWhatServerInfo | null;
   openworkServerWorkspaceId: string | null;
 
   updateOpenworkServerSettings: (next: OpenworkServerSettings) => void;
@@ -551,3 +551,4 @@ export default function ConfigView(props: ConfigViewProps) {
     </section>
   );
 }
+

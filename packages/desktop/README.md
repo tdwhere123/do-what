@@ -49,3 +49,13 @@ pnpm run setup:windows
 ## 5. 常用命令
 
 - `opencode-router` 已从 do-what 主线代码路径摘除。
+
+## v0.8 完成记录 (2026-03-01)
+
+- Tauri 命令面仅保留 do-what 命名：
+  - `dowhat_server_info`
+  - `reset_dowhat_state`
+  - `sandbox_cleanup_dowhat_containers`
+  - `workspace_dowhat_read/write`
+- Orchestrator 启动前确保 `data_dir` 存在
+

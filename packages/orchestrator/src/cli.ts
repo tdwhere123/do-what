@@ -157,45 +157,45 @@ type SidecarDiagnostics = {
   allowExternal: boolean;
 };
 
-type RouterWorkspaceType = "local" | "remote";
+type OrchestratorWorkspaceType = "local" | "remote";
 
-type RouterWorkspace = {
+type OrchestratorWorkspace = {
   id: string;
   name: string;
   path: string;
-  workspaceType: RouterWorkspaceType;
+  workspaceType: OrchestratorWorkspaceType;
   baseUrl?: string;
   directory?: string;
   createdAt: number;
   lastUsedAt?: number;
 };
 
-type RouterDaemonState = {
+type OrchestratorDaemonState = {
   pid: number;
   port: number;
   baseUrl: string;
   startedAt: number;
 };
 
-type RouterOpencodeState = {
+type OrchestratorOpencodeState = {
   pid: number;
   port: number;
   baseUrl: string;
   startedAt: number;
 };
 
-type RouterBinaryInfo = {
+type OrchestratorBinaryInfo = {
   path: string;
   source: BinarySource;
   expectedVersion?: string;
   actualVersion?: string;
 };
 
-type RouterBinaryState = {
-  opencode?: RouterBinaryInfo;
+type OrchestratorBinaryState = {
+  opencode?: OrchestratorBinaryInfo;
 };
 
-type RouterSidecarState = {
+type OrchestratorSidecarState = {
   dir: string;
   baseUrl: string;
   manifestUrl: string;
@@ -205,15 +205,15 @@ type RouterSidecarState = {
   allowExternal: boolean;
 };
 
-type RouterState = {
+type OrchestratorState = {
   version: number;
-  daemon?: RouterDaemonState;
-  opencode?: RouterOpencodeState;
+  daemon?: OrchestratorDaemonState;
+  opencode?: OrchestratorOpencodeState;
   cliVersion?: string;
-  sidecar?: RouterSidecarState;
-  binaries?: RouterBinaryState;
+  sidecar?: OrchestratorSidecarState;
+  binaries?: OrchestratorBinaryState;
   activeId: string;
-  workspaces: RouterWorkspace[];
+  workspaces: OrchestratorWorkspace[];
 };
 
 type FieldsResult<T> = {
@@ -1101,7 +1101,7 @@ function shQuote(value: string): string {
 function resolveSidecarDir(flags: Map<string, string | boolean>): string {
   const override = readFlag(flags, "sidecar-dir") ?? readCompatEnv("OPENWORK_SIDECAR_DIR");
   if (override && override.trim()) return resolve(override.trim());
-  return join(resolveRouterDataDir(flags), "sidecars");
+  return join(resolveOrchestratorDataDir(flags), "sidecars");
 }
 
 function resolveSidecarBaseUrl(flags: Map<string, string | boolean>, cliVersion: string): string {
@@ -1763,26 +1763,26 @@ async function resolveOpencodeBin(options: {
   return resolveExternal();
 }
 
-function resolveRouterDataDir(flags: Map<string, string | boolean>): string {
-  const override = readFlag(flags, "data-dir") ?? readCompatEnv("OPENWORK_DATA_DIR");
+function resolveOrchestratorDataDir(flags: Map<string, string | boolean>): string {
+  const override = readFlag(flags, "data-dir") ?? process.env.DOWHAT_DATA_DIR;
   if (override && override.trim()) {
     return resolve(override.trim());
   }
-  return join(homedir(), ".openwork", "openwork-orchestrator");
+  return join(homedir(), ".do-what", "do-what-orchestrator");
 }
 
-function routerStatePath(dataDir: string): string {
-  return join(dataDir, "openwork-orchestrator-state.json");
+function orchestratorStatePath(dataDir: string): string {
+  return join(dataDir, "dowhat-orchestrator-state.json");
 }
 
 function nowMs(): number {
   return Date.now();
 }
 
-async function loadRouterState(path: string): Promise<RouterState> {
+async function loadOrchestratorState(path: string): Promise<OrchestratorState> {
   try {
     const raw = await readFile(path, "utf8");
-    const parsed = JSON.parse(raw) as RouterState;
+    const parsed = JSON.parse(raw) as OrchestratorState;
     if (!parsed.workspaces) parsed.workspaces = [];
     if (!parsed.activeId) parsed.activeId = "";
     if (!parsed.version) parsed.version = 1;
@@ -1801,7 +1801,7 @@ async function loadRouterState(path: string): Promise<RouterState> {
   }
 }
 
-async function saveRouterState(path: string, state: RouterState): Promise<void> {
+async function saveOrchestratorState(path: string, state: OrchestratorState): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
   const payload = JSON.stringify(state, null, 2);
   await writeFile(path, `${payload}\n`, "utf8");
@@ -1815,12 +1815,23 @@ function workspaceIdForLocal(path: string): string {
   return `ws-${createHash("sha1").update(path).digest("hex").slice(0, 12)}`;
 }
 
+function stripNullChars(value: string): string {
+  return value.replace(/\x00/g, "");
+}
+
+async function resolveOpencodeConfigDir(dataDir: string, workspacePath: string): Promise<string> {
+  const rawDir = join(dataDir, "opencode-config", workspaceIdForLocal(workspacePath));
+  const safeDir = stripNullChars(rawDir);
+  await mkdir(safeDir, { recursive: true });
+  return safeDir;
+}
+
 function workspaceIdForRemote(baseUrl: string, directory?: string | null): string {
   const key = directory ? `${baseUrl}::${directory}` : baseUrl;
   return `ws-${createHash("sha1").update(key).digest("hex").slice(0, 12)}`;
 }
 
-function findWorkspace(state: RouterState, input: string): RouterWorkspace | undefined {
+function findWorkspace(state: OrchestratorState, input: string): OrchestratorWorkspace | undefined {
   const trimmed = input.trim();
   if (!trimmed) return undefined;
   const direct = state.workspaces.find((entry) => entry.id === trimmed || entry.name === trimmed);
@@ -2816,7 +2827,7 @@ function normalizeEvent(raw: unknown): { type: string } | null {
   return null;
 }
 
-async function waitForRouterHealthy(baseUrl: string, timeoutMs = 10_000, pollMs = 250): Promise<void> {
+async function waitForOrchestratorDaemonHealthy(baseUrl: string, timeoutMs = 10_000, pollMs = 250): Promise<void> {
   const start = Date.now();
   let lastError: string | null = null;
   const url = baseUrl.replace(/\/$/, "");
@@ -2942,7 +2953,7 @@ function createLogger(options: {
     "openwork-orchestrator": ANSI.gray,
     opencode: ANSI.cyan,
     "openwork-server": ANSI.green,
-    "openwork-orchestrator-router": ANSI.cyan,
+    "dowhat-orchestrator-daemon": ANSI.cyan,
   };
   const levelColors: Record<LogLevel, string> = {
     debug: ANSI.gray,
@@ -3073,7 +3084,7 @@ async function copyToClipboard(text: string): Promise<{ copied: boolean; error?:
   return { copied: false, error: "Clipboard unavailable" };
 }
 
-async function spawnRouterDaemon(args: ParsedArgs, dataDir: string, host: string, port: number) {
+async function spawnOrchestratorDaemon(args: ParsedArgs, dataDir: string, host: string, port: number) {
   const self = resolveSelfCommand();
   const commandArgs = [
     ...self.prefixArgs,
@@ -3137,14 +3148,14 @@ async function spawnRouterDaemon(args: ParsedArgs, dataDir: string, host: string
   child.unref();
 }
 
-async function ensureRouterDaemon(args: ParsedArgs, autoStart = true): Promise<{ baseUrl: string; dataDir: string }> {
-  const dataDir = resolveRouterDataDir(args.flags);
-  const statePath = routerStatePath(dataDir);
-  const state = await loadRouterState(statePath);
+async function ensureOrchestratorDaemon(args: ParsedArgs, autoStart = true): Promise<{ baseUrl: string; dataDir: string }> {
+  const dataDir = resolveOrchestratorDataDir(args.flags);
+  const statePath = orchestratorStatePath(dataDir);
+  const state = await loadOrchestratorState(statePath);
   const existing = state.daemon;
   if (existing && existing.baseUrl && isProcessAlive(existing.pid)) {
     try {
-      await waitForRouterHealthy(existing.baseUrl, 1500, 150);
+      await waitForOrchestratorDaemonHealthy(existing.baseUrl, 1500, 150);
       return { baseUrl: existing.baseUrl, dataDir };
     } catch {
       // fallthrough
@@ -3161,13 +3172,13 @@ async function ensureRouterDaemon(args: ParsedArgs, autoStart = true): Promise<{
     "127.0.0.1",
   );
   const baseUrl = `http://${host}:${port}`;
-  await spawnRouterDaemon(args, dataDir, host, port);
-  await waitForRouterHealthy(baseUrl, 10_000, 250);
+  await spawnOrchestratorDaemon(args, dataDir, host, port);
+  await waitForOrchestratorDaemonHealthy(baseUrl, 10_000, 250);
   return { baseUrl, dataDir };
 }
 
-async function requestRouter(args: ParsedArgs, method: string, path: string, body?: unknown, autoStart = true) {
-  const { baseUrl } = await ensureRouterDaemon(args, autoStart);
+async function requestOrchestratorDaemon(args: ParsedArgs, method: string, path: string, body?: unknown, autoStart = true) {
+  const { baseUrl } = await ensureOrchestratorDaemon(args, autoStart);
   const url = `${baseUrl.replace(/\/$/, "")}${path}`;
   const headers: Record<string, string> = {};
   let payload: string | undefined;
@@ -3188,23 +3199,23 @@ async function runDaemonCommand(args: ParsedArgs) {
 
   try {
     if (subcommand === "run" || subcommand === "foreground") {
-      await runRouterDaemon(args);
+      await runOrchestratorDaemon(args);
       return;
     }
     if (subcommand === "start") {
-      const { baseUrl } = await ensureRouterDaemon(args, true);
+      const { baseUrl } = await ensureOrchestratorDaemon(args, true);
       const status = await fetchJson(`${baseUrl.replace(/\/$/, "")}/health`);
       outputResult({ ok: true, baseUrl, ...status }, outputJson);
       return;
     }
     if (subcommand === "status") {
-      const { baseUrl } = await ensureRouterDaemon(args, false);
+      const { baseUrl } = await ensureOrchestratorDaemon(args, false);
       const status = await fetchJson(`${baseUrl.replace(/\/$/, "")}/health`);
       outputResult({ ok: true, baseUrl, ...status }, outputJson);
       return;
     }
     if (subcommand === "stop") {
-      const { baseUrl } = await ensureRouterDaemon(args, false);
+      const { baseUrl } = await ensureOrchestratorDaemon(args, false);
       await fetchJson(`${baseUrl.replace(/\/$/, "")}/shutdown`, { method: "POST" });
       outputResult({ ok: true }, outputJson);
       return;
@@ -3225,7 +3236,7 @@ async function runWorkspaceCommand(args: ParsedArgs) {
     if (subcommand === "add") {
       if (!id) throw new Error("workspace path is required");
       const name = readFlag(args.flags, "name");
-      const result = await requestRouter(args, "POST", "/workspaces", {
+      const result = await requestOrchestratorDaemon(args, "POST", "/workspaces", {
         path: id,
         name: name ?? null,
       });
@@ -3236,7 +3247,7 @@ async function runWorkspaceCommand(args: ParsedArgs) {
       if (!id) throw new Error("baseUrl is required");
       const directory = readFlag(args.flags, "directory");
       const name = readFlag(args.flags, "name");
-      const result = await requestRouter(args, "POST", "/workspaces/remote", {
+      const result = await requestOrchestratorDaemon(args, "POST", "/workspaces/remote", {
         baseUrl: id,
         directory: directory ?? null,
         name: name ?? null,
@@ -3245,25 +3256,25 @@ async function runWorkspaceCommand(args: ParsedArgs) {
       return;
     }
     if (subcommand === "list") {
-      const result = await requestRouter(args, "GET", "/workspaces");
+      const result = await requestOrchestratorDaemon(args, "GET", "/workspaces");
       outputResult({ ok: true, ...result }, outputJson);
       return;
     }
     if (subcommand === "switch") {
       if (!id) throw new Error("workspace id is required");
-      const result = await requestRouter(args, "POST", `/workspaces/${encodeURIComponent(id)}/activate`);
+      const result = await requestOrchestratorDaemon(args, "POST", `/workspaces/${encodeURIComponent(id)}/activate`);
       outputResult({ ok: true, ...result }, outputJson);
       return;
     }
     if (subcommand === "info") {
       if (!id) throw new Error("workspace id is required");
-      const result = await requestRouter(args, "GET", `/workspaces/${encodeURIComponent(id)}`);
+      const result = await requestOrchestratorDaemon(args, "GET", `/workspaces/${encodeURIComponent(id)}`);
       outputResult({ ok: true, ...result }, outputJson);
       return;
     }
     if (subcommand === "path") {
       if (!id) throw new Error("workspace id is required");
-      const result = await requestRouter(args, "GET", `/workspaces/${encodeURIComponent(id)}/path`);
+      const result = await requestOrchestratorDaemon(args, "GET", `/workspaces/${encodeURIComponent(id)}/path`);
       outputResult({ ok: true, ...result }, outputJson);
       return;
     }
@@ -3282,7 +3293,7 @@ async function runInstanceCommand(args: ParsedArgs) {
   try {
     if (subcommand === "dispose") {
       if (!id) throw new Error("workspace id is required");
-      const result = await requestRouter(args, "POST", `/instances/${encodeURIComponent(id)}/dispose`);
+      const result = await requestOrchestratorDaemon(args, "POST", `/instances/${encodeURIComponent(id)}/dispose`);
       outputResult({ ok: true, ...result }, outputJson);
       return;
     }
@@ -3293,7 +3304,7 @@ async function runInstanceCommand(args: ParsedArgs) {
   }
 }
 
-async function runRouterDaemon(args: ParsedArgs) {
+async function runOrchestratorDaemon(args: ParsedArgs) {
   const outputJson = readBool(args.flags, "json", false);
   const verbose = readBool(args.flags, "verbose", false, "OPENWORK_VERBOSE");
   const logFormat = readLogFormat(args.flags, "log-format", "pretty", "OPENWORK_LOG_FORMAT");
@@ -3314,9 +3325,9 @@ async function runRouterDaemon(args: ParsedArgs) {
   const opencodeSourceInput = readBinarySource(args.flags, "opencode-source", "auto", "OPENWORK_OPENCODE_SOURCE");
   const sidecarSource = sidecarSourceInput;
   const opencodeSource = opencodeSourceInput;
-  const dataDir = resolveRouterDataDir(args.flags);
-  const statePath = routerStatePath(dataDir);
-  let state = await loadRouterState(statePath);
+  const dataDir = resolveOrchestratorDataDir(args.flags);
+  const statePath = orchestratorStatePath(dataDir);
+  let state = await loadOrchestratorState(statePath);
 
   const host = readFlag(args.flags, "daemon-host") ?? "127.0.0.1";
   const port = await resolvePort(
@@ -3367,7 +3378,7 @@ async function runRouterDaemon(args: ParsedArgs) {
   const activeWorkspace = state.workspaces.find((entry) => entry.id === state.activeId && entry.workspaceType === "local");
   const opencodeWorkdir = opencodeWorkdirFlag ?? activeWorkspace?.path ?? process.cwd();
   const resolvedWorkdir = await ensureWorkspace(opencodeWorkdir);
-  const opencodeConfigDir = join(dataDir, "opencode-config", workspaceIdForLocal(resolvedWorkdir));
+  const opencodeConfigDir = await resolveOpencodeConfigDir(dataDir, resolvedWorkdir);
   logger.info(
     "Daemon starting",
     { runId, logFormat, workdir: resolvedWorkdir, host, port },
@@ -3432,7 +3443,7 @@ async function runRouterDaemon(args: ParsedArgs) {
         await waitForOpencodeHealthy(client, 2000, 200);
         if (!state.sidecar || !state.cliVersion || !state.binaries?.opencode) {
           updateDiagnostics(state.binaries?.opencode?.actualVersion);
-          await saveRouterState(statePath, state);
+          await saveOrchestratorState(statePath, state);
         }
         return { baseUrl: existing.baseUrl, client };
       } catch {
@@ -3478,7 +3489,7 @@ async function runRouterDaemon(args: ParsedArgs) {
       startedAt: nowMs(),
     };
     updateDiagnostics(opencodeActualVersion);
-    await saveRouterState(statePath, state);
+    await saveOrchestratorState(statePath, state);
     return { baseUrl, client };
   };
 
@@ -3490,7 +3501,7 @@ async function runRouterDaemon(args: ParsedArgs) {
     const url = new URL(req.url ?? "/", `http://${host}:${port}`);
     res.on("finish", () => {
       logger.info(
-        "Router request",
+        "Daemon request",
         {
           method,
           path: url.pathname,
@@ -3498,7 +3509,7 @@ async function runRouterDaemon(args: ParsedArgs) {
           durationMs: Date.now() - startedAt,
           activeId: state.activeId,
         },
-        "openwork-orchestrator-router",
+        "dowhat-orchestrator-daemon",
       );
     });
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -3562,7 +3573,7 @@ async function runRouterDaemon(args: ParsedArgs) {
           ? body.name.trim()
           : resolved.split(/[\\/]/).filter(Boolean).pop() ?? "Workspace";
         const existing = state.workspaces.find((entry) => entry.id === id);
-        const entry: RouterWorkspace = {
+        const entry: OrchestratorWorkspace = {
           id,
           name,
           path: resolved,
@@ -3573,7 +3584,7 @@ async function runRouterDaemon(args: ParsedArgs) {
         state.workspaces = state.workspaces.filter((item) => item.id !== id);
         state.workspaces.push(entry);
         if (!state.activeId) state.activeId = id;
-        await saveRouterState(statePath, state);
+        await saveOrchestratorState(statePath, state);
         send(200, { activeId: state.activeId, workspace: entry });
         return;
       }
@@ -3589,7 +3600,7 @@ async function runRouterDaemon(args: ParsedArgs) {
         const id = workspaceIdForRemote(baseUrl, directory || undefined);
         const name = typeof body?.name === "string" && body.name.trim() ? body.name.trim() : baseUrl;
         const existing = state.workspaces.find((entry) => entry.id === id);
-        const entry: RouterWorkspace = {
+        const entry: OrchestratorWorkspace = {
           id,
           name,
           path: directory,
@@ -3602,7 +3613,7 @@ async function runRouterDaemon(args: ParsedArgs) {
         state.workspaces = state.workspaces.filter((item) => item.id !== id);
         state.workspaces.push(entry);
         if (!state.activeId) state.activeId = id;
-        await saveRouterState(statePath, state);
+        await saveOrchestratorState(statePath, state);
         send(200, { activeId: state.activeId, workspace: entry });
         return;
       }
@@ -3625,7 +3636,7 @@ async function runRouterDaemon(args: ParsedArgs) {
         }
         state.activeId = workspace.id;
         workspace.lastUsedAt = nowMs();
-        await saveRouterState(statePath, state);
+        await saveOrchestratorState(statePath, state);
         send(200, { activeId: state.activeId, workspace });
         return;
       }
@@ -3650,7 +3661,7 @@ async function runRouterDaemon(args: ParsedArgs) {
         });
         const pathInfo = unwrap(await client.path.get());
         workspace.lastUsedAt = nowMs();
-        await saveRouterState(statePath, state);
+        await saveOrchestratorState(statePath, state);
         send(200, { workspace, path: pathInfo });
         return;
       }
@@ -3674,7 +3685,7 @@ async function runRouterDaemon(args: ParsedArgs) {
         );
         const ok = response.ok ? await response.json() : false;
         workspace.lastUsedAt = nowMs();
-        await saveRouterState(statePath, state);
+        await saveOrchestratorState(statePath, state);
         send(200, { disposed: ok });
         return;
       }
@@ -3692,7 +3703,7 @@ async function runRouterDaemon(args: ParsedArgs) {
   });
 
   const shutdown = async () => {
-    logger.info("Daemon shutting down", { host, port }, "openwork-orchestrator-router");
+    logger.info("Daemon shutting down", { host, port }, "dowhat-orchestrator-daemon");
     try {
       await new Promise<void>((resolve) => server.close(() => resolve()));
     } catch {
@@ -3708,7 +3719,7 @@ async function runRouterDaemon(args: ParsedArgs) {
     if (state.opencode && !isProcessAlive(state.opencode.pid)) {
       state.opencode = undefined;
     }
-    await saveRouterState(statePath, state);
+    await saveOrchestratorState(statePath, state);
     process.exit(0);
   };
 
@@ -3719,12 +3730,12 @@ async function runRouterDaemon(args: ParsedArgs) {
       baseUrl: `http://${host}:${port}`,
       startedAt: nowMs(),
     };
-    await saveRouterState(statePath, state);
+    await saveOrchestratorState(statePath, state);
     if (outputJson) {
       outputResult({ ok: true, daemon: state.daemon }, true);
     } else {
       if (logFormat === "json") {
-        logger.info("Daemon running", { host, port }, "openwork-orchestrator-router");
+        logger.info("Daemon running", { host, port }, "dowhat-orchestrator-daemon");
       } else {
         console.log(`orchestrator daemon running on ${host}:${port}`);
       }
@@ -3914,8 +3925,8 @@ async function runStart(args: ParsedArgs) {
     readFlag(args.flags, "sandbox-image") ?? readCompatEnv("OPENWORK_SANDBOX_IMAGE") ?? "debian:bookworm-slim";
   const sandboxPersistOverride =
     readFlag(args.flags, "sandbox-persist-dir") ?? readCompatEnv("OPENWORK_SANDBOX_PERSIST_DIR");
-  const dataDir = resolveRouterDataDir(args.flags);
-  const opencodeConfigDir = join(dataDir, "opencode-config", workspaceIdForLocal(resolvedWorkspace));
+  const dataDir = resolveOrchestratorDataDir(args.flags);
+  const opencodeConfigDir = await resolveOpencodeConfigDir(dataDir, resolvedWorkspace);
   const sandboxPersistDir = resolve(
     sandboxPersistOverride?.trim()
       ? sandboxPersistOverride.trim()
@@ -4640,3 +4651,5 @@ main().catch((error) => {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
 });
+
+

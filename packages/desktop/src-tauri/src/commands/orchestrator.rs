@@ -83,7 +83,7 @@ struct DockerCommandResult {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct OpenworkDockerCleanupResult {
+pub struct DoWhatDockerCleanupResult {
     pub candidates: Vec<String>,
     pub removed: Vec<String>,
     pub errors: Vec<String>,
@@ -1098,11 +1098,10 @@ pub fn sandbox_stop(container_name: String) -> Result<ExecResult, String> {
     })
 }
 
-#[tauri::command]
-pub fn sandbox_cleanup_openwork_containers() -> Result<OpenworkDockerCleanupResult, String> {
+fn sandbox_cleanup_containers_impl() -> Result<DoWhatDockerCleanupResult, String> {
     let candidates = list_openwork_managed_containers()?;
     if candidates.is_empty() {
-        return Ok(OpenworkDockerCleanupResult {
+        return Ok(DoWhatDockerCleanupResult {
             candidates,
             removed: Vec::new(),
             errors: Vec::new(),
@@ -1133,11 +1132,16 @@ pub fn sandbox_cleanup_openwork_containers() -> Result<OpenworkDockerCleanupResu
         }
     }
 
-    Ok(OpenworkDockerCleanupResult {
+    Ok(DoWhatDockerCleanupResult {
         candidates,
         removed,
         errors,
     })
+}
+
+#[tauri::command]
+pub fn sandbox_cleanup_dowhat_containers() -> Result<DoWhatDockerCleanupResult, String> {
+    sandbox_cleanup_containers_impl()
 }
 
 #[cfg(test)]

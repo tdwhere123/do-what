@@ -1,7 +1,7 @@
 import { Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
-import { Cpu, Server, Settings } from "lucide-solid";
+import { Cpu, Server, Settings, Moon, Sun } from "lucide-solid";
 
-import type { OpenworkServerStatus } from "../lib/openwork-server";
+import type { OpenworkServerStatus } from "../lib/dowhat-server";
 import type { McpStatusMap } from "../types";
 
 import Button from "./button";
@@ -10,6 +10,8 @@ type StatusBarProps = {
   clientConnected: boolean;
   openworkServerStatus: OpenworkServerStatus;
   developerMode: boolean;
+  themeMode: "light" | "dark" | "system";
+  onToggleTheme: () => void;
   onOpenSettings: () => void;
   onOpenMessaging: () => void;
   onOpenProviders: () => Promise<void> | void;
@@ -22,17 +24,17 @@ export default function StatusBar(props: StatusBarProps) {
   const opencodeStatusMeta = createMemo(() => ({
     dot: props.clientConnected ? "bg-green-9" : "bg-gray-6",
     text: props.clientConnected ? "text-green-11" : "text-[var(--color-text-tertiary)]",
-    label: props.clientConnected ? "Connected" : "Not connected",
+    label: props.clientConnected ? "已连接" : "未连接",
   }));
 
   const openworkStatusMeta = createMemo(() => {
     switch (props.openworkServerStatus) {
       case "connected":
-        return { dot: "bg-green-9", text: "text-green-11", label: "Ready" };
+        return { dot: "bg-green-9", text: "text-green-11", label: "已就绪" };
       case "limited":
-        return { dot: "bg-amber-9", text: "text-amber-11", label: "Limited access" };
+        return { dot: "bg-amber-9", text: "text-amber-11", label: "受限访问" };
       default:
-        return { dot: "bg-gray-6", text: "text-[var(--color-text-tertiary)]", label: "Unavailable" };
+        return { dot: "bg-gray-6", text: "text-[var(--color-text-tertiary)]", label: "不可用" };
     }
   });
 
@@ -57,13 +59,13 @@ export default function StatusBar(props: StatusBarProps) {
   const proTips = createMemo<ProTip[]>(() => [
     {
       id: "notion",
-      label: "Connect Notion MCP",
+      label: "连接 Notion MCP",
       enabled: () => notionStatus() !== "connected",
       action: () => runAction(props.onOpenMcp),
     },
     {
       id: "providers",
-      label: "Use your own models (OpenRouter, Anthropic, OpenAI)",
+      label: "使用自有模型 (OpenRouter, Anthropic, OpenAI)",
       enabled: () => props.clientConnected && providerConnectedCount() === 0,
       action: () => runAction(props.onOpenProviders),
     },
@@ -128,16 +130,16 @@ export default function StatusBar(props: StatusBarProps) {
   });
 
   return (
-    <div class="border-t border-[var(--color-border-subtle)] bg-[var(--color-bg-base)]/90 backdrop-blur-md">
+    <div class="border-t border-[var(--color-border-subtle)] bg-[var(--dls-surface)]/92 backdrop-blur-md">
       <div class="px-4 py-2 flex flex-wrap items-center gap-3 text-xs">
         <div
           class="flex items-center gap-2"
-          title={`Engine: ${opencodeStatusMeta().label}`}
+          title={`引擎: ${opencodeStatusMeta().label}`}
         >
           <span class={`w-2 h-2 rounded-full ${opencodeStatusMeta().dot}`} />
           <Cpu class="w-4 h-4 text-[var(--color-text-secondary)]" />
           <Show when={props.developerMode || !props.clientConnected}>
-            <span class="text-[var(--color-text-secondary)] font-medium">Engine</span>
+            <span class="text-[var(--color-text-secondary)] font-medium">引擎</span>
             <span class={opencodeStatusMeta().text}>{opencodeStatusMeta().label}</span>
           </Show>
         </div>
@@ -162,19 +164,27 @@ export default function StatusBar(props: StatusBarProps) {
               title={activeTip()?.label}
               aria-label={activeTip()?.label}
             >
-              <span class="uppercase tracking-[0.2em] text-[10px] text-[var(--color-text-tertiary)]">Tip</span>
+              <span class="uppercase tracking-[0.2em] text-[10px] text-[var(--color-text-tertiary)]">提示</span>
               <span class="text-[var(--color-text-secondary)] font-medium">{activeTip()?.label}</span>
             </button>
           </Show>
           <Button
             variant="ghost"
             class="h-7 px-2.5 py-0 text-xs"
+            onClick={props.onToggleTheme}
+            title={props.themeMode === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+          >
+            {props.themeMode === 'dark' ? <Sun class="w-4 h-4" /> : <Moon class="w-4 h-4" />}
+          </Button>
+          <Button
+            variant="ghost"
+            class="h-7 px-2.5 py-0 text-xs"
             onClick={props.onOpenSettings}
-            title="Settings"
+            title="设置"
           >
             <Settings class="w-4 h-4" />
             <Show when={props.developerMode}>
-              <span class="text-[var(--color-text-secondary)] font-medium">Settings</span>
+              <span class="text-[var(--color-text-secondary)] font-medium">设置</span>
             </Show>
           </Button>
         </div>

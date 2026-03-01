@@ -4,7 +4,7 @@ use tauri::AppHandle;
 use tauri_plugin_shell::process::CommandEvent;
 use uuid::Uuid;
 
-use crate::types::OpenworkServerInfo;
+use crate::types::DoWhatServerInfo;
 use crate::utils::truncate_output;
 
 pub mod manager;
@@ -45,7 +45,7 @@ pub fn start_openwork_server(
     opencode_base_url: Option<&str>,
     opencode_username: Option<&str>,
     opencode_password: Option<&str>,
-) -> Result<OpenworkServerInfo, String> {
+) -> Result<DoWhatServerInfo, String> {
     let mut state = manager
         .inner
         .lock()

@@ -132,7 +132,7 @@ export type View = "onboarding" | "dashboard" | "session" | "proto";
 
 export type StartupPreference = "local" | "server";
 
-export type EngineRuntime = "direct" | "openwork-orchestrator";
+export type EngineRuntime = "direct" | "dowhat-orchestrator";
 
 export type OnboardingStep = "welcome" | "local" | "server" | "connecting";
 
@@ -156,9 +156,9 @@ export type WorkspaceConnectionState = {
   checkedAt?: number | null;
 };
 
-export type ResetOpenworkMode = "onboarding" | "all";
+export type ResetDoWhatMode = "onboarding" | "all";
 
-export type WorkspaceOpenworkConfig = {
+export type WorkspaceDoWhatConfig = {
   version: number;
   workspace?: {
     name?: string | null;

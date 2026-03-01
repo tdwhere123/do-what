@@ -2,9 +2,37 @@ import { invoke } from "@tauri-apps/api/core";
 import { validateMcpServerName } from "../mcp";
 import type { AgentRunConfig, AgentRuntime } from "../state/sessions";
 
+function isTauri(): boolean {
+  if (typeof window === "undefined") return false;
+  const maybeTauri = window as unknown as {
+    __TAURI__?: unknown;
+    __TAURI_INTERNALS__?: unknown;
+  };
+  return maybeTauri.__TAURI__ != null || maybeTauri.__TAURI_INTERNALS__ != null;
+}
+
+function commandUnavailableMessage(command: string): string {
+  return `[${command}] requires desktop runtime`;
+}
+
+async function invokeWithFallback<T>(
+  command: string,
+  args?: Record<string, unknown>,
+  fallback?: T | (() => T | Promise<T>),
+): Promise<T> {
+  if (!isTauri()) {
+    if (typeof fallback === "function") {
+      return (fallback as () => T | Promise<T>)();
+    }
+    if (fallback !== undefined) return fallback;
+    throw new Error(commandUnavailableMessage(command));
+  }
+  return invoke<T>(command, args);
+}
+
 export type EngineInfo = {
   running: boolean;
-  runtime: "direct" | "openwork-orchestrator";
+  runtime: "direct" | "dowhat-orchestrator";
   baseUrl: string | null;
   projectDir: string | null;
   hostname: string | null;
@@ -16,7 +44,7 @@ export type EngineInfo = {
   lastStderr: string | null;
 };
 
-export type OpenworkServerInfo = {
+export type DoWhatServerInfo = {
   running: boolean;
   host: string | null;
   port: number | null;
@@ -38,7 +66,7 @@ export type OrchestratorDaemonState = {
   startedAt: number;
 };
 
-export type OrchestratorOpencodeState = {
+export type OrchestratorEngineState = {
   pid: number;
   port: number;
   baseUrl: string;
@@ -81,7 +109,7 @@ export type OrchestratorStatus = {
   running: boolean;
   dataDir: string;
   daemon: OrchestratorDaemonState | null;
-  opencode: OrchestratorOpencodeState | null;
+  opencode: OrchestratorEngineState | null;
   cliVersion?: string | null;
   sidecar?: OrchestratorSidecarInfo | null;
   binaries?: OrchestratorBinaryState | null;
@@ -107,6 +135,70 @@ export type RuntimeAssistantStatusSnapshot = {
   checkedAt: number;
   assistants: RuntimeAssistantStatus[];
 };
+
+const defaultRuntimeAssistantStatus = (
+  id: RuntimeAssistantStatus["id"],
+  name: string,
+  binary: string,
+): RuntimeAssistantStatus => ({
+  id,
+  name,
+  binary,
+  installed: false,
+  installState: "not-installed",
+  loggedIn: false,
+  loginState: "logged-out",
+  version: null,
+  details: ["Desktop runtime required"],
+});
+
+const defaultEngineInfo = (): EngineInfo => ({
+  running: false,
+  runtime: "direct",
+  baseUrl: null,
+  projectDir: null,
+  hostname: null,
+  port: null,
+  opencodeUsername: null,
+  opencodePassword: null,
+  pid: null,
+  lastStdout: null,
+  lastStderr: null,
+});
+
+const defaultOrchestratorStatus = (): OrchestratorStatus => ({
+  running: false,
+  dataDir: "",
+  daemon: null,
+  opencode: null,
+  cliVersion: null,
+  sidecar: null,
+  binaries: null,
+  activeId: null,
+  workspaceCount: 0,
+  workspaces: [],
+  lastError: null,
+});
+
+const defaultDoWhatServerInfo = (): DoWhatServerInfo => ({
+  running: false,
+  host: null,
+  port: null,
+  baseUrl: null,
+  connectUrl: null,
+  mdnsUrl: null,
+  lanUrl: null,
+  clientToken: null,
+  hostToken: null,
+  pid: null,
+  lastStdout: null,
+  lastStderr: null,
+});
+
+const defaultWorkspaceList = (): WorkspaceList => ({
+  activeId: "",
+  workspaces: [],
+});
 
 export type EngineDoctorResult = {
   found: boolean;
@@ -156,26 +248,26 @@ export async function engineStart(
   projectDir: string,
   options?: {
     preferSidecar?: boolean;
-    runtime?: "direct" | "openwork-orchestrator";
+    runtime?: "direct" | "dowhat-orchestrator";
     workspacePaths?: string[];
     opencodeBinPath?: string | null;
   },
 ): Promise<EngineInfo> {
-  return invoke<EngineInfo>("engine_start", {
+  return invokeWithFallback<EngineInfo>("engine_start", {
     projectDir,
     preferSidecar: options?.preferSidecar ?? false,
     opencodeBinPath: options?.opencodeBinPath ?? null,
     runtime: options?.runtime ?? null,
     workspacePaths: options?.workspacePaths ?? null,
-  });
+  }, defaultEngineInfo);
 }
 
 export async function workspaceBootstrap(): Promise<WorkspaceList> {
-  return invoke<WorkspaceList>("workspace_bootstrap");
+  return invokeWithFallback<WorkspaceList>("workspace_bootstrap", undefined, defaultWorkspaceList);
 }
 
 export async function workspaceSetActive(workspaceId: string): Promise<WorkspaceList> {
-  return invoke<WorkspaceList>("workspace_set_active", { workspaceId });
+  return invokeWithFallback<WorkspaceList>("workspace_set_active", { workspaceId }, defaultWorkspaceList);
 }
 
 export async function workspaceCreate(input: {
@@ -183,11 +275,11 @@ export async function workspaceCreate(input: {
   name: string;
   preset: string;
 }): Promise<WorkspaceList> {
-  return invoke<WorkspaceList>("workspace_create", {
+  return invokeWithFallback<WorkspaceList>("workspace_create", {
     folderPath: input.folderPath,
     name: input.name,
     preset: input.preset,
-  });
+  }, defaultWorkspaceList);
 }
 
 export async function workspaceCreateRemote(input: {
@@ -205,7 +297,7 @@ export async function workspaceCreateRemote(input: {
   sandboxRunId?: string | null;
   sandboxContainerName?: string | null;
 }): Promise<WorkspaceList> {
-  return invoke<WorkspaceList>("workspace_create_remote", {
+  return invokeWithFallback<WorkspaceList>("workspace_create_remote", {
     baseUrl: input.baseUrl,
     directory: input.directory ?? null,
     displayName: input.displayName ?? null,
@@ -217,7 +309,7 @@ export async function workspaceCreateRemote(input: {
     sandboxBackend: input.sandboxBackend ?? null,
     sandboxRunId: input.sandboxRunId ?? null,
     sandboxContainerName: input.sandboxContainerName ?? null,
-  });
+  }, defaultWorkspaceList);
 }
 
 export async function workspaceUpdateRemote(input: {
@@ -236,7 +328,7 @@ export async function workspaceUpdateRemote(input: {
   sandboxRunId?: string | null;
   sandboxContainerName?: string | null;
 }): Promise<WorkspaceList> {
-  return invoke<WorkspaceList>("workspace_update_remote", {
+  return invokeWithFallback<WorkspaceList>("workspace_update_remote", {
     workspaceId: input.workspaceId,
     baseUrl: input.baseUrl ?? null,
     directory: input.directory ?? null,
@@ -249,40 +341,53 @@ export async function workspaceUpdateRemote(input: {
     sandboxBackend: input.sandboxBackend ?? null,
     sandboxRunId: input.sandboxRunId ?? null,
     sandboxContainerName: input.sandboxContainerName ?? null,
-  });
+  }, defaultWorkspaceList);
 }
 
 export async function workspaceUpdateDisplayName(input: {
   workspaceId: string;
   displayName?: string | null;
 }): Promise<WorkspaceList> {
-  return invoke<WorkspaceList>("workspace_update_display_name", {
+  return invokeWithFallback<WorkspaceList>("workspace_update_display_name", {
     workspaceId: input.workspaceId,
     displayName: input.displayName ?? null,
-  });
+  }, defaultWorkspaceList);
 }
 
 export async function workspaceForget(workspaceId: string): Promise<WorkspaceList> {
-  return invoke<WorkspaceList>("workspace_forget", { workspaceId });
+  return invokeWithFallback<WorkspaceList>("workspace_forget", { workspaceId }, defaultWorkspaceList);
 }
 
 export async function workspaceAddAuthorizedRoot(input: {
   workspacePath: string;
   folderPath: string;
 }): Promise<ExecResult> {
-  return invoke<ExecResult>("workspace_add_authorized_root", {
-    workspacePath: input.workspacePath,
-    folderPath: input.folderPath,
-  });
+  return invokeWithFallback<ExecResult>(
+    "workspace_add_authorized_root",
+    {
+      workspacePath: input.workspacePath,
+      folderPath: input.folderPath,
+    },
+    {
+      ok: false,
+      status: -1,
+      stdout: "",
+      stderr: commandUnavailableMessage("workspace_add_authorized_root"),
+    },
+  );
 }
 
 export async function workspaceExportConfig(input: {
   workspaceId: string;
   outputPath: string;
 }): Promise<WorkspaceExportSummary> {
-  return invoke<WorkspaceExportSummary>("workspace_export_config", {
+  return invokeWithFallback<WorkspaceExportSummary>("workspace_export_config", {
     workspaceId: input.workspaceId,
     outputPath: input.outputPath,
+  }, {
+    outputPath: input.outputPath,
+    included: 0,
+    excluded: [],
   });
 }
 
@@ -291,11 +396,11 @@ export async function workspaceImportConfig(input: {
   targetDir: string;
   name?: string | null;
 }): Promise<WorkspaceList> {
-  return invoke<WorkspaceList>("workspace_import_config", {
+  return invokeWithFallback<WorkspaceList>("workspace_import_config", {
     archivePath: input.archivePath,
     targetDir: input.targetDir,
     name: input.name ?? null,
-  });
+  }, defaultWorkspaceList);
 }
 
 export type OpencodeCommandDraft = {
@@ -307,7 +412,7 @@ export type OpencodeCommandDraft = {
   subtask?: boolean;
 };
 
-export type WorkspaceOpenworkConfig = {
+export type WorkspaceDoWhatConfig = {
   version: number;
   workspace?: {
     name?: string | null;
@@ -321,32 +426,58 @@ export type WorkspaceOpenworkConfig = {
   } | null;
 };
 
-export async function workspaceOpenworkRead(input: {
-  workspacePath: string;
-}): Promise<WorkspaceOpenworkConfig> {
-  return invoke<WorkspaceOpenworkConfig>("workspace_openwork_read", {
-    workspacePath: input.workspacePath,
-  });
+function defaultWorkspaceDoWhatConfig(workspacePath?: string): WorkspaceDoWhatConfig {
+  return {
+    version: 1,
+    workspace: null,
+    authorizedRoots: workspacePath ? [workspacePath] : [],
+    reload: null,
+  };
 }
 
-export async function workspaceOpenworkWrite(input: {
+export async function workspaceDoWhatRead(input: {
   workspacePath: string;
-  config: WorkspaceOpenworkConfig;
+}): Promise<WorkspaceDoWhatConfig> {
+  return invokeWithFallback<WorkspaceDoWhatConfig>(
+    "workspace_dowhat_read",
+    {
+      workspacePath: input.workspacePath,
+    },
+    () => defaultWorkspaceDoWhatConfig(input.workspacePath),
+  );
+}
+
+export async function workspaceDoWhatWrite(input: {
+  workspacePath: string;
+  config: WorkspaceDoWhatConfig;
 }): Promise<ExecResult> {
-  return invoke<ExecResult>("workspace_openwork_write", {
-    workspacePath: input.workspacePath,
-    config: input.config,
-  });
+  return invokeWithFallback<ExecResult>(
+    "workspace_dowhat_write",
+    {
+      workspacePath: input.workspacePath,
+      config: input.config,
+    },
+    {
+      ok: false,
+      status: -1,
+      stdout: "",
+      stderr: commandUnavailableMessage("workspace_dowhat_write"),
+    },
+  );
 }
 
 export async function opencodeCommandList(input: {
   scope: "workspace" | "global";
   projectDir: string;
 }): Promise<string[]> {
-  return invoke<string[]>("opencode_command_list", {
-    scope: input.scope,
-    projectDir: input.projectDir,
-  });
+  return invokeWithFallback<string[]>(
+    "opencode_command_list",
+    {
+      scope: input.scope,
+      projectDir: input.projectDir,
+    },
+    [],
+  );
 }
 
 export async function opencodeCommandWrite(input: {
@@ -354,11 +485,20 @@ export async function opencodeCommandWrite(input: {
   projectDir: string;
   command: OpencodeCommandDraft;
 }): Promise<ExecResult> {
-  return invoke<ExecResult>("opencode_command_write", {
-    scope: input.scope,
-    projectDir: input.projectDir,
-    command: input.command,
-  });
+  return invokeWithFallback<ExecResult>(
+    "opencode_command_write",
+    {
+      scope: input.scope,
+      projectDir: input.projectDir,
+      command: input.command,
+    },
+    {
+      ok: false,
+      status: -1,
+      stdout: "",
+      stderr: commandUnavailableMessage("opencode_command_write"),
+    },
+  );
 }
 
 export async function opencodeCommandDelete(input: {
@@ -366,33 +506,46 @@ export async function opencodeCommandDelete(input: {
   projectDir: string;
   name: string;
 }): Promise<ExecResult> {
-  return invoke<ExecResult>("opencode_command_delete", {
-    scope: input.scope,
-    projectDir: input.projectDir,
-    name: input.name,
-  });
+  return invokeWithFallback<ExecResult>(
+    "opencode_command_delete",
+    {
+      scope: input.scope,
+      projectDir: input.projectDir,
+      name: input.name,
+    },
+    {
+      ok: false,
+      status: -1,
+      stdout: "",
+      stderr: commandUnavailableMessage("opencode_command_delete"),
+    },
+  );
 }
 
 export async function engineStop(): Promise<EngineInfo> {
-  return invoke<EngineInfo>("engine_stop");
+  return invokeWithFallback<EngineInfo>("engine_stop", undefined, defaultEngineInfo);
 }
 
 export async function orchestratorStatus(): Promise<OrchestratorStatus> {
-  return invoke<OrchestratorStatus>("orchestrator_status");
+  return invokeWithFallback<OrchestratorStatus>(
+    "orchestrator_status",
+    undefined,
+    defaultOrchestratorStatus,
+  );
 }
 
 export async function orchestratorWorkspaceActivate(input: {
   workspacePath: string;
   name?: string | null;
 }): Promise<OrchestratorWorkspace> {
-  return invoke<OrchestratorWorkspace>("orchestrator_workspace_activate", {
+  return invokeWithFallback<OrchestratorWorkspace>("orchestrator_workspace_activate", {
     workspacePath: input.workspacePath,
     name: input.name ?? null,
   });
 }
 
 export async function orchestratorInstanceDispose(workspacePath: string): Promise<boolean> {
-  return invoke<boolean>("orchestrator_instance_dispose", { workspacePath });
+  return invokeWithFallback<boolean>("orchestrator_instance_dispose", { workspacePath }, false);
 }
 
 export type AppBuildInfo = {
@@ -402,11 +555,15 @@ export type AppBuildInfo = {
 };
 
 export async function appBuildInfo(): Promise<AppBuildInfo> {
-  return invoke<AppBuildInfo>("app_build_info");
+  return invokeWithFallback<AppBuildInfo>(
+    "app_build_info",
+    undefined,
+    () => ({ version: "web", gitSha: null, buildEpoch: null }),
+  );
 }
 
 export type OrchestratorDetachedHost = {
-  openworkUrl: string;
+  doWhatUrl: string;
   token: string;
   hostToken: string;
   port: number;
@@ -420,7 +577,7 @@ export async function orchestratorStartDetached(input: {
   sandboxBackend?: "none" | "docker" | null;
   runId?: string | null;
 }): Promise<OrchestratorDetachedHost> {
-  return invoke<OrchestratorDetachedHost>("orchestrator_start_detached", {
+  return invokeWithFallback<OrchestratorDetachedHost>("orchestrator_start_detached", {
     workspacePath: input.workspacePath,
     sandboxBackend: input.sandboxBackend ?? null,
     runId: input.runId ?? null,
@@ -452,39 +609,79 @@ export type SandboxDoctorResult = {
 };
 
 export async function sandboxDoctor(): Promise<SandboxDoctorResult> {
-  return invoke<SandboxDoctorResult>("sandbox_doctor");
+  return invokeWithFallback<SandboxDoctorResult>(
+    "sandbox_doctor",
+    undefined,
+    () => ({
+      installed: false,
+      daemonRunning: false,
+      permissionOk: false,
+      ready: false,
+      clientVersion: null,
+      serverVersion: null,
+      error: commandUnavailableMessage("sandbox_doctor"),
+      debug: { candidates: [] },
+    }),
+  );
 }
 
 export async function sandboxStop(containerName: string): Promise<ExecResult> {
-  return invoke<ExecResult>("sandbox_stop", { containerName });
+  return invokeWithFallback<ExecResult>(
+    "sandbox_stop",
+    { containerName },
+    {
+      ok: false,
+      status: -1,
+      stdout: "",
+      stderr: commandUnavailableMessage("sandbox_stop"),
+    },
+  );
 }
 
-export type OpenworkDockerCleanupResult = {
+export type DoWhatDockerCleanupResult = {
   candidates: string[];
   removed: string[];
   errors: string[];
 };
 
-export async function sandboxCleanupOpenworkContainers(): Promise<OpenworkDockerCleanupResult> {
-  return invoke<OpenworkDockerCleanupResult>("sandbox_cleanup_openwork_containers");
+export async function sandboxCleanupDoWhatContainers(): Promise<DoWhatDockerCleanupResult> {
+  return invokeWithFallback<DoWhatDockerCleanupResult>(
+    "sandbox_cleanup_dowhat_containers",
+    undefined,
+    { candidates: [], removed: [], errors: [] },
+  );
 }
 
-export async function openworkServerInfo(): Promise<OpenworkServerInfo> {
-  return invoke<OpenworkServerInfo>("openwork_server_info");
+export async function doWhatServerInfo(): Promise<DoWhatServerInfo> {
+  return invokeWithFallback<DoWhatServerInfo>(
+    "dowhat_server_info",
+    undefined,
+    defaultDoWhatServerInfo,
+  );
 }
 
 export async function engineInfo(): Promise<EngineInfo> {
-  return invoke<EngineInfo>("engine_info");
+  return invokeWithFallback<EngineInfo>("engine_info", undefined, defaultEngineInfo);
 }
 
 export async function engineDoctor(options?: {
   preferSidecar?: boolean;
   opencodeBinPath?: string | null;
 }): Promise<EngineDoctorResult> {
-  return invoke<EngineDoctorResult>("engine_doctor", {
+  return invokeWithFallback<EngineDoctorResult>("engine_doctor", {
     preferSidecar: options?.preferSidecar ?? false,
     opencodeBinPath: options?.opencodeBinPath ?? null,
-  });
+  }, () => ({
+    found: false,
+    inPath: false,
+    resolvedPath: null,
+    version: null,
+    supportsServe: false,
+    notes: [commandUnavailableMessage("engine_doctor")],
+    serveHelpStatus: null,
+    serveHelpStdout: null,
+    serveHelpStderr: null,
+  }));
 }
 
 export async function pickDirectory(options?: {
@@ -492,6 +689,7 @@ export async function pickDirectory(options?: {
   defaultPath?: string;
   multiple?: boolean;
 }): Promise<string | string[] | null> {
+  if (!isTauri()) return null;
   const { open } = await import("@tauri-apps/plugin-dialog");
   return open({
     title: options?.title,
@@ -507,6 +705,7 @@ export async function pickFile(options?: {
   multiple?: boolean;
   filters?: Array<{ name: string; extensions: string[] }>;
 }): Promise<string | string[] | null> {
+  if (!isTauri()) return null;
   const { open } = await import("@tauri-apps/plugin-dialog");
   return open({
     title: options?.title,
@@ -522,6 +721,7 @@ export async function saveFile(options?: {
   defaultPath?: string;
   filters?: Array<{ name: string; extensions: string[] }>;
 }): Promise<string | null> {
+  if (!isTauri()) return null;
   const { save } = await import("@tauri-apps/plugin-dialog");
   return save({
     title: options?.title,
@@ -576,11 +776,29 @@ export type ScheduledJob = {
 };
 
 export async function engineInstall(): Promise<ExecResult> {
-  return invoke<ExecResult>("engine_install");
+  return invokeWithFallback<ExecResult>(
+    "engine_install",
+    undefined,
+    {
+      ok: false,
+      status: -1,
+      stdout: "",
+      stderr: commandUnavailableMessage("engine_install"),
+    },
+  );
 }
 
 export async function opkgInstall(projectDir: string, pkg: string): Promise<ExecResult> {
-  return invoke<ExecResult>("opkg_install", { projectDir, package: pkg });
+  return invokeWithFallback<ExecResult>(
+    "opkg_install",
+    { projectDir, package: pkg },
+    {
+      ok: false,
+      status: -1,
+      stdout: "",
+      stderr: commandUnavailableMessage("opkg_install"),
+    },
+  );
 }
 
 export async function importSkill(
@@ -588,11 +806,20 @@ export async function importSkill(
   sourceDir: string,
   options?: { overwrite?: boolean },
 ): Promise<ExecResult> {
-  return invoke<ExecResult>("import_skill", {
-    projectDir,
-    sourceDir,
-    overwrite: options?.overwrite ?? false,
-  });
+  return invokeWithFallback<ExecResult>(
+    "import_skill",
+    {
+      projectDir,
+      sourceDir,
+      overwrite: options?.overwrite ?? false,
+    },
+    {
+      ok: false,
+      status: -1,
+      stdout: "",
+      stderr: commandUnavailableMessage("import_skill"),
+    },
+  );
 }
 
 export async function installSkillTemplate(
@@ -601,12 +828,21 @@ export async function installSkillTemplate(
   content: string,
   options?: { overwrite?: boolean },
 ): Promise<ExecResult> {
-  return invoke<ExecResult>("install_skill_template", {
-    projectDir,
-    name,
-    content,
-    overwrite: options?.overwrite ?? false,
-  });
+  return invokeWithFallback<ExecResult>(
+    "install_skill_template",
+    {
+      projectDir,
+      name,
+      content,
+      overwrite: options?.overwrite ?? false,
+    },
+    {
+      ok: false,
+      status: -1,
+      stdout: "",
+      stderr: commandUnavailableMessage("install_skill_template"),
+    },
+  );
 }
 
 export type LocalSkillCard = {
@@ -622,19 +858,41 @@ export type LocalSkillContent = {
 };
 
 export async function listLocalSkills(projectDir: string): Promise<LocalSkillCard[]> {
-  return invoke<LocalSkillCard[]>("list_local_skills", { projectDir });
+  return invokeWithFallback<LocalSkillCard[]>("list_local_skills", { projectDir }, []);
 }
 
 export async function readLocalSkill(projectDir: string, name: string): Promise<LocalSkillContent> {
-  return invoke<LocalSkillContent>("read_local_skill", { projectDir, name });
+  return invokeWithFallback<LocalSkillContent>(
+    "read_local_skill",
+    { projectDir, name },
+    { path: "", content: "" },
+  );
 }
 
 export async function writeLocalSkill(projectDir: string, name: string, content: string): Promise<ExecResult> {
-  return invoke<ExecResult>("write_local_skill", { projectDir, name, content });
+  return invokeWithFallback<ExecResult>(
+    "write_local_skill",
+    { projectDir, name, content },
+    {
+      ok: false,
+      status: -1,
+      stdout: "",
+      stderr: commandUnavailableMessage("write_local_skill"),
+    },
+  );
 }
 
 export async function uninstallSkill(projectDir: string, name: string): Promise<ExecResult> {
-  return invoke<ExecResult>("uninstall_skill", { projectDir, name });
+  return invokeWithFallback<ExecResult>(
+    "uninstall_skill",
+    { projectDir, name },
+    {
+      ok: false,
+      status: -1,
+      stdout: "",
+      stderr: commandUnavailableMessage("uninstall_skill"),
+    },
+  );
 }
 
 export type OpencodeConfigFile = {
@@ -648,7 +906,11 @@ export async function readOpencodeConfig(
   scope: "project" | "global",
   projectDir: string,
 ): Promise<OpencodeConfigFile> {
-  return invoke<OpencodeConfigFile>("read_opencode_config", { scope, projectDir });
+  return invokeWithFallback<OpencodeConfigFile>(
+    "read_opencode_config",
+    { scope, projectDir },
+    { path: "", exists: false, content: null },
+  );
 }
 
 export async function writeOpencodeConfig(
@@ -656,11 +918,22 @@ export async function writeOpencodeConfig(
   projectDir: string,
   content: string,
 ): Promise<ExecResult> {
-  return invoke<ExecResult>("write_opencode_config", { scope, projectDir, content });
+  return invokeWithFallback<ExecResult>(
+    "write_opencode_config",
+    { scope, projectDir, content },
+    {
+      ok: false,
+      status: -1,
+      stdout: "",
+      stderr: commandUnavailableMessage("write_opencode_config"),
+    },
+  );
 }
 
-export async function resetOpenworkState(mode: "onboarding" | "all"): Promise<void> {
-  return invoke<void>("reset_openwork_state", { mode });
+export type ResetDoWhatMode = "onboarding" | "all";
+
+export async function resetDoWhatState(mode: ResetDoWhatMode): Promise<void> {
+  return invokeWithFallback<void>("reset_dowhat_state", { mode }, undefined);
 }
 
 export type CacheResetResult = {
@@ -670,15 +943,28 @@ export type CacheResetResult = {
 };
 
 export async function resetOpencodeCache(): Promise<CacheResetResult> {
-  return invoke<CacheResetResult>("reset_opencode_cache");
+  return invokeWithFallback<CacheResetResult>(
+    "reset_opencode_cache",
+    undefined,
+    { removed: [], missing: [], errors: [commandUnavailableMessage("reset_opencode_cache")] },
+  );
 }
 
 export async function schedulerListJobs(scopeRoot?: string): Promise<ScheduledJob[]> {
-  return invoke<ScheduledJob[]>("scheduler_list_jobs", { scopeRoot });
+  return invokeWithFallback<ScheduledJob[]>("scheduler_list_jobs", { scopeRoot }, []);
 }
 
 export async function schedulerDeleteJob(name: string, scopeRoot?: string): Promise<ScheduledJob> {
-  return invoke<ScheduledJob>("scheduler_delete_job", { name, scopeRoot });
+  return invokeWithFallback<ScheduledJob>(
+    "scheduler_delete_job",
+    { name, scopeRoot },
+    {
+      slug: name,
+      name,
+      schedule: "",
+      createdAt: "",
+    },
+  );
 }
 
 export async function opencodeDbMigrate(input: {
@@ -691,11 +977,20 @@ export async function opencodeDbMigrate(input: {
     throw new Error("project_dir is required");
   }
 
-  return invoke<ExecResult>("opencode_db_migrate", {
-    projectDir: safeProjectDir,
-    preferSidecar: input.preferSidecar ?? false,
-    opencodeBinPath: input.opencodeBinPath ?? null,
-  });
+  return invokeWithFallback<ExecResult>(
+    "opencode_db_migrate",
+    {
+      projectDir: safeProjectDir,
+      preferSidecar: input.preferSidecar ?? false,
+      opencodeBinPath: input.opencodeBinPath ?? null,
+    },
+    {
+      ok: false,
+      status: -1,
+      stdout: "",
+      stderr: commandUnavailableMessage("opencode_db_migrate"),
+    },
+  );
 }
 
 export async function opencodeMcpAuth(
@@ -709,10 +1004,19 @@ export async function opencodeMcpAuth(
 
   const safeServerName = validateMcpServerName(serverName);
 
-  return invoke<ExecResult>("opencode_mcp_auth", {
-    projectDir: safeProjectDir,
-    serverName: safeServerName,
-  });
+  return invokeWithFallback<ExecResult>(
+    "opencode_mcp_auth",
+    {
+      projectDir: safeProjectDir,
+      serverName: safeServerName,
+    },
+    {
+      ok: false,
+      status: -1,
+      stdout: "",
+      stderr: commandUnavailableMessage("opencode_mcp_auth"),
+    },
+  );
 }
 
 /**
@@ -721,7 +1025,7 @@ export async function opencodeMcpAuth(
  * Useful for tiling window managers on Linux (e.g., Hyprland, i3, sway).
  */
 export async function setWindowDecorations(decorations: boolean): Promise<void> {
-  return invoke<void>("set_window_decorations", { decorations });
+  return invokeWithFallback<void>("set_window_decorations", { decorations }, undefined);
 }
 
 
@@ -732,38 +1036,57 @@ export async function agentRunStart(params: {
   workdir?: string;
   config: AgentRunConfig;
 }): Promise<void> {
-  return invoke("agent_run_start", {
-    runId: params.runId,
-    runtime: params.runtime,
-    prompt: params.prompt,
-    workdir: params.workdir ?? null,
-    config: {
-      mcpConfigPath: params.config.mcpConfigPath ?? null,
-      rulesPrefix: params.config.rulesPrefix ?? null,
+  return invokeWithFallback(
+    "agent_run_start",
+    {
+      runId: params.runId,
+      runtime: params.runtime,
+      prompt: params.prompt,
+      workdir: params.workdir ?? null,
+      config: {
+        mcpConfigPath: params.config.mcpConfigPath ?? null,
+        rulesPrefix: params.config.rulesPrefix ?? null,
+      },
     },
-  });
+    undefined,
+  );
 }
 
 export async function agentRunAbort(runId: string): Promise<void> {
-  return invoke("agent_run_abort", { runId });
+  return invokeWithFallback("agent_run_abort", { runId }, undefined);
 }
 
 export async function checkRuntimeAvailable(runtime: "claude-code" | "codex"): Promise<string> {
-  return invoke("check_runtime_available", { runtime });
+  return invokeWithFallback("check_runtime_available", { runtime }, "not-installed");
 }
 
 export async function checkOpencodeStatus(): Promise<RuntimeAssistantStatus> {
-  return invoke("check_opencode_status");
+  return invokeWithFallback(
+    "check_opencode_status",
+    undefined,
+    defaultRuntimeAssistantStatus("opencode", "OpenCode", "opencode"),
+  );
 }
 
 export async function checkClaudeCodeStatus(): Promise<RuntimeAssistantStatus> {
-  return invoke("check_claude_code_status");
+  return invokeWithFallback(
+    "check_claude_code_status",
+    undefined,
+    defaultRuntimeAssistantStatus("claude-code", "Claude Code", "claude"),
+  );
 }
 
 export async function checkCodexStatus(): Promise<RuntimeAssistantStatus> {
-  return invoke("check_codex_status");
+  return invokeWithFallback(
+    "check_codex_status",
+    undefined,
+    defaultRuntimeAssistantStatus("codex", "Codex", "codex"),
+  );
 }
 
 export async function checkAssistantStatuses(): Promise<RuntimeAssistantStatusSnapshot> {
-  return invoke("check_assistant_statuses");
+  return invokeWithFallback("check_assistant_statuses", undefined, {
+    checkedAt: Date.now(),
+    assistants: [],
+  });
 }

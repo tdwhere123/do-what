@@ -68,6 +68,7 @@ import {
   appendRunEvent,
   updateAgentRun,
 } from "./state/sessions";
+import { hasAnyConnectedRuntime, refreshRuntimeSnapshot } from "./state/runtime-connection";
 import type {
   Client,
   DashboardTab,
@@ -80,7 +81,7 @@ import type {
   PluginScope,
   ReloadReason,
   ReloadTrigger,
-  ResetOpenworkMode,
+  ResetDoWhatMode,
   SettingsTab,
   SkillCard,
   SidebarSessionItem,
@@ -141,11 +142,11 @@ import {
   writeOpencodeConfig,
   schedulerDeleteJob,
   schedulerListJobs,
-  openworkServerInfo,
+  doWhatServerInfo,
   orchestratorStatus,
   setWindowDecorations,
   type OrchestratorStatus,
-  type OpenworkServerInfo,
+  type DoWhatServerInfo,
 } from "./lib/tauri";
 import {
   parseOpenworkWorkspaceIdFromUrl,
@@ -322,7 +323,7 @@ export default function App() {
 
   const [engineCustomBinPath, setEngineCustomBinPath] = createSignal("");
 
-  const [engineRuntime, setEngineRuntime] = createSignal<EngineRuntime>("openwork-orchestrator");
+  const [engineRuntime, setEngineRuntime] = createSignal<EngineRuntime>("dowhat-orchestrator");
 
   const [baseUrl, setBaseUrl] = createSignal("http://127.0.0.1:4096");
   const [clientDirectory, setClientDirectory] = createSignal("");
@@ -333,7 +334,7 @@ export default function App() {
   const [openworkServerCapabilities, setOpenworkServerCapabilities] = createSignal<OpenworkServerCapabilities | null>(null);
   const [openworkServerCheckedAt, setOpenworkServerCheckedAt] = createSignal<number | null>(null);
   const [openworkServerWorkspaceId, setOpenworkServerWorkspaceId] = createSignal<string | null>(null);
-  const [openworkServerHostInfo, setOpenworkServerHostInfo] = createSignal<OpenworkServerInfo | null>(null);
+  const [openworkServerHostInfo, setOpenworkServerHostInfo] = createSignal<DoWhatServerInfo | null>(null);
   const [openworkServerDiagnostics, setOpenworkServerDiagnostics] = createSignal<OpenworkServerDiagnostics | null>(null);
   const [openworkReconnectBusy, setOpenworkReconnectBusy] = createSignal(false);
   const [orchestratorStatusState, setOrchestratorStatusState] = createSignal<OrchestratorStatus | null>(null);
@@ -504,7 +505,7 @@ export default function App() {
 
     const run = async () => {
       try {
-        const info = await openworkServerInfo();
+        const info = await doWhatServerInfo();
         if (active) setOpenworkServerHostInfo(info);
       } catch {
         if (active) setOpenworkServerHostInfo(null);
@@ -1098,6 +1099,14 @@ export default function App() {
       resolvedText: content,
     };
 
+    if (!hasAnyConnectedRuntime()) {
+      await refreshRuntimeSnapshot();
+      if (!hasAnyConnectedRuntime()) {
+        setError("Please connect an AI assistant before sending prompts.");
+        return;
+      }
+    }
+
     const c = client();
     if (!c) return;
 
@@ -1467,7 +1476,7 @@ export default function App() {
     if (!trimmed) {
       throw new Error("Session name is required");
     }
-    
+
     await renameSession(sessionID, trimmed);
     await refreshSidebarWorkspaceSessions(workspaceStore.activeWorkspaceId()).catch(() => undefined);
   }
@@ -2051,7 +2060,7 @@ export default function App() {
     openworkServerSettings,
     updateOpenworkServerSettings,
     openworkServerClient,
-    onEngineStable: () => {},
+    onEngineStable: () => { },
     engineRuntime,
     developerMode,
   });
@@ -2450,9 +2459,9 @@ export default function App() {
           const directoryHint = normalizeDirectoryPath(active.directory?.trim() ?? active.path?.trim() ?? "");
           const match = directoryHint
             ? items.find((entry) => {
-                const entryPath = normalizeDirectoryPath((entry.opencode?.directory ?? entry.directory ?? entry.path ?? "").trim());
-                return Boolean(entryPath && entryPath === directoryHint);
-              })
+              const entryPath = normalizeDirectoryPath((entry.opencode?.directory ?? entry.directory ?? entry.path ?? "").trim());
+              return Boolean(entryPath && entryPath === directoryHint);
+            })
             : (response.activeId ? items.find((entry) => entry.id === response.activeId) : null) ?? items[0];
           setOpenworkServerWorkspaceId(match?.id ?? response.activeId ?? null);
         } catch {
@@ -2691,9 +2700,9 @@ export default function App() {
     setRenameWorkspaceId(workspaceId);
     setRenameWorkspaceName(
       workspace.displayName?.trim() ||
-        workspace.openworkWorkspaceName?.trim() ||
-        workspace.name?.trim() ||
-        ""
+      workspace.openworkWorkspaceName?.trim() ||
+      workspace.name?.trim() ||
+      ""
     );
     setRenameWorkspaceOpen(true);
   };
@@ -2763,7 +2772,7 @@ export default function App() {
       let hostInfo = openworkServerHostInfo();
       if (isTauriRuntime()) {
         try {
-          hostInfo = await openworkServerInfo();
+          hostInfo = await doWhatServerInfo();
           setOpenworkServerHostInfo(hostInfo);
         } catch {
           hostInfo = null;
@@ -2920,6 +2929,7 @@ export default function App() {
   onMount(() => {
     // OpenCode hot reload drives freshness now; OpenWork no longer listens for
     // legacy reload-required events.
+    void refreshRuntimeSnapshot();
   });
 
   const {
@@ -4271,7 +4281,7 @@ export default function App() {
         const storedEngineRuntime = window.localStorage.getItem(
           "openwork.engineRuntime"
         );
-        if (storedEngineRuntime === "direct" || storedEngineRuntime === "openwork-orchestrator") {
+        if (storedEngineRuntime === "direct" || storedEngineRuntime === "dowhat-orchestrator") {
           setEngineRuntime(storedEngineRuntime);
         }
 
@@ -5238,6 +5248,8 @@ export default function App() {
     sessionStatus: selectedSessionStatus(),
     renameSession: renameSessionTitle,
     error: error(),
+    themeMode: themeMode(),
+    setThemeMode: setThemeMode,
   });
 
   const dashboardTabs = new Set<DashboardTab>([
@@ -5440,13 +5452,13 @@ export default function App() {
         onConfirmWorker={
           isTauriRuntime()
             ? async (preset, folder) => {
-                const ok = await workspaceStore.createSandboxFlow(preset, folder, {
-                  onReady: async () => {
-                    await createSessionAndOpen();
-                  },
-                });
-                if (!ok) return;
-              }
+              const ok = await workspaceStore.createSandboxFlow(preset, folder, {
+                onReady: async () => {
+                  await createSessionAndOpen();
+                },
+              });
+              if (!ok) return;
+            }
             : undefined
         }
         workerDisabled={(() => {
@@ -5574,3 +5586,5 @@ export default function App() {
     </>
   );
 }
+
+

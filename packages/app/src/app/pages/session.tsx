@@ -1,4 +1,5 @@
 import { For, Show, createEffect, createMemo, createSignal, on, onCleanup, onMount } from "solid-js";
+import { hasAnyConnectedRuntime } from "../state/runtime-connection";
 import type { Agent, Part } from "@opencode-ai/sdk/v2/client";
 import type {
   ArtifactItem,
@@ -20,7 +21,7 @@ import type {
   WorkspaceSessionGroup,
 } from "../types";
 
-import type { EngineInfo, OpenworkServerInfo, WorkspaceInfo } from "../lib/tauri";
+import type { EngineInfo, DoWhatServerInfo, WorkspaceInfo } from "../lib/tauri";
 
 import {
   Check,
@@ -81,6 +82,8 @@ import SessionDagWidget from "../components/session-dag";
 import { useAgentRuns, useProjects } from "../state/sessions";
 
 export type SessionViewProps = {
+  themeMode: "light" | "dark" | "system";
+  setThemeMode: (mode: "light" | "dark" | "system") => void;
   selectedSessionId: string | null;
   setView: (view: View, sessionId?: string) => void;
   tab: DashboardTab;
@@ -107,7 +110,7 @@ export type SessionViewProps = {
   openworkServerStatus: OpenworkServerStatus;
   openworkServerClient: OpenworkServerClient | null;
   openworkServerSettings: OpenworkServerSettings;
-  openworkServerHostInfo: OpenworkServerInfo | null;
+  openworkServerHostInfo: DoWhatServerInfo | null;
   openworkServerWorkspaceId: string | null;
   engineInfo: EngineInfo | null;
   stopHost: () => void;
@@ -2961,48 +2964,72 @@ export default function SessionView(props: SessionViewProps) {
             >
               <div class="max-w-5xl mx-auto w-full">
                 <Show when={props.messages.length === 0 && !selectedAgentRun()}>
-                  <div class="text-center py-16 px-6 space-y-6">
-                    <img
-                      src="/svg/organic/shape/flower/Elements-organic-shape-flower-nature-splash.svg"
-                      class="w-24 h-24 mx-auto opacity-85"
-                      alt=""
-                      aria-hidden="true"
-                    />
-                    <div class="space-y-2">
-                      <h3 class="text-xl font-medium">您想做些什么？</h3>
-                      <p class="text-dls-secondary text-sm max-w-sm mx-auto">
-                        选择一个起点，或者直接在下方输入。
-                      </p>
-                    </div>
-                    <div class="grid gap-3 sm:grid-cols-2 max-w-2xl mx-auto text-left">
-                      <button
-                        type="button"
-                        class="rounded-2xl border border-dls-border bg-dls-hover p-4 transition-all hover:bg-dls-active hover:border-[var(--color-border-default)]"
-                        onClick={() => {
-                          void handleBrowserAutomationQuickstart();
-                        }}
-                      >
-                        <div class="text-sm font-semibold text-dls-text">自动化您的浏览器</div>
-                        <div class="mt-1 text-xs text-dls-secondary leading-relaxed">
-                          配置浏览器操作并从 do-what 运行可靠的网络任务。
+                  <Show
+                    when={hasAnyConnectedRuntime()}
+                    fallback={
+                      <div class="flex flex-col items-center justify-center h-full gap-5 text-center py-20 px-6">
+                        <div class="p-4 bg-[var(--color-bg-elevated)] rounded-full text-[var(--color-text-secondary)]">
+                          <Cpu size={32} />
                         </div>
-                      </button>
-                      <button
-                        type="button"
-                        class="rounded-2xl border border-dls-border bg-dls-hover p-4 transition-all hover:bg-dls-active hover:border-[var(--color-border-default)]"
-                        onClick={() => {
-                          void handleSoulQuickstart();
-                        }}
-                      >
-                        <div class="text-sm font-semibold text-dls-text">赋我予魂 (Soul)</div>
-                        <div class="mt-1 text-xs text-dls-secondary leading-relaxed">
-                          通过轻量级的定期检查，在不同会话中保持您的目标和偏好。<br />
-                          权衡：更高的自主性会带来额外的后台运行，但还原仅需一条命令。
-                          在记忆(Soul)区域审核设置和心跳证据。
+                        <div class="text-xl font-medium text-[var(--color-text-primary)]">
+                          请先连接一个 AI 助手
                         </div>
-                      </button>
+                        <div class="text-sm text-[var(--color-text-secondary)] max-w-sm mx-auto">
+                          连接 OpenCode、Claude Code 或 Codex 等引擎后即可开始对话和运行任务。
+                        </div>
+                        <Button onClick={() => {
+                          props.setTab("settings");
+                          props.setSettingsTab("runtimes");
+                          props.setView("dashboard");
+                        }}>
+                          前往连接设置
+                        </Button>
+                      </div>
+                    }
+                  >
+                    <div class="text-center py-16 px-6 space-y-6">
+                      <img
+                        src="/svg/organic/shape/flower/Elements-organic-shape-flower-nature-splash.svg"
+                        class="w-24 h-24 mx-auto opacity-85"
+                        alt=""
+                        aria-hidden="true"
+                      />
+                      <div class="space-y-2">
+                        <h3 class="text-xl font-medium">您想做些什么？</h3>
+                        <p class="text-dls-secondary text-sm max-w-sm mx-auto">
+                          选择一个起点，或者直接在下方输入。
+                        </p>
+                      </div>
+                      <div class="grid gap-3 sm:grid-cols-2 max-w-2xl mx-auto text-left">
+                        <button
+                          type="button"
+                          class="rounded-2xl border border-dls-border bg-dls-hover p-4 transition-all hover:bg-dls-active hover:border-[var(--color-border-default)]"
+                          onClick={() => {
+                            void handleBrowserAutomationQuickstart();
+                          }}
+                        >
+                          <div class="text-sm font-semibold text-dls-text">自动化您的浏览器</div>
+                          <div class="mt-1 text-xs text-dls-secondary leading-relaxed">
+                            配置浏览器操作并从 do-what 运行可靠的网络任务。
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          class="rounded-2xl border border-dls-border bg-dls-hover p-4 transition-all hover:bg-dls-active hover:border-[var(--color-border-default)]"
+                          onClick={() => {
+                            void handleSoulQuickstart();
+                          }}
+                        >
+                          <div class="text-sm font-semibold text-dls-text">赋我予魂 (Soul)</div>
+                          <div class="mt-1 text-xs text-dls-secondary leading-relaxed">
+                            通过轻量级的定期检查，在不同会话中保持您的目标和偏好。<br />
+                            权衡：更高的自主性会带来额外的后台运行，但还原仅需一条命令。
+                            在记忆(Soul)区域审核设置和心跳证据。
+                          </div>
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  </Show>
                 </Show>
 
                 <Show when={hiddenMessageCount() > 0}>
@@ -3211,6 +3238,8 @@ export default function SessionView(props: SessionViewProps) {
           clientConnected={props.clientConnected}
           openworkServerStatus={props.openworkServerStatus}
           developerMode={props.developerMode}
+          themeMode={props.themeMode}
+          onToggleTheme={() => props.setThemeMode(props.themeMode === "dark" ? "light" : "dark")}
           onOpenSettings={() => openSettings("general")}
           onOpenMessaging={openConfig}
           onOpenProviders={openProviderAuth}
@@ -3546,3 +3575,4 @@ export default function SessionView(props: SessionViewProps) {
     </div>
   );
 }
+

@@ -21,12 +21,13 @@ const DEFAULTS: SharedConfig = {
   skillsDir: "~/.config/do-what/shared/skills/",
 };
 
-const STORAGE_KEY = "openwork.shared-config.v1";
+const STORAGE_KEY = "dowhat.shared-config.v1";
+const LEGACY_STORAGE_KEY = "openwork.shared-config.v1";
 
 export async function readSharedConfig(): Promise<SharedConfig> {
   if (typeof window === "undefined") return DEFAULTS;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_STORAGE_KEY);
     if (!raw) return DEFAULTS;
     return { ...DEFAULTS, ...(JSON.parse(raw) as Partial<SharedConfig>) };
   } catch {
@@ -38,6 +39,7 @@ export async function writeSharedConfig(cfg: Partial<SharedConfig>): Promise<voi
   if (typeof window === "undefined") return;
   const merged = { ...(await readSharedConfig()), ...cfg };
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+  window.localStorage.removeItem(LEGACY_STORAGE_KEY);
 }
 
 export async function readRulesContent(): Promise<string> {

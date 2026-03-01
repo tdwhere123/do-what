@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 use zip::ZipArchive;
 
-use crate::types::{OpencodeCommand, WorkspaceOpenworkConfig};
+use crate::types::{OpencodeCommand, WorkspaceDoWhatConfig};
 use crate::utils::now_ms;
 use crate::workspace::commands::{sanitize_command_name, serialize_command_frontmatter};
 
@@ -485,7 +485,7 @@ pub fn ensure_workspace_files(workspace_path: &str, preset: &str) -> Result<(), 
 
     let openwork_path = root.join(".opencode").join("openwork.json");
     if !openwork_path.exists() {
-        let openwork = WorkspaceOpenworkConfig::new(workspace_path, preset, now_ms());
+        let openwork = WorkspaceDoWhatConfig::new(workspace_path, preset, now_ms());
 
         fs::create_dir_all(openwork_path.parent().unwrap())
             .map_err(|e| format!("Failed to create {}: {e}", openwork_path.display()))?;

@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use tauri_plugin_shell::process::CommandChild;
 
-use crate::types::OpenworkServerInfo;
+use crate::types::DoWhatServerInfo;
 
 #[derive(Default)]
 pub struct OpenworkServerManager {
@@ -26,7 +26,7 @@ pub struct OpenworkServerState {
 }
 
 impl OpenworkServerManager {
-    pub fn snapshot_locked(state: &mut OpenworkServerState) -> OpenworkServerInfo {
+    pub fn snapshot_locked(state: &mut OpenworkServerState) -> DoWhatServerInfo {
         let (running, pid) = match state.child.as_ref() {
             None => (false, None),
             Some(_child) if state.child_exited => {
@@ -36,7 +36,7 @@ impl OpenworkServerManager {
             Some(child) => (true, Some(child.pid())),
         };
 
-        OpenworkServerInfo {
+        DoWhatServerInfo {
             running,
             host: state.host.clone(),
             port: state.port,

@@ -31,3 +31,14 @@ pnpm --filter @do-what/ui dev
 - 本包是业务主链路入口，不依赖 router 才能运行。
 - router 连接链路已从主线摘除，不作为前端能力入口。
 - Settings 的 `Runtimes` 分页会调用桌面端统一状态接口并展示 `opencode/claude-code/codex` 的安装与登录状态。
+
+## v0.8 完成记录 (2026-03-01)
+
+- Web 安全 Tauri invoke fallback（`src/app/lib/tauri.ts`）
+- 启动时 localStorage 迁移：`openwork.* → dowhat.*`
+- Runtime 连接状态模块：`src/app/state/runtime-connection.ts`
+- `sendPrompt` 无 runtime 连接时阻止发送
+- 前端遗留别名已清除（`Openwork*` → `DoWhat*`）
+- 系统通知文本全部汉化
+- 默认浅色主题，暗色为暖棕方案
+

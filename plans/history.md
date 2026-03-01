@@ -3,148 +3,84 @@
 ## 版本路线
 
 | 版本 | 主题 | 状态 |
-|---|---|---|
-| v0.1-v0.5 | 基线清理、多运行时雏形、UI 重构 | 已完成（历史） |
-| v0.6 | 环境自安装 + 文档重建 + Router 主线移除 | 进行中 |
+|------|------|------|
+| v0.1–v0.5 | 基线清理、多运行时雏形、UI 重构 | ✅ 已完成 |
+| v0.6 | 环境自安装 + 文档重建 + Router 移除 | ✅ 已完成 |
+| v0.7 | 双轨重构（视觉 + 核心解耦） | ✅ 已完成 |
+| v0.8 | 后端解耦 + UI 视觉交互 + 汉化 | ✅ 已完成 |
 
-## v0.6 目标
+---
 
-1. 缺失环境自动安装（Windows / winget）
-2. 安装与启动链路稳定化
-3. Router 从硬依赖降级并最终从主线移除
-4. 删除历史 PR 文档噪音
-5. 强制维护 `AGENTS.md` 与 `plans/`
+## v0.6 完成摘要
 
-## v0.6 已落地
+**目标**：缺失环境自动安装、启动链路稳定化、Router 从主线移除、文档重建。
 
+### 核心成果
+- Windows 环境自动化脚本：`doctor.ps1` / `install.ps1` / `bootstrap.ps1`
+- Bun 安装增强（winget 多策略 + 官方脚本回退）
+- Rust 工具链检测修复 + 自动配置
+- Router 从硬依赖 → 可选降级 → 代码路径摘除 → 物理删除
+- 瘦身开发模式：`pnpm dev` 默认仅启动 UI
+- Windows linker 冲突修复（MSVC `link.exe` 注入）
+- 核心文档重写（README、ARCHITECTURE、docs/ 目录）
+- env 前缀迁移：`DOWHAT_*` 优先，兼容 `OPENWORK_*`
 
-- env 前缀兼容迁移（进行中）：
-  - 新增 `DOWHAT_*` 配置读取，优先级高于 `OPENWORK_*`
-  - `OPENWORK_*` 继续兼容，读取时打印一次 deprecated 提示（非阻塞）
-  - server/orchestrator/desktop 读取层完成首轮迁移
-  - 新增执行记录：`plans/execution/02-env-compat-migration.md`
-- 新增 `scripts/setup/windows/doctor.ps1`
-- 新增 `scripts/setup/windows/install.ps1`
-- 新增 `scripts/setup/windows/bootstrap.ps1`
-- 根 `package.json` 新增：
-  - `doctor:windows`
-  - `setup:windows`
-  - `bootstrap:windows`
-- `install.ps1` 增强 Bun 安装逻辑：
-  - `winget` 多策略重试
-  - `winget` 失败后自动回退 Bun 官方安装脚本（覆盖 `exit=-1978335189` 场景）
-- `doctor.ps1` 修复 Rust 检查误判：新增 `rust-toolchain` 检测
-- `install.ps1` 增加 Rust 默认工具链自动配置：`rustup default stable`
-- `prepare-sidecar.mjs` 支持 Router 默认关闭，不再强依赖本地 `packages/opencode-router`
-- `packages/orchestrator/src/cli.ts`：Router 默认值改为关闭，可由环境变量启用
-- `packages/desktop/src-tauri/src/commands/orchestrator.rs`：沙箱启动遵循 Router 开关
-- 新增瘦身开发模式：
-  - `pnpm dev` 默认仅 UI（`dev:lite`）
-  - `pnpm run dev:desktop` 才走 Tauri 桌面链路
-- 修复 Windows linker 冲突：
-  - `packages/desktop/scripts/dev.mjs` 自动注入 MSVC `link.exe` 路径，规避 Git `link.exe`
-- 重写核心文档与包 README
-- 新增真瘦身专项规格：
-  - `plans/v0.6-slimming-spec.md`
-  - 明确业务优先启动、core/optional 分层、桌面壳后置策略
-- 打通 runtime 实际执行链路：
-  - `composer` 选择 `claude-code/codex` 后，`sendPrompt` 走 Tauri `agent_run_start`
-  - Session 页新增 `Local Runtime Output` 展示
-- 下线 router 默认活跃链路：
-  - StatusBar 移除 router 轮询
-  - 桌面 sandbox 启动固定 `--no-opencode-router`
-  - `prepare-sidecar` 忽略 router 构建请求
-- 新增仓库瘦身脚本：
-  - `pnpm run clean:artifacts`
-  - 完整 `.gitignore`（忽略 `target/sidecars` 等构建产物）
-- 新增 package README：
-  - `packages/app/README.md`
-  - `packages/desktop/README.md`
-- 命名与脚本统一（package/script migration）：
-  - workspace/package 名称改为 `@do-what/*` 体系
-  - 根脚本统一为 `dev:business` / `dev:desktop` / `dev:ui`
-  - `dev:lite` 保留为 deprecated 过渡别名
+### 删除清单
+- `packages/orchestrator/scripts/build-opencode-router.mjs`
+- `packages/orchestrator/scripts/router.mjs`
 
-- Router 可选化收敛（本次）：
-  - `prepare-sidecar` 默认不依赖 router，显式启用时尝试构建
-  - router 包/sidecar 缺失从硬失败改为 warning 降级（不阻塞主链路）
-  - orchestrator 显式启用 router 但缺失 binary 时，未 required 则自动降级继续启动
-  - 新增执行文档：`plans/execution/03-router-optionalization.md`
+---
 
-## v0.6 待完成
+## v0.7 完成摘要
 
-1. 落地 `dev:business` 作为默认业务链路
-2. 完成 app/server/orchestrator 的 core/optional 切分
-3. 补齐仓库构建产物清理与 `.gitignore` 完善
-4. 补充更多平台安装文档（macOS / Linux）
+**目标**：双轨并行重构 — Track 1 视觉交互（Antigravity）+ Track 2 核心解耦（Codex）。
 
-## v0.6 本次增量（2026-02-28）
+### Track 1 视觉（Antigravity）
+- CSS Variables / Tailwind 颜色规范提取
+- 页面骨架重构（Sidebar + Toolbar + Main Area）
+- 图标替换（svg-preview → 新版 SVG）
 
-- 新增 rebrand 基线执行文档：`plans/execution/00-rebrand-baseline.md`
-  - 产出旧标识 -> 新标识映射草案
-  - 产出必须保留功能与禁止误删区域清单
-  - 产出 API path/env/package/filter 风险点与后续 ownership 建议
+### Track 2 核心（Codex）
+- 桌面端生命周期修复（退出时清理子进程、真实退出码）
+- 多助手并行状态模型（`check_assistant_statuses` 等 Tauri 命令）
+- Settings Runtime 页统一展示三助手状态
+- `DOWHAT_*` 前缀在 desktop/orchestrator 启动路径优先生效
+- 数据目录迁移至 `.do-what/do-what-orchestrator`
 
-## v0.6 本次增量（2026-02-28，整洁化收口）
+---
 
-- 统一维护规则写入 `AGENTS.md`：
-  - 每次改动必须同步 `plans/v0.6.md`、`plans/history.md` 与受影响 README。
-  - 删除动作必须有清单和理由；不确定项转 TODO 保留。
-- 回填 `plans/v0.6.md` 与 `plans/v0.6-slimming-spec.md` 的收口记录。
-- 执行仓库可运行校验（typecheck/lint/test，按脚本可用性执行）。
-- 产出最终迁移报告：`plans/execution/99-final-report.md`。
+## v0.8 完成摘要
 
-## v0.6 本次增量（2026-02-28，v0.7 Track 2 对齐）
+**目标**：后端品牌解耦 + UI 视觉交互完善 + 全面汉化。
 
-- 新增桌面端多助手状态命令：
-  - `check_assistant_statuses`
-  - `check_opencode_status`
-  - `check_claude_code_status`
-  - `check_codex_status`
-- Settings 运行时页改为统一状态模型展示，支持并列渲染 `opencode/claude-code/codex` 安装与登录状态。
-- 修复本地 runtime 生命周期问题：
-  - 应用退出时清理 active run 子进程
-  - run 完成事件上报真实退出码（不再固定 0）
-- Desktop/orchestrator 启动链路环境变量改为 `DOWHAT_*` 优先并兼容 `OPENWORK_*`，开发数据目录默认切换到 `.do-what/*`。
-- 验证通过：
-  - `pnpm.cmd --filter @do-what/desktop exec cargo check --manifest-path src-tauri/Cargo.toml`
-  - `pnpm.cmd --filter @do-what/ui typecheck`
-- README 联动更新：
-  - `packages/desktop/README.md`
-  - `packages/app/README.md`
-  - `packages/orchestrator/README.md`
-  - `packages/server/README.md`
+### Codex Track（后端）
+- ENOENT 修复：orchestrator `opencode-config` NUL 过滤 + 目录创建
+- Web 兼容：`isTauri` guard + Tauri invoke fallback
+- 品牌解耦：TS 类型名/变量名 `Openwork*` → `DoWhat*`
+- Tauri invoke 命令名统一为 `dowhat_*`（同步 Rust）
+- Runtime 连接状态：`runtime-connection.ts` + `sendPrompt` 守卫
+- 自有 API 模型列表：`provider-models.ts`
+- localStorage 迁移：`openwork.* → dowhat.*`
 
-## v0.6 本次增量（2026-02-28，Router 可选连接能力移除）
+### Antigravity Track（前端）
+- 默认浅色主题，暗色改为暖棕方案
+- 底栏主题切换按钮（☀️/🌙）+ 汉化
+- do-what-logo + 星星闪烁动画
+- `theme.ts` key 迁移至 `dowhat.themePref`
+- 系统通知文本全部汉化
+- `status-bar.tsx` import 路径更新
+- 删除遗留 `openwork-logo.tsx`
 
-- 主链路行为调整：
-  - `prepare-sidecar` 固定禁用 router sidecar，历史开关仅保留兼容读取并输出 ignored 提示
-  - `orchestrator/src/cli.ts` 固定 `opencodeRouterEnabled=false`，历史 CLI/env 开关不再生效
-  - `desktop/src-tauri/build.rs` 不再参与 router sidecar 兜底装配
-  - `app/src/app/lib/tauri.ts` 移除 router 状态与控制调用封装
-- 开发脚本联动：
-  - `scripts/dev-headless-web.ts` 移除 router 启动参数与构建依赖
-  - 根脚本 `test:orchestrator` 对齐为 orchestrator typecheck
-- 受影响文档与元信息已同步：
-  - `README.md`
-  - `packages/app/README.md`
-  - `packages/desktop/README.md`
-  - `packages/orchestrator/README.md`
-  - `packages/server/README.md`
-  - `packages/orchestrator/package.json`（description 去除 optional router 表述）
-- 稳定性检查结果：
-  - 通过：`ui/server/orchestrator` typecheck、`server test`、`orchestrator build`、`ui build`、`desktop cargo check`
-  - 环境限制：`ui test:health`、`ui test:sessions` 因本机缺少 `opencode`（`spawn opencode ENOENT`）未通过
+### 已知保留项（后续版本处理）
+- `openwork-server.ts` 内部类型名（通过 `dowhat-server.ts` re-export）
+- `skills.tsx`、`publisher.ts` 中的 openwork 业务引用
+- i18n key 名称中的 openwork 前缀
 
-## v0.6 本次增量（2026-02-28，Router 代码路径摘除）
+---
 
-- 摘除 `opencode-router` 主线代码路径：
-  - `packages/orchestrator/src/cli.ts` 删除 router 二进制解析/健康检查/sandbox 注入/proxy 自检逻辑。
-  - `packages/orchestrator/src/tui/app.tsx` 删除 Router 页面与交互逻辑。
-- 物理删除脚本：
-  - `packages/orchestrator/scripts/build-opencode-router.mjs`
-  - `packages/orchestrator/scripts/router.mjs`
-- 验证结果：
-  - 通过：`@do-what/orchestrator typecheck/build`、`@do-what/server typecheck/test`、`@do-what/ui typecheck/build`、`@do-what/desktop cargo check`
-  - 环境限制：`@do-what/ui test:health`、`@do-what/ui test:sessions` 依赖本机 `opencode`，当前缺失导致 `ENOENT`
-- README 联动：根 README 与 `app/desktop/orchestrator/server` README 已同步为“摘除”语义。
+## 维护规则
+
+每次功能改动后必须同步：
+1. `plans/history.md`
+2. 受影响模块 README
+3. `AGENTS.md`（如涉及维护规则变更）

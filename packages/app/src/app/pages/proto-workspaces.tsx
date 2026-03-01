@@ -12,7 +12,7 @@ import {
 
 import type { WorkspaceInfo } from "../lib/tauri";
 import Button from "../components/button";
-import OpenWorkLogo from "../components/openwork-logo";
+import DoWhatLogo from "../components/do-what-logo";
 import WorkspaceChip from "../components/workspace-chip";
 
 type ProtoView = "onboarding" | "dashboard" | "session";
@@ -95,12 +95,12 @@ const navItems: Array<{
   label: string;
   icon: any;
 }> = [
-  { id: "scheduled", label: "Schedule", icon: Command },
-  { id: "sessions", label: "Sessions", icon: Play },
-  { id: "skills", label: "Skills", icon: Folder },
-  { id: "settings", label: "Settings", icon: Settings },
-  { id: "mcp", label: "MCPs", icon: Server },
-];
+    { id: "scheduled", label: "Schedule", icon: Command },
+    { id: "sessions", label: "Sessions", icon: Play },
+    { id: "skills", label: "Skills", icon: Folder },
+    { id: "settings", label: "Settings", icon: Settings },
+    { id: "mcp", label: "MCPs", icon: Server },
+  ];
 
 export default function ProtoWorkspacesView() {
   const [view, setView] = createSignal<ProtoView>("dashboard");
@@ -130,11 +130,10 @@ export default function ProtoWorkspacesView() {
                 {(key) => (
                   <button
                     onClick={() => setView(key)}
-                    class={`rounded-full px-3 py-1 text-xs transition-colors ${
-                      view() === key
+                    class={`rounded-full px-3 py-1 text-xs transition-colors ${view() === key
                         ? "bg-gray-12 text-gray-1"
                         : "text-gray-10 hover:text-gray-12"
-                    }`}
+                      }`}
                   >
                     {viewLabels[key]}
                   </button>
@@ -150,7 +149,7 @@ export default function ProtoWorkspacesView() {
             <div class="max-w-xl w-full z-10 space-y-10">
               <div class="text-center space-y-4">
                 <div class="flex items-center justify-center gap-3 mb-6">
-                  <OpenWorkLogo size={48} />
+                  <DoWhatLogo size={48} />
                   <h2 class="text-3xl font-bold tracking-tight text-gray-12">OpenWork</h2>
                 </div>
                 <h3 class="text-xl text-gray-11">Choose how to connect</h3>
@@ -216,18 +215,17 @@ export default function ProtoWorkspacesView() {
             <aside class="w-60 border-r border-gray-6 p-6 hidden md:flex flex-col justify-between bg-gray-1">
               <div>
                 <div class="flex items-center gap-3 mb-10 px-2">
-                  <OpenWorkLogo size={28} />
+                  <DoWhatLogo size={28} />
                   <span class="font-bold text-lg tracking-tight">OpenWork</span>
                 </div>
                 <nav class="space-y-1">
                   <For each={navItems}>
                     {(item) => (
                       <button
-                        class={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                          item.id === "scheduled"
+                        class={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${item.id === "scheduled"
                             ? "bg-gray-2 text-gray-12"
                             : "text-gray-10 hover:text-gray-12 hover:bg-gray-2/50"
-                        }`}
+                          }`}
                       >
                         <item.icon size={18} />
                         {item.label}
@@ -330,9 +328,8 @@ export default function ProtoWorkspacesView() {
                     <For each={sessions}>
                       {(session, idx) => (
                         <button
-                          class={`w-full p-4 flex items-center justify-between hover:bg-gray-4/50 transition-colors text-left ${
-                            idx() !== sessions.length - 1 ? "border-b border-gray-6/50" : ""
-                          }`}
+                          class={`w-full p-4 flex items-center justify-between hover:bg-gray-4/50 transition-colors text-left ${idx() !== sessions.length - 1 ? "border-b border-gray-6/50" : ""
+                            }`}
                         >
                           <div class="flex items-center gap-4">
                             <div class="w-8 h-8 rounded-full bg-gray-4 flex items-center justify-center text-xs text-gray-10 font-mono">

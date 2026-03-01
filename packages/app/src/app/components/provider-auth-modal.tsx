@@ -385,7 +385,7 @@ export default function ProviderAuthModal(props: ProviderAuthModalProps) {
         <div class="bg-gray-2 border border-gray-6/70 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden max-h-[calc(100vh-2rem)] flex flex-col">
           <div class="px-6 pt-6 pb-4 border-b border-gray-6/50 flex items-start justify-between gap-4">
             <div>
-              <h3 class="text-lg font-semibold text-gray-12">Connect providers</h3>
+              <h3 class="text-lg font-semibold text-gray-12">连接服务商</h3>
               <p class="text-sm text-gray-11 mt-1">Sign in to services you want OpenWork to use.</p>
             </div>
             <Button
@@ -450,11 +450,10 @@ export default function ProviderAuthModal(props: ProviderAuthModalProps) {
                           return (
                             <button
                               type="button"
-                              class={`w-full rounded-xl border px-4 py-3 text-left transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
-                                idx() === activeEntryIndex()
+                              class={`w-full rounded-xl border px-4 py-3 text-left transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${idx() === activeEntryIndex()
                                   ? "border-gray-8 bg-gray-1/80"
                                   : "border-gray-6 bg-gray-1/40 hover:bg-gray-1/70"
-                              }`}
+                                }`}
                               disabled={actionDisabled()}
                               onMouseEnter={() => setActiveEntryIndex(idx())}
                               onClick={() => handleEntrySelect(entry)}
@@ -467,11 +466,11 @@ export default function ProviderAuthModal(props: ProviderAuthModalProps) {
                                 <div class="flex items-center justify-end gap-2 shrink-0 min-w-[108px]">
                                   <Show
                                     when={entry.connected}
-                                    fallback={<span class="text-xs text-gray-9">Connect</span>}
+                                    fallback={<span class="text-xs text-gray-9">连接</span>}
                                   >
                                     <div class="flex items-center gap-1 text-[11px] text-green-11 bg-green-7/10 border border-green-7/20 px-2 py-1 rounded-full">
                                       <CheckCircle2 size={12} />
-                                      Connected
+                                      已连接
                                     </div>
                                   </Show>
                                 </div>
@@ -480,11 +479,10 @@ export default function ProviderAuthModal(props: ProviderAuthModalProps) {
                                 <For each={entry.methods}>
                                   {(method) => (
                                     <span
-                                      class={`text-[10px] uppercase tracking-[0.2em] px-2 py-1 rounded-full border ${
-                                        method.type === "oauth"
+                                      class={`text-[10px] uppercase tracking-[0.2em] px-2 py-1 rounded-full border ${method.type === "oauth"
                                           ? "bg-indigo-7/15 text-indigo-11 border-indigo-7/30"
                                           : "bg-gray-3 text-gray-11 border-gray-6"
-                                      }`}
+                                        }`}
                                     >
                                       {methodLabel(method)}
                                     </span>

@@ -6,7 +6,7 @@ import type {
   StartupPreference,
   OnboardingStep,
   WorkspaceDisplay,
-  WorkspaceOpenworkConfig,
+  WorkspaceDoWhatConfig,
   WorkspacePreset,
   WorkspaceConnectionState,
   EngineRuntime,
@@ -52,8 +52,8 @@ import {
   workspaceExportConfig,
   workspaceForget,
   workspaceImportConfig,
-  workspaceOpenworkRead,
-  workspaceOpenworkWrite,
+  workspaceDoWhatRead,
+  workspaceDoWhatWrite,
   workspaceSetActive,
   workspaceUpdateDisplayName,
   workspaceUpdateRemote,
@@ -305,7 +305,7 @@ export function createWorkspaceStore(options: {
   const [authorizedDirs, setAuthorizedDirs] = createSignal<string[]>([]);
   const [newAuthorizedDir, setNewAuthorizedDir] = createSignal("");
 
-  const [workspaceConfig, setWorkspaceConfig] = createSignal<WorkspaceOpenworkConfig | null>(null);
+  const [workspaceConfig, setWorkspaceConfig] = createSignal<WorkspaceDoWhatConfig | null>(null);
   const [workspaceConfigLoaded, setWorkspaceConfigLoaded] = createSignal(false);
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = createSignal(false);
   const [createRemoteWorkspaceOpen, setCreateRemoteWorkspaceOpen] = createSignal(false);
@@ -508,7 +508,7 @@ export function createWorkspaceStore(options: {
     };
   };
 
-  const resolveEngineRuntime = () => options.engineRuntime?.() ?? "openwork-orchestrator";
+  const resolveEngineRuntime = () => options.engineRuntime?.() ?? "dowhat-orchestrator";
 
   const resolveWorkspacePaths = () => {
     const active = activeWorkspacePath().trim();
@@ -965,7 +965,7 @@ export function createWorkspaceStore(options: {
       } else {
         setWorkspaceConfigLoaded(false);
         try {
-          const cfg = await workspaceOpenworkRead({ workspacePath: next.path });
+          const cfg = await workspaceDoWhatRead({ workspacePath: next.path });
           setWorkspaceConfig(cfg);
           setWorkspaceConfigLoaded(true);
 
@@ -1031,7 +1031,7 @@ export function createWorkspaceStore(options: {
         existingEngineProjectDir: existingEngine?.projectDir ?? null,
       });
 
-      if (canReuseHost && runtime === "openwork-orchestrator") {
+      if (canReuseHost && runtime === "dowhat-orchestrator") {
         try {
           const reuseStart = Date.now();
           await orchestratorWorkspaceActivate({
@@ -1091,7 +1091,7 @@ export function createWorkspaceStore(options: {
 
       try {
         const runtime = resolveEngineRuntime();
-        if (runtime === "openwork-orchestrator") {
+        if (runtime === "dowhat-orchestrator") {
           await orchestratorWorkspaceActivate({
             workspacePath: next.path,
             name: next.displayName?.trim() || next.name?.trim() || null,
@@ -1640,7 +1640,7 @@ export function createWorkspaceStore(options: {
         markOnboardingComplete();
 
         const ok = await createRemoteWorkspaceFlow({
-          openworkHostUrl: host.openworkUrl,
+          openworkHostUrl: host.doWhatUrl,
           openworkToken: host.token,
           directory: resolvedFolder,
           displayName: name,
@@ -2572,7 +2572,7 @@ export function createWorkspaceStore(options: {
 
     try {
       const runtime = engine()?.runtime ?? resolveEngineRuntime();
-      if (runtime === "openwork-orchestrator") {
+      if (runtime === "dowhat-orchestrator") {
         await orchestratorInstanceDispose(root);
         await orchestratorWorkspaceActivate({
           workspacePath: root,
@@ -2710,7 +2710,8 @@ export function createWorkspaceStore(options: {
   function markOnboardingComplete() {
     if (typeof window === "undefined") return;
     try {
-      window.localStorage.setItem("openwork.onboardingComplete", "1");
+      window.localStorage.setItem("dowhat.onboardingComplete", "1");
+      window.localStorage.removeItem("openwork.onboardingComplete");
     } catch {
       // ignore
     }
@@ -2723,14 +2724,14 @@ export function createWorkspaceStore(options: {
     if (!root) return;
 
     const existing = workspaceConfig();
-    const cfg: WorkspaceOpenworkConfig = {
+    const cfg: WorkspaceDoWhatConfig = {
       version: existing?.version ?? 1,
       workspace: existing?.workspace ?? null,
       authorizedRoots: nextRoots,
       reload: existing?.reload ?? null,
     };
 
-    await workspaceOpenworkWrite({ workspacePath: root, config: cfg });
+    await workspaceDoWhatWrite({ workspacePath: root, config: cfg });
     setWorkspaceConfig(cfg);
   }
 
@@ -2741,7 +2742,7 @@ export function createWorkspaceStore(options: {
     if (!root) return;
 
     const existing = workspaceConfig();
-    const cfg: WorkspaceOpenworkConfig = {
+    const cfg: WorkspaceDoWhatConfig = {
       version: existing?.version ?? 1,
       workspace: existing?.workspace ?? null,
       authorizedRoots: Array.isArray(existing?.authorizedRoots) ? existing!.authorizedRoots : authorizedDirs(),
@@ -2751,7 +2752,7 @@ export function createWorkspaceStore(options: {
       },
     };
 
-    await workspaceOpenworkWrite({ workspacePath: root, config: cfg });
+    await workspaceDoWhatWrite({ workspacePath: root, config: cfg });
     setWorkspaceConfig(cfg);
   }
 
@@ -2819,7 +2820,10 @@ export function createWorkspaceStore(options: {
     const startupPref = readStartupPreference();
     const onboardingComplete = (() => {
       try {
-        return window.localStorage.getItem("openwork.onboardingComplete") === "1";
+        return (
+          window.localStorage.getItem("dowhat.onboardingComplete") === "1" ||
+          window.localStorage.getItem("openwork.onboardingComplete") === "1"
+        );
       } catch {
         return false;
       }
@@ -2852,7 +2856,7 @@ export function createWorkspaceStore(options: {
         } else {
           setProjectDir(active.path);
           try {
-            const cfg = await workspaceOpenworkRead({ workspacePath: active.path });
+            const cfg = await workspaceDoWhatRead({ workspacePath: active.path });
             setWorkspaceConfig(cfg);
             setWorkspaceConfigLoaded(true);
             const roots = Array.isArray(cfg.authorizedRoots) ? cfg.authorizedRoots : [];
@@ -3079,3 +3083,4 @@ export function createWorkspaceStore(options: {
     clearWorkspaceDebugEvents,
   };
 }
+

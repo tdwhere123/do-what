@@ -10,14 +10,14 @@ import type {
   PluginScope,
   ReloadReason,
   ReloadTrigger,
-  ResetOpenworkMode,
+  ResetDoWhatMode,
 } from "./types";
 import { addOpencodeCacheHint, isTauriRuntime, safeStringify } from "./utils";
 import { mapConfigProvidersToList } from "./utils/providers";
 import {
-  resetOpenworkState,
+  resetDoWhatState,
   resetOpencodeCache,
-  sandboxCleanupOpenworkContainers,
+  sandboxCleanupDoWhatContainers,
 } from "./lib/tauri";
 import { unwrap, waitForHealthy } from "./lib/opencode";
 
@@ -60,7 +60,7 @@ export function createSystemState(options: {
 
 
   const [resetModalOpen, setResetModalOpen] = createSignal(false);
-  const [resetModalMode, setResetModalMode] = createSignal<ResetOpenworkMode>("onboarding");
+  const [resetModalMode, setResetModalMode] = createSignal<ResetDoWhatMode>("onboarding");
   const [resetModalText, setResetModalText] = createSignal("");
   const [resetModalBusy, setResetModalBusy] = createSignal(false);
 
@@ -71,24 +71,25 @@ export function createSystemState(options: {
     return options.sessions().some((s) => statuses[s.id] === "running" || statuses[s.id] === "retry");
   });
 
-  function clearOpenworkLocalStorage() {
+  function clearDoWhatLocalStorage() {
     if (typeof window === "undefined") return;
 
     try {
       const keys = Object.keys(window.localStorage);
       for (const key of keys) {
-        if (key.startsWith("openwork.")) {
+        if (key.startsWith("openwork.") || key.startsWith("dowhat.")) {
           window.localStorage.removeItem(key);
         }
       }
       // Legacy compatibility key
       window.localStorage.removeItem("openwork_mode_pref");
+      window.localStorage.removeItem("dowhat_mode_pref");
     } catch {
       // ignore
     }
   }
 
-  function openResetModal(mode: ResetOpenworkMode) {
+  function openResetModal(mode: ResetDoWhatMode) {
     if (anyActiveRuns()) {
       options.setError("Stop active runs before resetting.");
       return;
@@ -115,10 +116,10 @@ export function createSystemState(options: {
 
     try {
       if (isTauriRuntime()) {
-        await resetOpenworkState(resetModalMode());
+        await resetDoWhatState(resetModalMode());
       }
 
-      clearOpenworkLocalStorage();
+      clearDoWhatLocalStorage();
 
       if (isTauriRuntime()) {
         await relaunch();
@@ -165,56 +166,56 @@ export function createSystemState(options: {
     const reasons = reloadReasons();
     if (!reasons.length) {
       return {
-        title: "Reload required",
-        body: "OpenWork detected changes that require reloading the OpenCode instance.",
+        title: "需要重载",
+        body: "do-what 检测到变更，需要重载引擎以应用。",
       };
     }
 
     if (reasons.length === 1 && reasons[0] === "plugins") {
       return {
-        title: "Reload required",
-        body: "OpenCode loads npm plugins at startup. Reload the engine to apply opencode.json changes.",
+        title: "需要重载",
+        body: "OpenCode 在启动时加载 npm 插件。请重载引擎以应用 opencode.json 的变更。",
       };
     }
 
     if (reasons.length === 1 && reasons[0] === "skills") {
       return {
-        title: "Reload required",
-        body: "OpenCode can cache skill discovery/state. Reload the engine to make newly installed skills available.",
+        title: "需要重载",
+        body: "OpenCode 可能缓存了技能发现/状态。请重载引擎以使新安装的技能生效。",
       };
     }
 
     if (reasons.length === 1 && reasons[0] === "agents") {
       return {
-        title: "Reload required",
-        body: "OpenCode loads agents at startup. Reload the engine to make updated agents available.",
+        title: "需要重载",
+        body: "OpenCode 在启动时加载代理。请重载引擎以使更新的代理生效。",
       };
     }
 
     if (reasons.length === 1 && reasons[0] === "commands") {
       return {
-        title: "Reload required",
-        body: "OpenCode loads commands at startup. Reload the engine to make updated commands available.",
+        title: "需要重载",
+        body: "OpenCode 在启动时加载命令。请重载引擎以使更新的命令生效。",
       };
     }
 
     if (reasons.length === 1 && reasons[0] === "config") {
       return {
-        title: "Reload required",
-        body: "OpenCode reads opencode.json at startup. Reload the engine to apply configuration changes.",
+        title: "需要重载",
+        body: "OpenCode 在启动时读取 opencode.json。请重载引擎以应用配置变更。",
       };
     }
 
     if (reasons.length === 1 && reasons[0] === "mcp") {
       return {
-        title: "Reload required",
-        body: "OpenCode loads MCP servers at startup. Reload the engine to activate the new connection.",
+        title: "需要重载",
+        body: "OpenCode 在启动时加载 MCP 服务器。请重载引擎以激活新连接。",
       };
     }
 
     return {
-      title: "Reload required",
-      body: "OpenWork detected OpenCode configuration changes. Reload the engine to apply them.",
+      title: "需要重载",
+      body: "do-what 检测到 OpenCode 配置变更，请重载引擎以应用。",
     };
   });
 
@@ -307,13 +308,13 @@ export function createSystemState(options: {
         }
 
         try {
-          window.localStorage.setItem("openwork.notionStatus", nextStatus);
+          window.localStorage.setItem("dowhat.notionStatus", nextStatus);
           if (nextStatus === "connected") {
             const detail = options.notion.statusDetail();
             if (detail) {
-              window.localStorage.setItem("openwork.notionStatusDetail", detail);
+              window.localStorage.setItem("dowhat.notionStatusDetail", detail);
             } else {
-              window.localStorage.removeItem("openwork.notionStatusDetail");
+              window.localStorage.removeItem("dowhat.notionStatusDetail");
             }
           }
         } catch {
@@ -368,7 +369,7 @@ export function createSystemState(options: {
     }
   }
 
-  async function cleanupOpenworkDockerContainers() {
+  async function cleanupDoWhatDockerContainers() {
     if (!isTauriRuntime()) {
       setDockerCleanupResult("Docker cleanup requires the desktop app.");
       return;
@@ -381,9 +382,9 @@ export function createSystemState(options: {
     options.setError(null);
 
     try {
-      const result = await sandboxCleanupOpenworkContainers();
+      const result = await sandboxCleanupDoWhatContainers();
       if (!result.candidates.length) {
-        setDockerCleanupResult("No OpenWork Docker containers found.");
+        setDockerCleanupResult("No DoWhat Docker containers found.");
         return;
       }
 
@@ -396,7 +397,7 @@ export function createSystemState(options: {
         return;
       }
 
-      setDockerCleanupResult(`Removed ${removedCount} OpenWork Docker container(s).`);
+      setDockerCleanupResult(`Removed ${removedCount} DoWhat Docker container(s).`);
     } catch (e) {
       setDockerCleanupResult(e instanceof Error ? e.message : safeStringify(e));
     } finally {
@@ -427,7 +428,9 @@ export function createSystemState(options: {
     repairOpencodeCache,
     dockerCleanupBusy,
     dockerCleanupResult,
-    cleanupOpenworkDockerContainers,
+    cleanupDoWhatDockerContainers,
+    // Backward-compatible alias for UI code still on old naming.
+    cleanupOpenworkDockerContainers: cleanupDoWhatDockerContainers,
     resetModalOpen,
     setResetModalOpen,
     resetModalMode,

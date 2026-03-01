@@ -78,35 +78,29 @@ pub struct OrchestratorSpawnOptions {
 pub fn resolve_orchestrator_data_dir() -> String {
     let env_dir = env::var("DOWHAT_DATA_DIR")
         .ok()
-        .filter(|value| !value.trim().is_empty())
-        .or_else(|| {
-            env::var("OPENWORK_DATA_DIR")
-                .ok()
-                .filter(|value| !value.trim().is_empty())
-        });
+        .filter(|value| !value.trim().is_empty());
 
     if let Some(dir) = env_dir {
         return dir;
     }
 
     if let Some(home) = home_dir() {
-        let dowhat_path = home.join(".do-what").join("do-what-orchestrator");
-        let openwork_path = home.join(".openwork").join("openwork-orchestrator");
-        if openwork_path.exists() && !dowhat_path.exists() {
-            return openwork_path.to_string_lossy().to_string();
-        }
-        return dowhat_path.to_string_lossy().to_string();
+        return home
+            .join(".do-what")
+            .join("do-what-orchestrator")
+            .to_string_lossy()
+            .to_string();
     }
 
     ".do-what/do-what-orchestrator".to_string()
 }
 
 fn orchestrator_state_path(data_dir: &str) -> PathBuf {
-    Path::new(data_dir).join("openwork-orchestrator-state.json")
+    Path::new(data_dir).join("dowhat-orchestrator-state.json")
 }
 
 fn orchestrator_auth_path(data_dir: &str) -> PathBuf {
-    Path::new(data_dir).join("openwork-orchestrator-auth.json")
+    Path::new(data_dir).join("dowhat-orchestrator-auth.json")
 }
 
 pub fn read_orchestrator_auth(data_dir: &str) -> Option<OrchestratorAuthFile> {
@@ -193,6 +187,9 @@ pub fn spawn_orchestrator_daemon(
     app: &AppHandle,
     options: &OrchestratorSpawnOptions,
 ) -> Result<(tauri::async_runtime::Receiver<CommandEvent>, CommandChild), String> {
+    fs::create_dir_all(&options.data_dir)
+        .map_err(|e| format!("Failed to create orchestrator data dir {}: {e}", options.data_dir))?;
+
     let command = match app.shell().sidecar("openwork-orchestrator") {
         Ok(command) => command,
         Err(_) => app.shell().command("openwork"),

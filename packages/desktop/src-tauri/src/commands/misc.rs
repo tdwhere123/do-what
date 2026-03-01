@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use crate::engine::doctor::resolve_engine_path;
 use crate::paths::home_dir;
 use crate::platform::command_for_program;
-use crate::types::{ExecResult, WorkspaceOpenworkConfig};
+use crate::types::{ExecResult, WorkspaceDoWhatConfig};
 use crate::workspace::state::load_workspace_state;
 use tauri::{AppHandle, Manager};
 
@@ -88,10 +88,10 @@ fn validate_server_name(name: &str) -> Result<String, String> {
 
 fn read_workspace_openwork_config(
     workspace_path: &Path,
-) -> Result<WorkspaceOpenworkConfig, String> {
+) -> Result<WorkspaceDoWhatConfig, String> {
     let openwork_path = workspace_path.join(".opencode").join("openwork.json");
     if !openwork_path.exists() {
-        let mut cfg = WorkspaceOpenworkConfig::default();
+        let mut cfg = WorkspaceDoWhatConfig::default();
         let workspace_value = workspace_path.to_string_lossy().to_string();
         if !workspace_value.trim().is_empty() {
             cfg.authorized_roots.push(workspace_value);
@@ -102,7 +102,7 @@ fn read_workspace_openwork_config(
     let raw = fs::read_to_string(&openwork_path)
         .map_err(|e| format!("Failed to read {}: {e}", openwork_path.display()))?;
 
-    serde_json::from_str::<WorkspaceOpenworkConfig>(&raw)
+    serde_json::from_str::<WorkspaceDoWhatConfig>(&raw)
         .map_err(|e| format!("Failed to parse {}: {e}", openwork_path.display()))
 }
 
@@ -227,8 +227,7 @@ pub fn reset_opencode_cache() -> Result<CacheResetResult, String> {
     })
 }
 
-#[tauri::command]
-pub fn reset_openwork_state(app: tauri::AppHandle, mode: String) -> Result<(), String> {
+fn reset_state_impl(app: tauri::AppHandle, mode: String) -> Result<(), String> {
     let mode = mode.trim();
     if mode != "onboarding" && mode != "all" {
         return Err("mode must be 'onboarding' or 'all'".to_string());
@@ -257,6 +256,11 @@ pub fn reset_openwork_state(app: tauri::AppHandle, mode: String) -> Result<(), S
     }
 
     Ok(())
+}
+
+#[tauri::command]
+pub fn reset_dowhat_state(app: tauri::AppHandle, mode: String) -> Result<(), String> {
+    reset_state_impl(app, mode)
 }
 
 #[tauri::command]

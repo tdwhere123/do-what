@@ -27,16 +27,19 @@
 
 [data-theme="dark"] {
   color-scheme: dark;
-  --dls-surface: #121212;
-  --dls-sidebar: #1a1a1a;
-  --dls-border: #262626;
-  --dls-accent: #3b82f6;
-  --dls-accent-hover: #2563eb;
-  --dls-accent-rgb: 59 130 246;
-  --dls-text-primary: #ededed;
-  --dls-text-secondary: #9ca3af;
-  --dls-hover: #1f1f1f;
-  --dls-active: #2d2d2d;
+  --dls-surface: #2a2520;
+  --dls-sidebar: #332d26;
+  --dls-border: #4a4238;
+  --dls-accent: #c96a35;
+  --dls-accent-hover: #bd5926;
+  --dls-accent-rgb: 201 106 53;
+  --dls-text-primary: #f0ebe3;
+  --dls-text-secondary: #b8b0a0;
+  --dls-hover: #3a332c;
+  --dls-active: #4a4238;
+  --dls-background-1: #2a2520;
+  --dls-background-2: #332d26;
+  --dls-background-elevated: #3a332c;
 }
 
 html,
