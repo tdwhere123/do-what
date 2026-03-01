@@ -772,10 +772,10 @@ export default function DashboardView(props: DashboardViewProps) {
                         </Show>
                         <Show when={group.status === "error"}>
                           <span
-                            class={`text - [10px] px - 2 py - 0.5 rounded - full border ${taskLoadError().tone === "offline"
+                            class={`text-[10px] px-2 py-0.5 rounded-full border ${taskLoadError().tone === "offline"
                               ? "border-amber-7/50 text-amber-11 bg-amber-3/30"
                               : "border-red-7/50 text-red-11 bg-red-3/30"
-                              } `}
+                              }`}
                             title={taskLoadError().title}
                           >
                             {taskLoadError().label}
@@ -912,10 +912,10 @@ export default function DashboardView(props: DashboardViewProps) {
                                   <div
                                     role="button"
                                     tabIndex={0}
-                                    class={`group flex items - center justify - between py - 2 px - 2.5 min - h - [34px] rounded - lg cursor - pointer relative overflow - hidden ml - 2 w - [calc(100 % -0.5rem)] ${isSelected()
+                                    class={`group flex items-center justify-between py-2 px-2.5 min-h-[34px] rounded-lg cursor-pointer relative overflow-hidden ml-2 w-[calc(100%-0.5rem)] ${isSelected()
                                       ? "bg-[rgba(0,0,0,0.07)] text-dls-text"
                                       : "hover:bg-[rgba(180,155,110,0.12)]"
-                                      } `}
+                                      }`}
                                     onClick={() => openSessionFromList(workspace().id, session.id)}
                                     onKeyDown={(event) => {
                                       if (event.key !== "Enter" && event.key !== " ") return;
@@ -945,10 +945,10 @@ export default function DashboardView(props: DashboardViewProps) {
                               fallback={
                                 <Show when={group.status === "error"}>
                                   <div
-                                    class={`w - full px - 3 py - 2 text - xs ml - 2 text - left rounded - lg border ${taskLoadError().tone === "offline"
+                                    class={`w-full px-3 py-2 text-xs ml-2 text-left rounded-lg border ${taskLoadError().tone === "offline"
                                       ? "text-amber-11 bg-amber-3/20 border-amber-7/40"
                                       : "text-red-11 bg-red-3/20 border-red-7/40"
-                                      } `}
+                                      }`}
                                     title={taskLoadError().title}
                                   >
                                     {taskLoadError().message}
@@ -963,10 +963,10 @@ export default function DashboardView(props: DashboardViewProps) {
                                     <div
                                       role="button"
                                       tabIndex={0}
-                                      class={`group flex items - center justify - between py - 2 px - 2.5 min - h - [34px] rounded - lg cursor - pointer relative overflow - hidden ml - 2 w - [calc(100 % -0.5rem)] ${isSelected()
+                                      class={`group flex items-center justify-between py-2 px-2.5 min-h-[34px] rounded-lg cursor-pointer relative overflow-hidden ml-2 w-[calc(100%-0.5rem)] ${isSelected()
                                         ? "bg-[rgba(0,0,0,0.07)] text-dls-text"
                                         : "hover:bg-[rgba(180,155,110,0.12)]"
-                                        } `}
+                                        }`}
                                       onClick={() => openSessionFromList(workspace().id, session.id)}
                                       onKeyDown={(event) => {
                                         if (event.key !== "Enter" && event.key !== " ") return;
@@ -1384,50 +1384,44 @@ export default function DashboardView(props: DashboardViewProps) {
           mcpStatuses={props.mcpStatuses}
         />
         <nav class="md:hidden border-t border-dls-border bg-dls-surface">
-          <div class={`mx - auto max - w - 5xl px - 4 py - 3 grid gap - 2 grid - cols - 6`}>
+          <div class="mx-auto max-w-5xl px-4 py-3 grid gap-2 grid-cols-6">
             <button
-              class={`flex flex - col items - center gap - 1 text - xs ${props.tab === "sessions" ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-tertiary)]"
-                } `}
+              class={`flex flex-col items-center gap-1 text-xs ${props.tab === "sessions" ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-tertiary)]"}`}
               onClick={() => props.setTab("sessions")}
             >
               <img src="/svg/organic/shape/bubble/Elements-organic-shape-bubble.svg" class="w-5 h-5 opacity-70" alt="" aria-hidden="true" />
               会话
             </button>
             <button
-              class={`flex flex - col items - center gap - 1 text - xs ${props.tab === "scheduled" ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-tertiary)]"
-                } `}
+              class={`flex flex-col items-center gap-1 text-xs ${props.tab === "scheduled" ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-tertiary)]"}`}
               onClick={() => props.setTab("scheduled")}
             >
               <img src="/svg/organic/shape/spiral/Elements-organic-shape-spiral.svg" class="w-5 h-5 opacity-70" alt="" aria-hidden="true" />
               自动化
             </button>
             <button
-              class={`flex flex - col items - center gap - 1 text - xs ${props.tab === "soul" ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-tertiary)]"
-                } `}
+              class={`flex flex-col items-center gap-1 text-xs ${props.tab === "soul" ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-tertiary)]"}`}
               onClick={() => props.setTab("soul")}
             >
               <img src="/svg/organic/shape/heart/Elements-organic-shape-heart.svg" class="w-5 h-5 opacity-70" alt="" aria-hidden="true" />
               记忆
             </button>
             <button
-              class={`flex flex - col items - center gap - 1 text - xs ${props.tab === "skills" ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-tertiary)]"
-                } `}
+              class={`flex flex-col items-center gap-1 text-xs ${props.tab === "skills" ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-tertiary)]"}`}
               onClick={() => props.setTab("skills")}
             >
               <img src="/svg/organic/shape/flash/Elements-organic-shape-flash.svg" class="w-5 h-5 opacity-70" alt="" aria-hidden="true" />
               技能
             </button>
             <button
-              class={`flex flex - col items - center gap - 1 text - xs ${props.tab === "extensions" ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-tertiary)]"
-                } `}
+              class={`flex flex-col items-center gap-1 text-xs ${props.tab === "extensions" ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-tertiary)]"}`}
               onClick={() => props.setTab("extensions")}
             >
               <img src="/svg/organic/shape/tree/Elements-organic-shape-tree-body-nuture.svg" class="w-5 h-5 opacity-70" alt="" aria-hidden="true" />
               扩展
             </button>
             <button
-              class={`flex flex - col items - center gap - 1 text - xs ${props.tab === "settings" ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-tertiary)]"
-                } `}
+              class={`flex flex-col items-center gap-1 text-xs ${props.tab === "settings" ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-tertiary)]"}`}
               onClick={() => props.setTab("settings")}
             >
               <img src="/svg/organic/shape/sun/Elements-organic-shape-sun.svg" class="w-5 h-5 opacity-70" alt="" aria-hidden="true" />
@@ -1447,26 +1441,26 @@ export default function DashboardView(props: DashboardViewProps) {
         <button
           type="button"
           title="会话 (Sessions)"
-          class={`w - full flex items - center gap - 2.5 px - 2.5 py - [9px] rounded - lg transition - colors text - left border - none group ${props.tab === "sessions"
+          class={`w-full flex items-center gap-2.5 px-2.5 py-[9px] rounded-lg transition-colors text-left border-none group ${props.tab === "sessions"
             ? "bg-[rgba(180,155,110,0.22)] text-dls-text"
             : "text-dls-secondary hover:text-dls-text hover:bg-[rgba(180,155,110,0.12)] bg-transparent"
-            } `}
+            }`}
           onClick={() => props.setTab("sessions")}
         >
-          <img src="/svg/organic/shape/bubble/Elements-organic-shape-bubble.svg" class={`w - [18px] h - [18px] shrink - 0 transition - opacity ${props.tab === "sessions" ? "opacity-90" : "opacity-65 group-hover:opacity-90"} `} alt="" aria-hidden="true" />
-          <span class="font-[Kalam,Caveat,cursive] text-sm tracking-wide leading-none">Sessions</span>
+          <img src="/svg/organic/shape/bubble/Elements-organic-shape-bubble.svg" class={`w-[18px] h-[18px] shrink-0 transition-opacity ${props.tab === "sessions" ? "opacity-90" : "opacity-65 group-hover:opacity-90"}`} alt="" aria-hidden="true" />
+          <span class="text-sm tracking-wide leading-none">会话</span>
         </button>
         <button
           type="button"
           title="自动化 (Automations)"
-          class={`w - full flex items - center gap - 2.5 px - 2.5 py - [9px] rounded - lg transition - colors text - left border - none group ${props.tab === "scheduled"
+          class={`w-full flex items-center gap-2.5 px-2.5 py-[9px] rounded-lg transition-colors text-left border-none group ${props.tab === "scheduled"
             ? "bg-[rgba(180,155,110,0.22)] text-dls-text"
             : "text-dls-secondary hover:text-dls-text hover:bg-[rgba(180,155,110,0.12)] bg-transparent"
-            } `}
+            }`}
           onClick={() => props.setTab("scheduled")}
         >
-          <img src="/svg/organic/shape/spiral/Elements-organic-shape-spiral.svg" class={`w - [18px] h - [18px] shrink - 0 transition - opacity ${props.tab === "scheduled" ? "opacity-90" : "opacity-65 group-hover:opacity-90"} `} alt="" aria-hidden="true" />
-          <span class="font-[Kalam,Caveat,cursive] text-sm tracking-wide leading-none">Automations</span>
+          <img src="/svg/organic/shape/spiral/Elements-organic-shape-spiral.svg" class={`w-[18px] h-[18px] shrink-0 transition-opacity ${props.tab === "scheduled" ? "opacity-90" : "opacity-65 group-hover:opacity-90"}`} alt="" aria-hidden="true" />
+          <span class="text-sm tracking-wide leading-none">自动化</span>
         </button>
 
         <div class="w-full h-px bg-[var(--color-border-subtle)] my-1" />
@@ -1475,26 +1469,26 @@ export default function DashboardView(props: DashboardViewProps) {
         <button
           type="button"
           title="记忆 (Soul)"
-          class={`w - full flex items - center gap - 2.5 px - 2.5 py - [9px] rounded - lg transition - colors text - left border - none group ${props.tab === "soul"
+          class={`w-full flex items-center gap-2.5 px-2.5 py-[9px] rounded-lg transition-colors text-left border-none group ${props.tab === "soul"
             ? "bg-[rgba(180,155,110,0.22)] text-dls-text"
             : "text-dls-secondary hover:text-dls-text hover:bg-[rgba(180,155,110,0.12)] bg-transparent"
-            } `}
+            }`}
           onClick={() => props.setTab("soul")}
         >
-          <img src="/svg/organic/shape/heart/Elements-organic-shape-heart.svg" class={`w - [18px] h - [18px] shrink - 0 transition - opacity ${props.tab === "soul" ? "opacity-90" : "opacity-65 group-hover:opacity-90"} `} alt="" aria-hidden="true" />
-          <span class="font-[Kalam,Caveat,cursive] text-sm tracking-wide leading-none">Soul</span>
+          <img src="/svg/organic/shape/heart/Elements-organic-shape-heart.svg" class={`w-[18px] h-[18px] shrink-0 transition-opacity ${props.tab === "soul" ? "opacity-90" : "opacity-65 group-hover:opacity-90"}`} alt="" aria-hidden="true" />
+          <span class="text-sm tracking-wide leading-none">记忆</span>
         </button>
         <button
           type="button"
           title="技能 (Skills)"
-          class={`w - full flex items - center gap - 2.5 px - 2.5 py - [9px] rounded - lg transition - colors text - left border - none group ${props.tab === "skills"
+          class={`w-full flex items-center gap-2.5 px-2.5 py-[9px] rounded-lg transition-colors text-left border-none group ${props.tab === "skills"
             ? "bg-[rgba(180,155,110,0.22)] text-dls-text"
             : "text-dls-secondary hover:text-dls-text hover:bg-[rgba(180,155,110,0.12)] bg-transparent"
-            } `}
+            }`}
           onClick={() => props.setTab("skills")}
         >
-          <img src="/svg/organic/shape/flash/Elements-organic-shape-flash.svg" class={`w - [18px] h - [18px] shrink - 0 transition - opacity ${props.tab === "skills" ? "opacity-90" : "opacity-65 group-hover:opacity-90"} `} alt="" aria-hidden="true" />
-          <span class="font-[Kalam,Caveat,cursive] text-sm tracking-wide leading-none">Skills</span>
+          <img src="/svg/organic/shape/flash/Elements-organic-shape-flash.svg" class={`w-[18px] h-[18px] shrink-0 transition-opacity ${props.tab === "skills" ? "opacity-90" : "opacity-65 group-hover:opacity-90"}`} alt="" aria-hidden="true" />
+          <span class="text-sm tracking-wide leading-none">技能</span>
         </button>
 
         <div class="w-full h-px bg-[var(--color-border-subtle)] my-1" />
@@ -1503,14 +1497,14 @@ export default function DashboardView(props: DashboardViewProps) {
         <button
           type="button"
           title="扩展 (Extensions)"
-          class={`w - full flex items - center gap - 2.5 px - 2.5 py - [9px] rounded - lg transition - colors text - left border - none group ${props.tab === "extensions"
+          class={`w-full flex items-center gap-2.5 px-2.5 py-[9px] rounded-lg transition-colors text-left border-none group ${props.tab === "extensions"
             ? "bg-[rgba(180,155,110,0.22)] text-dls-text"
             : "text-dls-secondary hover:text-dls-text hover:bg-[rgba(180,155,110,0.12)] bg-transparent"
-            } `}
+            }`}
           onClick={() => props.setTab("extensions")}
         >
-          <img src="/svg/organic/shape/tree/Elements-organic-shape-tree-body-nuture.svg" class={`w - [18px] h - [18px] shrink - 0 transition - opacity ${props.tab === "extensions" ? "opacity-90" : "opacity-65 group-hover:opacity-90"} `} alt="" aria-hidden="true" />
-          <span class="font-[Kalam,Caveat,cursive] text-sm tracking-wide leading-none">Extensions</span>
+          <img src="/svg/organic/shape/tree/Elements-organic-shape-tree-body-nuture.svg" class={`w-[18px] h-[18px] shrink-0 transition-opacity ${props.tab === "extensions" ? "opacity-90" : "opacity-65 group-hover:opacity-90"}`} alt="" aria-hidden="true" />
+          <span class="text-sm tracking-wide leading-none">扩展</span>
         </button>
 
         <div class="mt-auto border-t border-[var(--color-border-subtle)] pt-3 flex justify-center w-full">
