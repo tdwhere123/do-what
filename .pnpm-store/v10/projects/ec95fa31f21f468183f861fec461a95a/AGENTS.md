@@ -161,6 +161,116 @@ Shell 执行 / 文件写入 / 网络请求必须通过 `tools.shell_exec` / `too
 
 ---
 
+## 代码规范（Code Conventions）
+
+### TypeScript 命名规范
+
+| 类别 | 规则 | 示例 |
+|------|------|------|
+| Interface | PascalCase，**禁止** `I` 前缀 | `RunContext`, `EventBus` |
+| Type alias | PascalCase | `RunId`, `ToolName` |
+| Zod schema 变量 | PascalCase + `Schema` 后缀 | `BaseEventSchema`, `PolicyRuleSchema` |
+| Zod 推断类型 | PascalCase，与 schema 同名去掉后缀 | `BaseEvent`（from `BaseEventSchema`）|
+| 函数 / 方法 | camelCase，动词开头 | `createReadConnection`, `broadcastEvent` |
+| 模块级常量 | SCREAMING_SNAKE_CASE | `MAX_QUEUE_LENGTH`, `DEFAULT_PORT` |
+| 文件名 | kebab-case | `database-worker.ts`, `run-types.ts` |
+| 测试文件 | 与被测文件同名 + `.test.ts` | `run.test.ts` |
+| 类 | PascalCase | `WorkerClient`, `SseManager` |
+| 枚举值（zod enum） | snake_case 字符串 | `'agent_stuck'`, `'claude'` |
+
+### Zod Schema 规范
+
+```typescript
+// ✅ 正确
+export const RunStartedEventSchema = z.object({ ... });
+export type RunStartedEvent = z.infer<typeof RunStartedEventSchema>;
+
+// ❌ 禁止：直接 interface，跳过 zod schema
+export interface RunStartedEvent { ... }
+
+// ✅ 所有引擎事件 schema 必须加 .passthrough()
+export const EngineTokenEventSchema = z.object({ ... }).passthrough();
+
+// ✅ timestamp 字段必须用 .datetime() 强制 ISO 8601
+timestamp: z.string().datetime(),
+
+// ✅ 同一语义字段在所有 schema 中类型约束必须一致
+// 正确：所有涉及引擎类型的字段统一用同一枚举
+engineType: z.enum(['claude', 'codex']),
+// ❌ 禁止：同字段一处 z.enum 一处 z.string
+```
+
+### 错误处理规范
+
+```typescript
+// ❌ 禁止：空 catch 静默吞噬
+try { ... } catch { return []; }
+
+// ✅ 正确：记录 warn，明确区分可恢复场景
+try {
+  return stmt.all(revision);
+} catch (err) {
+  logger.warn({ err }, 'getEventsSince failed, returning empty');
+  return [];
+}
+
+// ✅ 不可恢复时直接 throw
+throw new Error(`DatabaseWorker init failed: ${String(err)}`);
+```
+
+### 不可变性规范（xstate context）
+
+```typescript
+// ❌ 禁止：原地修改 context 数组
+context.queue.push(item);
+
+// ✅ 正确：spread 产生新数组
+assign({ queue: ({ context }) => [...context.queue, item] })
+
+// ✅ 类型层面强制 readonly
+export interface ApprovalContext {
+  readonly queue: readonly ApprovalItem[];
+  readonly activeItem?: ApprovalItem;
+}
+```
+
+### SQLite 连接规范
+
+```typescript
+// ❌ 禁止：只读连接以读写模式打开
+new Database(path, { readonly: false })
+
+// ✅ 正确：readonly: true + query_only 双重防护
+const db = new Database(path, { readonly: true });
+db.pragma('query_only = true');
+```
+
+### 存根/占位实现规范
+
+```typescript
+// ❌ 禁止：无注释的空存根
+app.get('/state', async () => { return {}; });
+
+// ✅ 正确：附加 TODO 引用 Ticket 编号
+app.get('/state', async () => {
+  // TODO(T008): implement state snapshot
+  return { _stub: true };
+});
+```
+
+### 禁止模式清单
+
+- 禁止在主线程调用 `better-sqlite3` 写方法（`run` / `prepare + stmt.run`）
+- 禁止在 `worker_threads` 子文件中 `import` `packages/core` 任何模块
+- 禁止空 `catch {}` 或无日志的 `catch { return fallback }`
+- 禁止同一语义字段在不同 schema 中使用不同约束宽度（如一处 `z.enum` 一处 `z.string`）
+- 禁止 `any` 类型（改用 `unknown` + 类型收窄）
+- 禁止文件超过 800 行（按功能拆分）
+- 禁止函数超过 50 行（提取辅助函数）
+- 禁止在 Worker `close()` 内部创建新 Worker（关闭就是关闭，不替换）
+
+---
+
 ## 关键文件速查
 
 | 需要了解什么 | 读哪里 |

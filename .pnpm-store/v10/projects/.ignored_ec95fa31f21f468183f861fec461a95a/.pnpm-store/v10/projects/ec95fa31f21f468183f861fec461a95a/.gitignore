@@ -1,0 +1,5 @@
+node_modules
+dist
+.turbo
+*.db
+session_token
