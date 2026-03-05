@@ -303,7 +303,7 @@ idle ⇄ waiting（队首处理中）
 {
   "tools.file_read":  { "default": "allow", "deny_paths": ["/etc/shadow", "~/.ssh/*"] },
   "tools.file_write": { "default": "ask",   "allow_paths": ["<workspace>/**"] },
-  "tools.shell_exec": { "default": "ask",   "allow_commands": ["ls", "git status"] },
+  "tools.shell_exec": { "default": "ask",   "allow_commands": ["ls", "cat", "git status", "npm test"] },
   "tools.web_fetch":  { "default": "ask",   "allow_domains": ["github.com"] },
   "tools.git_status": { "default": "allow" },
   "tools.git_diff":   { "default": "allow" }
@@ -387,6 +387,10 @@ git_commit:abc1234 repo_path:docs/design.md#heading:Architecture
 | 日期 | Ticket | 变更 |
 |------|--------|------|
 | 2026-03-04 | — | 初始版本（规划阶段，基于 do-what-proposal-v0.1.md）|
+| 2026-03-05 | T001 | 完成 monorepo 骨架（workspace/turbo/tsconfig 与 8 个包 stub）|
+| 2026-03-05 | T002 | 新增 BaseEvent、RunLifecycleEvent、ToolExecutionEvent 的 zod schema 与测试|
+| 2026-03-05 | T003 | 新增 EngineOutput/MemoryOperation/SystemHealth 事件与 Tools API MCP schema（含 JSON Schema 导出）|
+| 2026-03-05 | T004 | 新增 Soul MCP schema、Policy schema/defaults、xstate 状态机类型骨架|
 
 ---
 

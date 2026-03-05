@@ -118,6 +118,8 @@ Shell 执行 / 文件写入 / 网络请求必须通过 `tools.shell_exec` / `too
 
 ## 文档维护规则
 
+**强制提醒：只要新增/修改接口（event schema、MCP schema、HTTP、DB、状态机类型），必须同步更新 `docs/INTERFACE_INDEX.md` 并追加变更记录。**
+
 ### docs/INTERFACE_INDEX.md — 接口索引
 
 **触发更新的操作：**

@@ -27,7 +27,7 @@ do-what 是一个可本地安装的 AI 开发工作台，以 **Core daemon** 为
 |------|------|
 | 方案定稿（v0.1） | ✅ 完成 |
 | Ticket 拆解（T001~T027） | ✅ 完成 |
-| E0 Protocol & Schema | 🔲 待实现 |
+| E0 Protocol & Schema | ✅ 完成 |
 | E1 Core Skeleton | 🔲 待实现 |
 | E1.5 Protocol Validation Gate | 🔲 待实现 |
 | E2 Claude Engine Adapter | 🔲 待实现 |
