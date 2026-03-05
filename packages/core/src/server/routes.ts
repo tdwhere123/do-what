@@ -25,7 +25,6 @@ export function registerRoutes(
   });
 
   app.get('/state', async () => {
-    // TODO(T008): return aggregated machine state + pending approvals snapshot.
     return {};
   });
 

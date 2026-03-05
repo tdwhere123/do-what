@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm:*)",
+      "Bash(node:*)",
+      "Bash(node-gyp rebuild:*)",
+      "Bash(npx node-gyp:*)"
+    ]
+  }
+}

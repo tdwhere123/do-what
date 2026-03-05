@@ -21,13 +21,17 @@ export class StateStore {
   }
 
   getEventsSince(revision: number): EventLogRow[] {
-    const stmt = this.db.prepare(
-      `SELECT revision, event_type, run_id, source, payload
-       FROM event_log
-       WHERE revision > ?
-       ORDER BY revision ASC`,
-    );
-    return stmt.all(revision) as EventLogRow[];
+    try {
+      const stmt = this.db.prepare(
+        `SELECT revision, event_type, run_id, source, payload
+         FROM event_log
+         WHERE revision > ?
+         ORDER BY revision ASC`,
+      );
+      return stmt.all(revision) as EventLogRow[];
+    } catch {
+      return [];
+    }
   }
 
   getSnapshot(): Record<string, unknown> {

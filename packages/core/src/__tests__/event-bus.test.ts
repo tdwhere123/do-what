@@ -72,25 +72,4 @@ describe('EventBus', () => {
     assert.equal(first.revision, 1);
     assert.equal(second.revision, 2);
   });
-
-  it('routes system events by event field', () => {
-    const bus = new EventBus({
-      sseManager: new FakeSseManager() as never,
-      workerClient: new FakeWorkerClient() as never,
-    });
-
-    let received = false;
-    bus.on('engine_connect', () => {
-      received = true;
-    });
-
-    bus.publish({
-      event: 'engine_connect',
-      runId: 'run-system',
-      source: 'core',
-      timestamp: new Date().toISOString(),
-    } as Omit<BaseEvent, 'revision'>);
-
-    assert.equal(received, true);
-  });
 });

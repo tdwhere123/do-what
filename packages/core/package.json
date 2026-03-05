@@ -14,7 +14,8 @@
   "dependencies": {
     "@do-what/protocol": "workspace:*",
     "better-sqlite3": "^11.10.0",
-    "fastify": "^5.6.1"
+    "fastify": "^5.6.1",
+    "xstate": "^5.20.1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13"

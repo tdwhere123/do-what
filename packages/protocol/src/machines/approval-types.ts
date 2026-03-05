@@ -1,16 +1,16 @@
 import type { EventObject } from 'xstate';
 
 export interface ApprovalItem {
-  readonly approvalId: string;
-  readonly runId: string;
-  readonly toolName: string;
-  readonly args: Readonly<Record<string, unknown>>;
-  readonly requestedAt: string;
+  approvalId: string;
+  runId: string;
+  toolName: string;
+  args: Readonly<Record<string, unknown>>;
+  requestedAt: string;
 }
 
 export interface ApprovalContext {
-  readonly queue: readonly ApprovalItem[];
-  readonly activeItem?: ApprovalItem;
+  queue: readonly ApprovalItem[];
+  activeItem?: ApprovalItem;
 }
 
 export type ApprovalEvent =

@@ -3,3 +3,4 @@ dist
 .turbo
 *.db
 session_token
+.pnpm-store/

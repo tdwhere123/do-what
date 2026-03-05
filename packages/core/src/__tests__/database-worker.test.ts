@@ -17,13 +17,6 @@ function createTempDb(): string {
   return path.join(dir, 'state.db');
 }
 
-function setupTable(dbPath: string, sql: string): void {
-  const db = new Database(dbPath);
-  db.pragma('journal_mode = WAL');
-  db.exec(sql);
-  db.close();
-}
-
 function readRows<T>(dbPath: string, sql: string): T[] {
   const db = new Database(dbPath, { readonly: true });
   const rows = db.prepare(sql).all() as T[];
@@ -50,46 +43,58 @@ afterEach(async () => {
 describe('DatabaseWorker', () => {
   it('processes writes serially without dropping order', async () => {
     const dbPath = createTempDb();
-    setupTable(
-      dbPath,
-      'CREATE TABLE event_log (id INTEGER PRIMARY KEY AUTOINCREMENT, seq INTEGER NOT NULL);',
-    );
-
     const client = new WorkerClient(dbPath);
     clients.push(client);
 
+    const timestamp = '2026-01-01T00:00:00.000Z';
     const writes: Promise<void>[] = [];
     for (let index = 1; index <= 100; index += 1) {
       writes.push(
         client.write({
-          params: [index],
-          sql: 'INSERT INTO event_log (seq) VALUES (?)',
+          params: [
+            index,
+            timestamp,
+            'test.event',
+            'run-test',
+            'database-worker.test',
+            JSON.stringify({ seq: index }),
+          ],
+          sql: 'INSERT INTO event_log (revision, timestamp, event_type, run_id, source, payload) VALUES (?, ?, ?, ?, ?, ?)',
         }),
       );
     }
 
     await Promise.all(writes);
 
-    const rows = readRows<{ seq: number }>(
+    const rows = readRows<{ payload: string; revision: number }>(
       dbPath,
-      'SELECT seq FROM event_log ORDER BY id ASC',
+      'SELECT revision, payload FROM event_log ORDER BY revision ASC',
     );
     assert.equal(rows.length, 100);
     for (let index = 1; index <= 100; index += 1) {
-      assert.equal(rows[index - 1].seq, index);
+      assert.equal(rows[index - 1].revision, index);
+      const payload = JSON.parse(rows[index - 1].payload) as { seq: number };
+      assert.equal(payload.seq, index);
     }
   });
 
   it('restarts worker after crash and continues writing', async () => {
     const dbPath = createTempDb();
-    setupTable(dbPath, 'CREATE TABLE event_log (value INTEGER NOT NULL);');
 
     const client = new WorkerClient(dbPath);
     clients.push(client);
 
+    const timestamp = '2026-01-01T00:00:00.000Z';
     await client.write({
-      params: [1],
-      sql: 'INSERT INTO event_log (value) VALUES (?)',
+      params: [
+        1,
+        timestamp,
+        'test.event',
+        'run-test',
+        'database-worker.test',
+        JSON.stringify({ value: 1 }),
+      ],
+      sql: 'INSERT INTO event_log (revision, timestamp, event_type, run_id, source, payload) VALUES (?, ?, ?, ?, ?, ?)',
     });
 
     const rawWorker = (client as unknown as { worker: Worker }).worker;
@@ -97,16 +102,24 @@ describe('DatabaseWorker', () => {
     await sleep(100);
 
     await client.write({
-      params: [2],
-      sql: 'INSERT INTO event_log (value) VALUES (?)',
+      params: [
+        2,
+        timestamp,
+        'test.event',
+        'run-test',
+        'database-worker.test',
+        JSON.stringify({ value: 2 }),
+      ],
+      sql: 'INSERT INTO event_log (revision, timestamp, event_type, run_id, source, payload) VALUES (?, ?, ?, ?, ?, ?)',
     });
 
-    const rows = readRows<{ value: number }>(
+    const rows = readRows<{ payload: string; revision: number }>(
       dbPath,
-      'SELECT value FROM event_log ORDER BY rowid ASC',
+      'SELECT revision, payload FROM event_log ORDER BY revision ASC',
     );
+    assert.deepEqual(rows.map((row) => row.revision), [1, 2]);
     assert.deepEqual(
-      rows.map((row) => row.value),
+      rows.map((row) => (JSON.parse(row.payload) as { value: number }).value),
       [1, 2],
     );
   });
