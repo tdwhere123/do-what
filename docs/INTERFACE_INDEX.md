@@ -94,8 +94,8 @@
 | event | 触发方 | 关键附加字段 |
 |-------|--------|-------------|
 | `engine_connect` | Engine Adapter | `engineType: 'claude'\|'codex', version: string` |
-| `engine_disconnect` | Engine Adapter | `engineType, reason: string` |
-| `circuit_break` | Engine Machine | `engineType, failureCount: number` |
+| `engine_disconnect` | Engine Adapter | `engineType: 'claude'\|'codex', reason: string` |
+| `circuit_break` | Engine Machine | `engineType: 'claude'\|'codex', failureCount: number` |
 | `network_status` | Core | `online: boolean` |
 
 > 源文件：`packages/protocol/src/events/system.ts`
@@ -224,10 +224,10 @@
 
 | 表名 | 主键 | 关键字段 | 说明 |
 |------|------|---------|------|
-| `event_log` | `revision` | `event_type, run_id, source, payload(JSON)` | 只追加，不可改 |
-| `runs` | `run_id` | `workspace_id, engine_type, status, metadata(JSON)` | Run 生命周期记录 |
-| `workspaces` | `workspace_id` | `root_path, engine_type` | 工作区配置 |
-| `agents` | `agent_id` | `role, engine_type, memory_ns` | Agent 定义 |
+| `event_log` | `revision` | `timestamp, event_type, run_id, source, payload(JSON)` | 只追加，不可改 |
+| `runs` | `run_id` | `workspace_id, agent_id, engine_type, status, created_at, updated_at, completed_at, error, metadata(JSON)` | Run 生命周期记录 |
+| `workspaces` | `workspace_id` | `name, root_path, engine_type, created_at, last_opened_at` | 工作区配置 |
+| `agents` | `agent_id` | `name, role, engine_type, memory_ns, created_at, config(JSON)` | Agent 定义 |
 | `approval_queue` | `approval_id` | `run_id, tool_name, args(JSON), status` | 工具审批队列 |
 | `snapshots` | `snapshot_id` | `revision, payload(JSON)` | 状态水合快照 |
 | `schema_version` | `version` | `applied_at, description` | 迁移版本跟踪 |
@@ -391,6 +391,8 @@ git_commit:abc1234 repo_path:docs/design.md#heading:Architecture
 | 2026-03-05 | T002 | 新增 BaseEvent、RunLifecycleEvent、ToolExecutionEvent 的 zod schema 与测试|
 | 2026-03-05 | T003 | 新增 EngineOutput/MemoryOperation/SystemHealth 事件与 Tools API MCP schema（含 JSON Schema 导出）|
 | 2026-03-05 | T004 | 新增 Soul MCP schema、Policy schema/defaults、xstate 状态机类型骨架|
+| 2026-03-05 | T006 | Review fixes: SystemHealth `engineType` enum alignment, event-channel routing, timestamp validation, and DB behavior constraints |
+| 2026-03-05 | T007 | Added Core state.db v1 DDL and migration framework (schema_version tracking, transactional apply, idempotent runs) |
 
 ---
 

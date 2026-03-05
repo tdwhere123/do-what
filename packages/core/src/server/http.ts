@@ -7,6 +7,7 @@ import {
   STATE_DIR,
   ensureRuntimeDirs,
 } from '../config.js';
+import { WorkerClient } from '../db/worker-client.js';
 import { authMiddleware, generateAndSaveToken } from './auth.js';
 import { registerRoutes } from './routes.js';
 import { SseManager } from './sse.js';
@@ -44,12 +45,15 @@ export async function startHttpServer(
   options: StartHttpServerOptions = {},
 ): Promise<HttpServerHandle> {
   const tokenPath = options.sessionTokenPath ?? SESSION_TOKEN_PATH;
+  const runDir = options.runDir ?? path.dirname(tokenPath);
+  const stateDir = options.stateDir ?? STATE_DIR;
   ensureRuntimeDirs({
-    runDir: options.runDir ?? path.dirname(tokenPath),
-    stateDir: options.stateDir ?? STATE_DIR,
+    runDir,
+    stateDir,
   });
 
   const token = generateAndSaveToken(tokenPath);
+  const workerClient = new WorkerClient(path.join(stateDir, 'state.db'));
 
   const sseManager = new SseManager();
   const app = Fastify({ logger: options.logger ?? true });
@@ -77,6 +81,7 @@ export async function startHttpServer(
     }
     stopping = true;
 
+    await workerClient.close();
     sseManager.closeAll();
     await app.close();
   };

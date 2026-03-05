@@ -2,21 +2,23 @@ import { z } from 'zod';
 
 import { BaseEventSchema } from './base.js';
 
+const EngineTypeSchema = z.enum(['claude', 'codex']);
+
 export const SystemEngineConnectEventSchema = BaseEventSchema.extend({
   event: z.literal('engine_connect'),
-  engineType: z.enum(['claude', 'codex']),
+  engineType: EngineTypeSchema,
   version: z.string(),
 }).passthrough();
 
 export const SystemEngineDisconnectEventSchema = BaseEventSchema.extend({
   event: z.literal('engine_disconnect'),
-  engineType: z.string(),
+  engineType: EngineTypeSchema,
   reason: z.string(),
 }).passthrough();
 
 export const SystemCircuitBreakEventSchema = BaseEventSchema.extend({
   event: z.literal('circuit_break'),
-  engineType: z.string(),
+  engineType: EngineTypeSchema,
   failureCount: z.number().int().nonnegative(),
 }).passthrough();
 

@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import { parentPort, workerData } from 'node:worker_threads';
+import { runPendingMigrations } from './migration-runner.js';
 
 interface WorkerData {
   dbPath: string;
@@ -30,6 +31,7 @@ function main(): void {
   db.pragma('journal_mode = WAL');
   db.pragma('synchronous = NORMAL');
   db.pragma('busy_timeout = 5000');
+  runPendingMigrations(db);
 
   const queue: QueueItem[] = [];
   let processing = false;
