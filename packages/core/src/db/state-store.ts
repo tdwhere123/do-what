@@ -45,6 +45,7 @@ export class StateStore {
   }
 
   getSnapshot(): Record<string, unknown> {
+    // This serves `/state`: a hot_state snapshot, not an async projection or ledger view.
     const db = this.open();
     if (!db) {
       return {

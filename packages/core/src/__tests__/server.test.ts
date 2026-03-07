@@ -176,10 +176,12 @@ describe('HTTP server auth and SSE', () => {
 
           void fetch(`${baseUrl}/_dev/publish`, {
             body: JSON.stringify({
-              revision: 1,
+              isComplete: false,
               runId: 'run-test',
               source: 'test',
+              text: 'hello from dev publish',
               timestamp: new Date().toISOString(),
+              type: 'token_stream',
             }),
             headers: {
               Authorization: `Bearer ${token}`,

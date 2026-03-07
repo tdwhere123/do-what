@@ -240,8 +240,6 @@ export const approvalMachine = setup({
   },
   guards: {
     hasActiveApproval: ({ context }) => Boolean(context.activeItem),
-    hasActiveApprovalWithQueue: ({ context }) =>
-      Boolean(context.activeItem) && context.queue.length > 0,
     isActiveApproveEvent: ({ context, event }) =>
       event.type === 'USER_APPROVE' && isActiveApproval(context, event.approvalId),
     isActiveApproveEventWithQueue: ({ context, event }) =>
@@ -267,6 +265,17 @@ export const approvalMachine = setup({
     input: {} as ApprovalMachineInput,
   },
 }).createMachine({
+  /*
+   * Transition table
+   * idle -> ENQUEUE -> waiting
+   * waiting -> ENQUEUE -> waiting
+   * waiting -> USER_APPROVE[queue empty] -> idle
+   * waiting -> USER_APPROVE[queue remains] -> waiting
+   * waiting -> USER_DENY[queue empty] -> idle
+   * waiting -> USER_DENY[queue remains] -> waiting
+   * waiting -> TIMEOUT[queue empty] -> idle
+   * waiting -> TIMEOUT[queue remains] -> waiting
+   */
   context: ({ input }) => ({
     activeItem: undefined,
     dbWriter: input.dbWriter,

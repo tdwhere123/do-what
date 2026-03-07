@@ -30,6 +30,7 @@ export class SoulStateStore {
   }
 
   read<T>(operation: (db: Database.Database) => T, fallback: T): T {
+    // SoulStateStore is a read-only cue db accessor, not the user decision ledger or repo writer.
     const db = this.open();
     if (!db) {
       return fallback;

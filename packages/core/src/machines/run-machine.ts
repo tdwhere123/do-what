@@ -393,6 +393,22 @@ export const runMachine = setup({
     input: {} as RunMachineInput,
   },
 }).createMachine({
+  /*
+   * Transition table
+   * idle -> START -> created
+   * created -> always -> started
+   * started -> always -> running
+   * running -> TOOL_REQUEST[ask] -> waiting_approval
+   * running -> COMPLETE -> completed
+   * running -> FAIL -> failed
+   * running -> CANCEL -> cancelled
+   * running -> INTERRUPT -> interrupted
+   * running -> TOOL_FAILED[threshold] -> interrupted
+   * waiting_approval -> TOOL_RESOLVED[approved] -> running
+   * waiting_approval -> TOOL_RESOLVED[denied] -> running|interrupted
+   * waiting_approval -> CANCEL -> cancelled
+   * waiting_approval -> INTERRUPT -> interrupted
+   */
   context: ({ input }) => ({
     agentId: input.agentId,
     agentStuckThreshold: input.agentStuckThreshold ?? AGENT_STUCK_THRESHOLD,

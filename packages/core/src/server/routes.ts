@@ -1,4 +1,4 @@
-import { BaseEventSchema } from '@do-what/protocol';
+import { AnyEventSchema } from '@do-what/protocol';
 import type { FastifyInstance } from 'fastify';
 import type { SoulToolDispatcher } from '@do-what/soul';
 import type { StateStore } from '../db/state-store.js';
@@ -49,6 +49,7 @@ export function registerRoutes(
   });
 
   app.get('/state', async () => {
+    // `/state` returns the current hot_state view from Core's read path.
     return options.stateStore.getSnapshot();
   });
 
@@ -86,7 +87,7 @@ export function registerRoutes(
     }
 
     app.post('/_dev/publish', async (request, reply) => {
-      const parsed = BaseEventSchema.safeParse(request.body);
+      const parsed = AnyEventSchema.safeParse(request.body);
       if (!parsed.success) {
         await reply.code(400).send({
           error: 'Invalid event payload',

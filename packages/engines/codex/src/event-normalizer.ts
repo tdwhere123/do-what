@@ -94,6 +94,14 @@ function isToolName(value: string): value is ToolsApiName {
   return value in ToolsApiSchemas;
 }
 
+function getApprovalId(source: JsonMap): string | undefined {
+  return getString(source, 'requestId', 'id', 'request_id');
+}
+
+function getToolName(source: JsonMap): string | undefined {
+  return getString(source, 'tool', 'toolName', 'name');
+}
+
 function normalizePlanStatus(rawStatus: string | undefined): 'active' | 'done' | 'failed' | 'pending' {
   if (!rawStatus) {
     return 'pending';
@@ -180,8 +188,8 @@ export class EventNormalizer {
   }
 
   private normalizeApprovalRequest(payload: JsonMap): BaseEvent | null {
-    const approvalId = getString(payload, 'requestId', 'id', 'request_id');
-    const toolName = getString(payload, 'tool', 'toolName', 'name');
+    const approvalId = getApprovalId(payload);
+    const toolName = getToolName(payload);
     if (!approvalId || !toolName) {
       console.warn('[codex][event-normalizer] invalid approval request payload', payload);
       return null;
@@ -343,10 +351,10 @@ export class EventNormalizer {
 
     const parsed = ToolFailedEventSchema.safeParse({
       ...this.buildBase(payload),
-      approvalId: getString(payload, 'requestId', 'id', 'request_id'),
+      approvalId: getApprovalId(payload),
       error,
       status: 'failed',
-      toolName: getString(payload, 'tool', 'toolName', 'name'),
+      toolName: getToolName(payload),
     });
 
     if (!parsed.success) {
@@ -366,11 +374,11 @@ export class EventNormalizer {
 
     const parsed = ToolCompletedEventSchema.safeParse({
       ...this.buildBase(payload),
-      approvalId: getString(payload, 'requestId', 'id', 'request_id'),
+      approvalId: getApprovalId(payload),
       exitCode: getNumber(payload, 'exitCode', 'exit_code', 'code') ?? 0,
       output,
       status: 'completed',
-      toolName: getString(payload, 'tool', 'toolName', 'name'),
+      toolName: getToolName(payload),
     });
 
     if (!parsed.success) {

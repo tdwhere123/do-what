@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const TEST_FILES = [
+  'core-forwarder.test.js',
   'policy-cache.test.js',
   'hook-runner.test.js',
   'mcp-server.test.js',

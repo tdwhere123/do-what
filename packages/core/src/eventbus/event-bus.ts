@@ -20,6 +20,7 @@ function getEventChannel(event: BaseEvent): string {
     type?: unknown;
   };
 
+  // event_log.event_type precedence is fixed to keep history queries stable.
   if (typeof candidate.eventType === 'string') {
     return candidate.eventType;
   }

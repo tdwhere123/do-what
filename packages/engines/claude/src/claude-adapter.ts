@@ -8,7 +8,7 @@ import {
 import { writeClaudeMdFile } from './claude-md-generator.js';
 import { ClaudeProcess } from './claude-process.js';
 import {
-  createCoreToolEventForwarder,
+  createConfiguredCoreToolEventForwarder,
   type ToolEventForwarder,
 } from './core-forwarder.js';
 import {
@@ -146,12 +146,10 @@ export class ClaudeAdapter {
     runActor.start();
     runActor.send({ type: 'START' });
 
-    const eventForwarder: ToolEventForwarder | undefined = options.token
-      ? createCoreToolEventForwarder({
-        port: options.port,
-        token: options.token,
-      })
-      : undefined;
+    const eventForwarder: ToolEventForwarder | undefined = createConfiguredCoreToolEventForwarder({
+      port: options.port,
+      token: options.token,
+    });
     const startMcpServerFn = this.dependencies.startMcpServer ?? startMcpServer;
     const mcpServer = await startMcpServerFn({
       approvalClient: options.approvalClient,

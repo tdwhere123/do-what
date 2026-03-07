@@ -10,7 +10,7 @@ import {
   type ToolsApiName,
 } from '@do-what/protocol';
 import {
-  createCoreToolEventForwarder,
+  createConfiguredCoreToolEventForwarder,
   type ToolEventForwarder,
 } from './core-forwarder.js';
 import {
@@ -125,7 +125,7 @@ export async function startMcpServer(
   const dependencies: Omit<ToolHandlerDependencies, 'runId'> = {
     approvalClient: options.approvalClient ?? new PendingApprovalStore(),
     cache,
-    eventForwarder: options.eventForwarder ?? createCoreToolEventForwarder(),
+    eventForwarder: options.eventForwarder ?? createConfiguredCoreToolEventForwarder(),
     observer: options.observer,
     source: options.source ?? 'engine.claude.mcp',
     workspaceRoot: options.workspaceRoot ?? process.env.DOWHAT_WORKSPACE_ROOT,

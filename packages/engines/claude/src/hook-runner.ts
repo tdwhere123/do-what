@@ -8,7 +8,7 @@ import type {
   ToolRequestedEvent,
 } from '@do-what/protocol';
 import {
-  createCoreToolEventForwarder,
+  createConfiguredCoreToolEventForwarder,
   type ToolEventForwarder,
 } from './core-forwarder.js';
 import {
@@ -268,7 +268,7 @@ async function runAsCli(): Promise<void> {
   const input = await readStdin();
   const result = await processHookInput(input, {
     cache,
-    forwarder: createCoreToolEventForwarder(),
+    forwarder: createConfiguredCoreToolEventForwarder(),
     runId: process.env.DOWHAT_RUN_ID,
     source: process.env.DOWHAT_HOOK_SOURCE ?? DEFAULT_SOURCE,
   });

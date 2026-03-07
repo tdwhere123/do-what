@@ -107,6 +107,18 @@ export const engineMachine = setup({
     input: {} as EngineMachineInput,
   },
 }).createMachine({
+  /*
+   * Transition table
+   * disconnected -> CONNECT -> connecting
+   * connecting -> always -> connected
+   * connected -> DISCONNECT|HEARTBEAT_TIMEOUT -> disconnected
+   * connected -> PARSE_ERROR -> degraded
+   * degraded -> CONNECT -> connecting
+   * degraded -> RECOVER -> connected
+   * degraded -> DISCONNECT|HEARTBEAT_TIMEOUT -> disconnected
+   * degraded -> PARSE_ERROR[threshold] -> circuit_open
+   * circuit_open -> CONNECT -> connecting
+   */
   context: ({ input }) => ({
     circuitOpenThreshold: input.circuitOpenThreshold ?? 5,
     connectionStatus: 'disconnected',
@@ -195,4 +207,3 @@ export type EngineActor = ActorRefFrom<typeof engineMachine>;
 export function createEngineActor(input: EngineMachineInput): EngineActor {
   return createActor(engineMachine, { input });
 }
-

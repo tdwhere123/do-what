@@ -73,4 +73,54 @@ describe('EventBus', () => {
     assert.equal(first.revision, 1);
     assert.equal(second.revision, 2);
   });
+
+  it('uses eventType, then type, then event, then status for event_log channels', async () => {
+    const workerClient = new FakeWorkerClient();
+    const bus = new EventBus({
+      sseManager: new FakeSseManager() as never,
+      workerClient: workerClient as never,
+    });
+
+    bus.publish({
+      event: 'engine_connect',
+      eventType: 'explicit-event-type',
+      revision: 0,
+      runId: 'run-channel-1',
+      source: 'core',
+      status: 'created',
+      timestamp: new Date().toISOString(),
+      type: 'token_stream',
+    } as BaseEvent);
+    bus.publish({
+      event: 'engine_disconnect',
+      revision: 0,
+      runId: 'run-channel-2',
+      source: 'core',
+      status: 'failed',
+      timestamp: new Date().toISOString(),
+      type: 'token_stream',
+    } as BaseEvent);
+    bus.publish({
+      event: 'engine_disconnect',
+      revision: 0,
+      runId: 'run-channel-3',
+      source: 'core',
+      status: 'failed',
+      timestamp: new Date().toISOString(),
+    } as BaseEvent);
+    bus.publish({
+      revision: 0,
+      runId: 'run-channel-4',
+      source: 'core',
+      status: 'failed',
+      timestamp: new Date().toISOString(),
+    } as BaseEvent);
+
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.equal(workerClient.writes[0]?.params[2], 'explicit-event-type');
+    assert.equal(workerClient.writes[1]?.params[2], 'token_stream');
+    assert.equal(workerClient.writes[2]?.params[2], 'engine_disconnect');
+    assert.equal(workerClient.writes[3]?.params[2], 'status:failed');
+  });
 });
