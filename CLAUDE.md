@@ -136,14 +136,3 @@ Core → 引擎（spawn 子进程，Job Object 管理进程树）
 | `~/.do-what/policy.json` | 工具审批策略配置 | `packages/core` |
 | `~/.do-what/worktrees/<runId>/` | 每个 Run 的 git worktree（临时）| `packages/tools` |
 
----
-
-## T010 门控（已通过 ✅ 2026-03-05）
-
-**T010 已完成，E2/E3 已放行并实现完毕。**
-
-验证结果（`docs/protocol-validation-report.md`）：5 pass / 2 warn / 0 fail。
-- ⚠️ `claude --print` 不可用（EngineQuota 特性默认关闭，不影响主路径）
-- ⚠️ Codex App Server 的 plan_node/diff/approval_request 事件仅运行时可见，已在 E3 fixtures 中覆盖
-
-**下一个门控节点：E6（Worktree 并行）依赖 E2+E3 已满足，可与 E4/E5 并行启动。**

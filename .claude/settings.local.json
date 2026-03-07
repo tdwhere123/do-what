@@ -9,7 +9,8 @@
       "Bash(do echo:*)",
       "Bash(wc:*)",
       "Bash(xargs grep:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(ls:*)"
     ]
   }
 }
