@@ -8,6 +8,9 @@ const SoulMemorySearchInputSchema = z.object({
   limit: z.number().int().positive().default(10),
   tracks: z.array(z.string()).optional(),
   budget: z.number().int().positive().optional(),
+  scope: z.string().optional(),
+  dimension: z.string().optional(),
+  domain_tags: z.array(z.string()).optional(),
 });
 
 const SoulOpenPointerInputSchema = z.object({

@@ -5,6 +5,7 @@ export const TABLE_AGENTS = 'agents';
 export const TABLE_APPROVAL_QUEUE = 'approval_queue';
 export const TABLE_SNAPSHOTS = 'snapshots';
 export const TABLE_SCHEMA_VERSION = 'schema_version';
+export const TABLE_DIAGNOSTICS_BASELINE = 'diagnostics_baseline';
 
 export interface EventLogRow {
   revision: number;
@@ -69,4 +70,11 @@ export interface SchemaVersionRow {
   version: number;
   applied_at: string;
   description: string;
+}
+
+export interface DiagnosticsBaselineRow {
+  workspace_id: string;
+  error_count: number;
+  created_at: string;
+  updated_at: string;
 }

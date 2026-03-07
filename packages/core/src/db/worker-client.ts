@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { setTimeout as sleep } from 'node:timers/promises';
 import { Worker } from 'node:worker_threads';
 
 export interface DbWriteRequest {
@@ -19,6 +20,8 @@ interface PendingRequest {
 }
 
 const MAX_RESTART_ATTEMPTS = 3;
+const CLOSE_DRAIN_TIMEOUT_MS = 250;
+const CLOSE_DRAIN_INTERVAL_MS = 10;
 
 export class WorkerClient {
   private closed = false;
@@ -59,7 +62,10 @@ export class WorkerClient {
     }
 
     this.closed = true;
-    this.failAllPending(new Error('worker client closed'));
+    await this.waitForPendingDrain();
+    if (this.pending.size > 0) {
+      this.failAllPending(new Error('worker client closed'));
+    }
     await this.worker.terminate();
   }
 
@@ -125,5 +131,12 @@ export class WorkerClient {
       pending.reject(error);
     }
     this.pending.clear();
+  }
+
+  private async waitForPendingDrain(): Promise<void> {
+    const deadline = Date.now() + CLOSE_DRAIN_TIMEOUT_MS;
+    while (this.pending.size > 0 && Date.now() < deadline) {
+      await sleep(CLOSE_DRAIN_INTERVAL_MS);
+    }
   }
 }

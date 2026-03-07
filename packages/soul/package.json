@@ -3,11 +3,22 @@
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
+  "types": "./src/index.ts",
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
     "build": "tsc",
-    "test": "vitest run"
+    "test": "pnpm --filter @do-what/protocol build && pnpm run build && node dist/run-tests.js"
+  },
+  "dependencies": {
+    "@do-what/protocol": "workspace:*",
+    "better-sqlite3": "^11.10.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13"
   }
 }

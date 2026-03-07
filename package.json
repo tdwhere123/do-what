@@ -16,6 +16,7 @@
     "lint": "turbo lint"
   },
   "devDependencies": {
+    "@do-what/core": "workspace:*",
     "@types/node": "^24.3.1",
     "turbo": "^2.5.6",
     "typescript": "^5.9.2",

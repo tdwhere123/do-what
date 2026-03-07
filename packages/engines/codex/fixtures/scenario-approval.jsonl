@@ -1,0 +1,4 @@
+{"type":"fixture_meta","fixture":"scenario-approval","codexVersion":"0.1"}
+{"type":"approval_request","request_id":"approval-1","tool":"tools.shell_exec","args":{"command":"pnpm test","sandbox":"native"},"timestamp":"2026-03-06T00:01:00.000Z"}
+{"type":"tool_result","requestId":"approval-1","tool":"tools.shell_exec","output":"tests passed","exitCode":0,"timestamp":"2026-03-06T00:01:01.000Z"}
+{"type":"run_complete","duration":2200,"timestamp":"2026-03-06T00:01:02.000Z"}

@@ -6,15 +6,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目状态
 
-**当前阶段：预实现（规划完成，代码尚未编写）。**
+**当前阶段：全部完成（E0–E7 已全部交付）。**
 
-所有代码都待写，规划文档是唯一真相：
-- `do-what-proposal-v0.1.md` — 完整方案（约 800 行，所有架构决策来源）
-- `docs/PLAN.md` — Epic/Ticket 总览 + 依赖 DAG + 关键路径
-- `tasks/T001~T027` — 每个 Ticket 的详细实现卡（含文件清单、DoD、验收命令）
-- `CODEX_QUEUE.md` — 可直接执行的 Codex 指令块
+规划文档：
+- `docs/archive/v0.1/do-what-proposal-v0.1.md` — v0.1 完整方案（归档，约 800 行，所有架构决策来源）
+- `docs/archive/v0.1/do-what-v0.1.x.md` — v0.1.x 收敛/清理方案（归档）
+- `docs/PLAN.md` — Epic/Ticket 总览 + 依赖 DAG + 关键路径 + **当前进度表**
+- `docs/archive/v0.1/tasks/T001~T027` — 每个 Ticket 的详细实现卡（含文件清单、DoD、验收命令）
+- `docs/archive/v0.1/CODEX_QUEUE.md` — v0.1 可直接执行的 Codex 指令块
 
-**接到实现任务时，先读对应 `tasks/T###-*.md`，再动手。**
+已完成：E0（T001–T004）、E1（T005–T009）、E1.5/T010 门控、E2（T011–T013）、E3（T014–T016）、E4（T017–T019）、E5（T020–T022）、E6（T023–T024）、**E7（T025–T027）**。
+**全部 E0–E7 已交付，40 个 soul 测试全通过。**
+
+**若任务涉及 v0.1 历史实现，先读归档 Ticket；若是新阶段规划/实现，不要默认沿用这套旧队列。**
 
 ---
 
@@ -125,7 +129,7 @@ Core → 引擎（spawn 子进程，Job Object 管理进程树）
 | 文件 | 用途 | 负责包 |
 |------|------|--------|
 | `~/.do-what/state/state.db` | Run/Workspace/Agent/Approval/Event Log | `packages/core` |
-| `~/.do-what/state/soul.db` | memory_cues/edges/evidence_index | `packages/soul` |
+| `~/.do-what/state/soul.db` | memory_cues(包含三轴模型及dormant字段)/edges/evidence_index/proposals | `packages/soul` |
 | `~/.do-what/memory/<fingerprint>/memory_repo/` | Git 版本锚（证据真相层）| `packages/soul` |
 | `~/.do-what/run/session_token` | Core HTTP 鉴权 token（权限 600）| `packages/core` |
 | `~/.do-what/run/hook-policy-cache.json` | Hook Runner 策略缓存（无 Core 即可读）| `packages/core` 写，`packages/engines/claude` 读 |
@@ -134,8 +138,12 @@ Core → 引擎（spawn 子进程，Job Object 管理进程树）
 
 ---
 
-## T010 门控（关键节点）
+## T010 门控（已通过 ✅ 2026-03-05）
 
-**T010（协议验证）完成之前，不要实现 E2（Claude 适配器）或 E3（Codex 适配器）。**
+**T010 已完成，E2/E3 已放行并实现完毕。**
 
-T010 需要在真实机器上跑验证脚本（`scripts/validate-claude-hooks.ts`），确认 Claude/Codex 实际协议与 `packages/protocol` 定义兼容。任何不兼容都必须在 T010 内修复，之后才能进入引擎适配层。
+验证结果（`docs/protocol-validation-report.md`）：5 pass / 2 warn / 0 fail。
+- ⚠️ `claude --print` 不可用（EngineQuota 特性默认关闭，不影响主路径）
+- ⚠️ Codex App Server 的 plan_node/diff/approval_request 事件仅运行时可见，已在 E3 fixtures 中覆盖
+
+**下一个门控节点：E6（Worktree 并行）依赖 E2+E3 已满足，可与 E4/E5 并行启动。**

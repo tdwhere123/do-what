@@ -9,5 +9,8 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@do-what/protocol": "workspace:*"
   }
 }

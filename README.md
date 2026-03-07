@@ -21,18 +21,21 @@ do-what 是一个可本地安装的 AI 开发工作台，以 **Core daemon** 为
 
 ## 项目状态
 
-> **当前阶段：规划完成，代码实现中。**
+> **当前阶段：v0.1 已完成，历史规划资料已归档，当前仓库作为后续规划基线。**
 
 | 阶段 | 状态 |
 |------|------|
 | 方案定稿（v0.1） | ✅ 完成 |
 | Ticket 拆解（T001~T027） | ✅ 完成 |
 | E0 Protocol & Schema | ✅ 完成 |
-| E1 Core Skeleton | 🔲 待实现 |
-| E1.5 Protocol Validation Gate | 🔲 待实现 |
-| E2 Claude Engine Adapter | 🔲 待实现 |
-| E3 Codex Engine Adapter | 🔲 待实现 |
-| E4~E7 Soul / Integrator / Compiler | 🔲 待实现 |
+| E1 Core Skeleton | ✅ 完成 |
+| E1.5 Protocol Validation Gate | ✅ 完成 |
+| E2 Claude Engine Adapter | ✅ 完成 |
+| E3 Codex Engine Adapter | ✅ 完成 |
+| E4 Soul Read Path | ✅ 完成 |
+| E5 Soul Write Path | ✅ 完成 |
+| E6 Worktree + Integrator | ✅ 完成 |
+| E7 Memory Compiler | ✅ 完成 |
 
 ---
 
@@ -82,7 +85,7 @@ do-what 是一个可本地安装的 AI 开发工作台，以 **Core daemon** 为
 
 ## 快速开始
 
-> 代码实现完成后更新此节。
+> v0.1 主线已完成；运行与构建产物默认不入库，需要时本地重新生成。
 
 **前提条件：**
 - Node.js >= 20
@@ -115,11 +118,13 @@ curl http://127.0.0.1:3847/health
 
 | 文档 | 内容 |
 |------|------|
-| [`do-what-proposal-v0.1.md`](./do-what-proposal-v0.1.md) | 完整方案（权威来源） |
+| [`docs/archive/v0.1/README.md`](./docs/archive/v0.1/README.md) | v0.1 归档索引与摘要 |
+| [`docs/archive/v0.1/do-what-proposal-v0.1.md`](./docs/archive/v0.1/do-what-proposal-v0.1.md) | v0.1 主方案（归档） |
+| [`docs/archive/v0.1/do-what-v0.1.x.md`](./docs/archive/v0.1/do-what-v0.1.x.md) | v0.1.x 收敛方案（归档） |
 | [`docs/PLAN.md`](./docs/PLAN.md) | Epic/Ticket 总览、依赖 DAG、关键路径 |
 | [`docs/INTERFACE_INDEX.md`](./docs/INTERFACE_INDEX.md) | 所有接口、事件、MCP Tool、HTTP 端点、DB 表索引 |
-| [`CODEX_QUEUE.md`](./CODEX_QUEUE.md) | Codex 执行指令块（逐 Ticket） |
-| [`tasks/`](./tasks/) | T001~T027 详细 Ticket 卡片 |
+| [`docs/archive/v0.1/CODEX_QUEUE.md`](./docs/archive/v0.1/CODEX_QUEUE.md) | v0.1 的 Codex 执行指令块（归档） |
+| [`docs/archive/v0.1/tasks/`](./docs/archive/v0.1/tasks/) | v0.1 的 T001~T027 Ticket 卡片（归档） |
 | [`CLAUDE.md`](./CLAUDE.md) | Claude Code 工作指南 |
 | [`AGENTS.md`](./AGENTS.md) | Codex Agent 工作指南 |
 
@@ -159,6 +164,6 @@ curl http://127.0.0.1:3847/health
 
 本项目为单人 + AI 辅助开发模式。
 
-- 代码改动通过 `CODEX_QUEUE.md` 的 Ticket 驱动
-- 每个 Ticket 完成后更新 `docs/INTERFACE_INDEX.md`（若有新增接口）
-- 方案变更必须先修改 `do-what-proposal-v0.1.md`，再同步 `docs/PLAN.md` 和受影响的 `tasks/T###`
+- v0.1 的执行队列、Ticket 卡片与方案文档已归档到 `docs/archive/v0.1/`
+- 若需追溯既有接口或实现依据，优先查看 `docs/INTERFACE_INDEX.md`、`docs/PLAN.md` 与 `docs/archive/v0.1/`
+- 后续规划建议新增独立文档，不回写 v0.1 归档材料

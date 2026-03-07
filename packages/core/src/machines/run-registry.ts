@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import type { RunLifecycleEvent } from '@do-what/protocol';
 import { createActor } from 'xstate';
 import { createReadConnection } from '../db/read-connection.js';
@@ -20,6 +21,13 @@ export interface RunRegistryOptions {
     publish: (event: Omit<RunLifecycleEvent, 'revision'>) => unknown;
   };
   now?: () => string;
+  onStatusChange?: (event: {
+    agentId?: string;
+    engineType: string;
+    runId: string;
+    status: string;
+    workspaceId: string;
+  }) => Promise<void> | void;
   policyEvaluate?: RunMachineInput['policyEvaluate'];
   source?: string;
 }
@@ -68,6 +76,21 @@ export class RunRegistry {
       },
     });
     actor.start();
+    let previousStatus = String(actor.getSnapshot().value);
+    actor.subscribe((snapshot) => {
+      const nextStatus = String(snapshot.value);
+      if (nextStatus === previousStatus) {
+        return;
+      }
+      previousStatus = nextStatus;
+      void this.options.onStatusChange?.({
+        agentId: input.agentId,
+        engineType: input.engineType,
+        runId: input.runId,
+        status: nextStatus,
+        workspaceId: input.workspaceId,
+      });
+    });
 
     this.actors.set(input.runId, actor);
     return actor;
@@ -120,8 +143,12 @@ export async function rehydrateRuns(options: {
   now?: () => string;
   source?: string;
 }): Promise<number> {
-  const db = createReadConnection(options.dbPath);
+  let db;
   try {
+    if (!fs.existsSync(options.dbPath)) {
+      return 0;
+    }
+    db = createReadConnection(options.dbPath);
     const placeholders = NON_TERMINAL_RUN_STATUSES.map(() => '?').join(', ');
     const rows = db
       .prepare(
@@ -155,9 +182,8 @@ export async function rehydrateRuns(options: {
     console.warn('[core][run-registry] rehydrate skipped', error);
     return 0;
   } finally {
-    db.close();
+    db?.close();
   }
 }
 
 export { createRunActor };
-

@@ -48,6 +48,7 @@ describe('EventBus', () => {
     assert.equal(received?.revision, 1);
     assert.equal(workerClient.writes.length, 1);
     assert.match(workerClient.writes[0].sql, /INSERT INTO event_log/i);
+    assert.equal(workerClient.writes[0].params.length, 6);
   });
 
   it('increments revisions monotonically', () => {

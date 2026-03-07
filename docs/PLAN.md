@@ -1,6 +1,6 @@
 # do-what 重构总览 PLAN.md
 
-> 基于 `do-what-proposal-v0.1.md` 生成
+> 基于 `docs/archive/v0.1/do-what-proposal-v0.1.md` 生成
 > 生成时间：2026-03-04
 > 技术栈：全栈 TypeScript · pnpm workspace · turborepo · Node.js daemon · Electron + React · SQLite · xstate v5
 
@@ -38,6 +38,22 @@ packages/
   tools/        ← Tool Runner（file/git/shell/docker/wsl）
   toolchain/    ← 工具链断言 + 可移植托管
 ```
+
+---
+
+## 当前进度（2026-03-06）
+
+| Epic | 状态 | 备注 |
+|------|------|------|
+| E0 Protocol & Schema | ✅ 完成 | T001–T004 全部交付 |
+| E1 Core Skeleton | ✅ 完成 | T005–T009 全部交付 |
+| E1.5 Protocol Validation Gate | ✅ 完成 | T010 通过，报告见 `docs/protocol-validation-report.md`（5 pass / 2 warn / 0 fail） |
+| E2 Claude Engine Adapter | ✅ 完成 | T011–T013 全部交付，13 个测试全通过 |
+| E3 Codex Engine Adapter | ✅ 完成 | T014–T016 全部交付，12 个测试全通过 |
+| E4 Soul Read Path | ✅ 完成 | T017–T019 全部交付，11 个测试全通过 |
+| E5 Soul Write Path | ✅ 完成 | T020–T022 全部交付，23 个测试全通过（含 E4 的 11 个）|
+| E6 Worktree 并行 + Integrator | ✅ 完成 | T023–T024 全部交付，11 个测试全通过（tools 4 + core 7）|
+| E7 Memory Compiler + 自我进化 | ✅ 完成 | T025–T027 全部交付，40 个测试全通过（含 E4/E5 回归）|
 
 ---
 

@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "@do-what/claude",
   "version": "0.1.0",
   "type": "module",
@@ -8,6 +8,11 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "vitest run"
+    "start-mcp": "pnpm run build && node ./dist/mcp-server.js",
+    "test": "pnpm --filter @do-what/protocol build && pnpm --filter @do-what/core build && pnpm run build && node ./dist/__tests__/run-tests.js"
+  },
+  "dependencies": {
+    "@do-what/core": "workspace:*",
+    "@do-what/protocol": "workspace:*"
   }
 }

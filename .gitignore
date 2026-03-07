@@ -2,5 +2,7 @@ node_modules
 dist
 .turbo
 *.db
+*.log
+output/
 session_token
 .pnpm-store/

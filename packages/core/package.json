@@ -8,11 +8,13 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "pnpm --filter @do-what/protocol build && pnpm run build && node dist/__tests__/server.test.js && node dist/__tests__/event-bus.test.js && node dist/__tests__/database-worker.test.js",
+    "test": "pnpm --filter @do-what/protocol build && pnpm --filter @do-what/soul build && pnpm --filter @do-what/tools build && pnpm run build && node dist/__tests__/migration.test.js && node dist/__tests__/approval-machine.test.js && node dist/__tests__/engine-machine.test.js && node dist/__tests__/policy-engine.test.js && node dist/__tests__/run-machine.test.js && node dist/__tests__/dag-builder.test.js && node dist/__tests__/fast-gate.test.js && node dist/__tests__/integrator.test.js && node dist/__tests__/server.test.js && node dist/__tests__/event-bus.test.js && node dist/__tests__/database-worker.test.js",
     "start": "node ./dist/server/index.js"
   },
   "dependencies": {
     "@do-what/protocol": "workspace:*",
+    "@do-what/soul": "workspace:*",
+    "@do-what/tools": "workspace:*",
     "better-sqlite3": "^11.10.0",
     "fastify": "^5.6.1",
     "xstate": "^5.20.1"

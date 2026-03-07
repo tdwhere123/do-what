@@ -105,7 +105,7 @@ ON CONFLICT(run_id) DO UPDATE SET
   updated_at = excluded.updated_at,
   completed_at = excluded.completed_at,
   error = excluded.error,
-  metadata = excluded.metadata
+  metadata = COALESCE(excluded.metadata, metadata)
 `;
 
 function evaluatePolicy(

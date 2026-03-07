@@ -1,10 +1,34 @@
 import { BaseEventSchema } from '@do-what/protocol';
 import type { FastifyInstance } from 'fastify';
+import type { SoulToolDispatcher } from '@do-what/soul';
+import type { StateStore } from '../db/state-store.js';
+import type { EventBus } from '../eventbus/event-bus.js';
+import { registerInternalRoutes } from './internal-routes.js';
+import { isLoopbackAddress } from './loopback-auth.js';
+import { registerMcpRoutes } from './mcp-routes.js';
+import { registerSoulRoutes } from './soul-routes.js';
 import type { SseManager } from './sse.js';
 
+export interface DevRunRequest {
+  durationMs?: number;
+  engine?: string;
+  prompt?: string;
+}
+
+export interface DevRunResult {
+  durationMs: number;
+  runId: string;
+  worktreePath: string;
+}
+
 export interface RegisterRoutesOptions {
+  eventBus: EventBus;
   isDevelopment: boolean;
+  mcpToolDispatcher: SoulToolDispatcher;
+  startDevRun?: (input: DevRunRequest) => Promise<DevRunResult>;
+  stateStore: StateStore;
   sseManager: SseManager;
+  token: string;
 }
 
 export function registerRoutes(
@@ -25,10 +49,42 @@ export function registerRoutes(
   });
 
   app.get('/state', async () => {
-    return {};
+    return options.stateStore.getSnapshot();
+  });
+
+  registerInternalRoutes(app, {
+    eventBus: options.eventBus,
+    token: options.token,
+  });
+  registerMcpRoutes(app, {
+    token: options.token,
+    toolDispatcher: options.mcpToolDispatcher,
+  });
+  registerSoulRoutes(app, {
+    toolDispatcher: options.mcpToolDispatcher,
   });
 
   if (options.isDevelopment) {
+    if (options.startDevRun) {
+      const startDevRun = options.startDevRun;
+      app.post('/_dev/start-run', async (request, reply) => {
+        if (!isLoopbackAddress(request.ip)) {
+          await reply.code(403).send({ error: 'Forbidden' });
+          return;
+        }
+
+        const payload =
+          request.body && typeof request.body === 'object'
+            ? (request.body as DevRunRequest)
+            : {};
+        const result = await startDevRun(payload);
+        await reply.code(202).send({
+          ok: true,
+          ...result,
+        });
+      });
+    }
+
     app.post('/_dev/publish', async (request, reply) => {
       const parsed = BaseEventSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -39,7 +95,7 @@ export function registerRoutes(
         return;
       }
 
-      options.sseManager.broadcast(parsed.data);
+      options.eventBus.publish(parsed.data);
       await reply.code(200).send({ ok: true });
     });
   }

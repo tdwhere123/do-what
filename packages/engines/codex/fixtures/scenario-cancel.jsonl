@@ -1,0 +1,3 @@
+{"type":"fixture_meta","fixture":"scenario-cancel","codexVersion":"0.1"}
+{"type":"token_stream","text":"Starting long-running task","done":false,"timestamp":"2026-03-06T00:02:00.000Z"}
+{"type":"run_failed","error":"run cancelled by user","code":"cancelled","timestamp":"2026-03-06T00:02:01.000Z"}

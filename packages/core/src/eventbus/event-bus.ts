@@ -66,16 +66,19 @@ export class EventBus {
       .write({
         params: [
           eventWithRevision.revision,
+          eventWithRevision.timestamp,
           getEventChannel(eventWithRevision),
           eventWithRevision.runId,
           eventWithRevision.source,
           JSON.stringify(eventWithRevision),
         ],
-        sql: `INSERT INTO event_log (revision, event_type, run_id, source, payload)
-              VALUES (?, ?, ?, ?, ?)`,
+        sql: `INSERT INTO event_log (revision, timestamp, event_type, run_id, source, payload)
+              VALUES (?, ?, ?, ?, ?, ?)`,
       })
       .catch((error) => {
-        console.warn('[core][event-bus] failed to write event log', error);
+        if (error?.message !== 'worker client closed') {
+          console.warn('[core][event-bus] failed to write event log', error);
+        }
       });
 
     this.sseManager.broadcast(eventWithRevision);

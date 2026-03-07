@@ -4,16 +4,14 @@ This file provides guidance to Codex when working with code in this repository.
 
 ---
 
-## 当前任务来源
+## v0.1 历史任务来源
 
-所有实现任务来自 **`CODEX_QUEUE.md`**。每次执行一个 Ticket，流程如下：
+v0.1 的实现任务已归档到 **`docs/archive/v0.1/CODEX_QUEUE.md`**。如需追溯某个 v0.1 Ticket，流程如下：
 
-1. 读取对应 `tasks/T###-*.md`（完整 Ticket 说明）
-2. 按 `CODEX_QUEUE.md` 中对应块的 **Exact tasks checklist** 逐条实现
-3. 运行 **Acceptance** 中的命令，确认全部通过
-4. 停止，等待人工确认后再继续下一个 Ticket
-
-**不要跨 Ticket 连续实现。每个 Ticket 必须独立验收。**
+1. 读取对应 `docs/archive/v0.1/tasks/T###-*.md`（完整 Ticket 说明）
+2. 按 `docs/archive/v0.1/CODEX_QUEUE.md` 中对应块的 **Exact tasks checklist** 核对实现与验收
+3. 运行 **Acceptance** 中的命令，确认历史交付结果
+4. 将其视为历史依据，不默认把这套队列当成当前 backlog
 
 ---
 
@@ -109,7 +107,7 @@ Shell 执行 / 文件写入 / 网络请求必须通过 `tools.shell_exec` / `too
 
 - [ ] `pnpm --filter @do-what/<pkg> exec tsc --noEmit` 无错误
 - [ ] `pnpm --filter @do-what/<pkg> test` 全部通过
-- [ ] `CODEX_QUEUE.md` 中对应 Ticket 的 **Acceptance** 命令输出符合预期
+- [ ] `docs/archive/v0.1/CODEX_QUEUE.md` 中对应 Ticket 的 **Acceptance** 命令输出符合预期
 - [ ] 没有修改本 Ticket **Files to touch** 列表之外的文件
 - [ ] 更新 `docs/INTERFACE_INDEX.md`（若有新增/修改接口，见下方规则）
 - [ ] 更新 `README.md` 的状态表格（若 Ticket 完成使某个 Epic 状态变化）
@@ -275,7 +273,7 @@ app.get('/state', async () => {
 
 | 需要了解什么 | 读哪里 |
 |-------------|--------|
-| 某个 Ticket 的完整要求 | `tasks/T###-*.md` |
+| 某个 Ticket 的完整要求 | `docs/archive/v0.1/tasks/T###-*.md` |
 | 所有接口/端点/表结构速查 | `docs/INTERFACE_INDEX.md` |
 | 事件类型 / zod schema 源码 | `packages/protocol/src/events/` |
 | MCP tool schema 源码 | `packages/protocol/src/mcp/` |

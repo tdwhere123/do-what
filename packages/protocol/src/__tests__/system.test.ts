@@ -35,6 +35,18 @@ describe('SystemHealthEventSchema', () => {
         event: 'network_status',
         online: true,
       },
+      {
+        ...base,
+        event: 'checkpoint_queue',
+        pendingCount: 2,
+        projectId: 'proj-1',
+      },
+      {
+        ...base,
+        event: 'soul_mode',
+        provider: 'local-heuristics',
+        soul_mode: 'basic',
+      },
     ] as const;
 
     for (const payload of cases) {
