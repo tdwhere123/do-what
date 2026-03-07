@@ -2,46 +2,43 @@
 
 > 本地单机 AI 开发工作台 · 单人 + AI 辅助 · Windows 为主
 
-do-what 是一个可本地安装的 AI 开发工作台，以 **Core daemon** 为控制平面，统一接入 Claude Code 和 Codex 两个引擎，提供多 Agent 并行协作、Soul 记忆外挂、强权限审计与可回放的执行历史。
+`do-what` 是一个可本地独立安装运行的智能开发工作台，旨在为单人开发者提供强大的 AI 结对编程与自动化执行能力。系统以 **Core daemon** 为绝对的控制平面，统一接入 Claude Code 和 Codex 等底层引擎，提供多 Agent 并行协作、Soul 长期记忆内核、强权限审计与可回放的完整执行历史。
+
+我们的核心理念是：**AI 只是执行侧，UI 只是渲染侧，唯一真相源与稳定控制流必须收敛于 Core 端。**
 
 ---
 
-## 核心特性
+## 核心驱动与特性
 
-| 特性 | 说明 |
-|------|------|
-| **统一 UI 入口** | 对话多个引擎、并行跑任务、像工作流一样看状态 |
-| **多 Agent 协作** | 并行只读 / 隔离并行写（独立 worktree）/ 可交接 |
-| **Soul 记忆外挂** | 模糊层（线索/抽象）+ 证据层（原文），渐进显影与遗忘 |
-| **强权限与审计** | 危险动作收口、Checkpoint 记忆审阅、事件可回放 |
+### 1. 统一的端到端管控平台
+提供统一的 UI 交互，将零散的命令行 CLI 工具收拢。这里不仅可以建立直观平缓的对话输入流，还能像可视化工作流一样清晰地监控后台并行的多个 Agent 任务进度、实时引擎状态与历史链路。
 
-**本版约束：** 仅支持 Claude Code + Codex，Windows 为主开发/运行平台（允许 WSL2/Docker）。
+### 2. 多 Agent 协作与工作流编排
+系统不再把协作过程写死为固定的角色对话剧本，而是将激活的 AI 引擎视作能够响应模板的**可编排执行节点**（如 Analyze, Plan, Build, Review, Integrate 等）。
+- **隔离并行执行**：各任务分支会在生命周期临时隔离的 Worktree 中下沉执行，规避互写的环境干扰。
+- **安全漂移汇聚**：通过精准绑定 Focus Surface 锁定代码基线范围，叠加 Integration Gate 判定，完美解决异步多分支代码同时向前推演造成的文件相互污染冲突。
 
----
+### 3. Soul 长期记忆内核（核心特色）
+打破传统 AI “金鱼记忆”或简单暴力抛掷全文上下文的局限，`do-what` 引入了具备层、域、图及内生动力学的 **Soul 长期记忆内核**：
+- **四轴生命周期管理**：
+  - **分层 (Layer)**：划分为提供直觉引导及强力压缩的「模糊层」，与确保可靠回溯审计的「证据层」。
+  - **作用域 (Scope)**：区分单机项目局部上下文、跨项目通用技术域及跨空间全局核心域经验。
+  - **图拓扑 (Topology)**：维护有方向及连接边界的图路径结构。利用单源一跳精准召回机制，在确保高联想率的同时规避传统知识图谱的 N+1 爆炸计算成本。
+  - **动力学 (Dynamics)**：所有记忆碎片具备仿生学代谢特征，基于频繁触及自动触发显影、强化、衰减、降级与复活的周期调节。
+- **三维内容感知体系**：系统自动拆解每一条记忆属性里的“来源通道 (source)”、“形成路径 (formation_kind)”与“内容真实维度 (dimension：如开发约束、架构偏好、落地决策、实施风险等)”，在极少 token 磨损下实现最优加载优先级推导。
+- **证据双重耐久化隔离**：项目代码、开发文档的快照级变异会留存于可追查的项目源指针中；而人为的核心纠偏、主观偏好与重要决策会独立记录到不可篡改的用户追加账本（Ledger）中。保障在项目彻底重构等背景巨变下，AI 依然能留存“你是谁”的精神记忆。
 
-## 项目状态
-
-> **当前阶段：v0.1 已完成，历史规划资料已归档，当前仓库作为后续规划基线。**
-
-| 阶段 | 状态 |
-|------|------|
-| 方案定稿（v0.1） | ✅ 完成 |
-| Ticket 拆解（T001~T027） | ✅ 完成 |
-| E0 Protocol & Schema | ✅ 完成 |
-| E1 Core Skeleton | ✅ 完成 |
-| E1.5 Protocol Validation Gate | ✅ 完成 |
-| E2 Claude Engine Adapter | ✅ 完成 |
-| E3 Codex Engine Adapter | ✅ 完成 |
-| E4 Soul Read Path | ✅ 完成 |
-| E5 Soul Write Path | ✅ 完成 |
-| E6 Worktree + Integrator | ✅ 完成 |
-| E7 Memory Compiler | ✅ 完成 |
+### 4. 强权限、安全拦截与全量审计
+将本地开发环境视作关键资产，采用绝对的隔离手段防范 AI 恶意暴走或逻辑污染：
+- **危险动作集中收口**：不论是系统文件写入、终端命令执行还是网络请求下发，全数统一收口到 Core 所管理的 Tools API，并由内置专属 Policy Engine 进行高频拦截仲裁。
+- **关键 Checkpoint 审阅屏障**：记忆沉淀与架构设计在写回主线之前，必定流经核心控制态触发 Checkpoint，要求人类工程师前置放行，严防 AI 产生伪造联想而毒化自有记忆。
+- **重演级日志捕获机制**：本地状态机严格遵循 EventLog 级别的事实流写入，保障每一个操作拥有详实的凭证快照，任何项目异常时刻均可完整时空回放定位。
 
 ---
 
 ## 架构概览
 
-```
+```text
 ┌─────────────────────────────────────────────┐
 │                 UI (Electron + React)        │
 │          HTTP + SSE → 127.0.0.1:3847        │
@@ -65,105 +62,89 @@ do-what 是一个可本地安装的 AI 开发工作台，以 **Core daemon** 为
 └────────────────────────────┘
 ```
 
-**所有状态流经 Core，引擎只是执行侧，UI 只是渲染侧。**
+**四条承重墙：**
+
+1. **单一真相源** — 状态只在 Core 中维护流转，随时可恢复、可回放。
+2. **危险动作收口** — 文件操作 / 命令下发 / 网络外连 均收敛至 Tools API，交由 Policy Engine 进行安全仲裁。
+3. **证据可溯源** — 模型吐出的阶段记忆与主观结论必定能在系统中找到映射的原始证据原文；证据平常不常驻工作上下文，完全根据所需阶段按需精确展开。
+4. **Token 预算契约** — 对于任何 LLM 引擎的交互，其上下文大小强制套用极严格的预算预分配卡点；应对异常超发，由系统侧主动发起本地极速熔断并执行降级措施，谢绝偷塞与溢出死锁。
 
 ---
 
-## 技术栈
+## 技术选型栈
 
-| 层 | 技术 |
+| 逻辑分层 | 核心技术选型 |
 |----|------|
-| Monorepo | pnpm workspace + turborepo |
-| 语言 | TypeScript（全栈，Node.js >= 20） |
-| Core daemon | Node.js + Fastify + xstate v5 |
-| 数据库 | better-sqlite3（WAL 模式，worker_threads 写） |
-| Schema 校验 | zod（所有 API/事件类型） |
-| 测试 | vitest |
-| UI | Electron + React（待实现） |
+| **Monorepo 组合与调配** | pnpm workspace + turborepo |
+| **基础统一语言** | TypeScript（全栈闭环，限定 Node.js >= 20 运行时） |
+| **Core daemon 控制端** | Node.js + Fastify + xstate v5 |
+| **关系型与文档存储** | better-sqlite3（高并发 WAL 模式，分配独立 worker_threads 完成全量落盘写操作） |
+| ** Schema 严格准入体系** | zod（核心用于全部 API 通讯、组件状态机及事件传递类型边界检验防呆） |
+| **核心链路测试框架** | vitest |
+| **应用大前端界面呈现** | Electron + React |
 
 ---
 
-## 快速开始
+## 快速运行与构建
 
-> v0.1 主线已完成；运行与构建产物默认不入库，需要时本地重新生成。
-
-**前提条件：**
+**基本环境要求：**
 - Node.js >= 20
 - pnpm >= 9
-- Git
-- Claude Code CLI（已登录）或 Codex CLI（已配置 API Key）
+- Git 基础工具集
+- 本地环境中已安装并授权了 Claude Code CLI，或配置了标准 API Key 的 Codex CLI 环境。
 
 ```bash
-# 克隆仓库
+# 1. 克隆代码仓库
 git clone <repo-url>
 cd do-what-new
 
-# 安装依赖
+# 2. 从零全量还原安装依赖
 pnpm install
 
-# 构建
+# 3. 执行模块间的编译产出构建
 pnpm -w build
 
-# 启动 Core
+# 4. 优先启动大核心服务 (Core Backend)
 pnpm --filter @do-what/core start
 
-# Core 运行于 127.0.0.1:3847
-# session_token 在 ~/.do-what/run/session_token
+# 提示验证:
+# 服务主端口默认驻留于 127.0.0.1:3847
+# 专属校验用的 session_token 会安全放置到 ~/.do-what/run/session_token 路径下用于全链路鉴权
 curl http://127.0.0.1:3847/health
 ```
 
 ---
 
-## 文档索引
+## 运行时文件与宿主环境保护区
 
-| 文档 | 内容 |
-|------|------|
-| [`docs/archive/v0.1/README.md`](./docs/archive/v0.1/README.md) | v0.1 归档索引与摘要 |
-| [`docs/archive/v0.1/do-what-proposal-v0.1.md`](./docs/archive/v0.1/do-what-proposal-v0.1.md) | v0.1 主方案（归档） |
-| [`docs/archive/v0.1/do-what-v0.1.x.md`](./docs/archive/v0.1/do-what-v0.1.x.md) | v0.1.x 收敛方案（归档） |
-| [`docs/PLAN.md`](./docs/PLAN.md) | Epic/Ticket 总览、依赖 DAG、关键路径 |
-| [`docs/INTERFACE_INDEX.md`](./docs/INTERFACE_INDEX.md) | 所有接口、事件、MCP Tool、HTTP 端点、DB 表索引 |
-| [`docs/archive/v0.1/CODEX_QUEUE.md`](./docs/archive/v0.1/CODEX_QUEUE.md) | v0.1 的 Codex 执行指令块（归档） |
-| [`docs/archive/v0.1/tasks/`](./docs/archive/v0.1/tasks/) | v0.1 的 T001~T027 Ticket 卡片（归档） |
-| [`CLAUDE.md`](./CLAUDE.md) | Claude Code 工作指南 |
-| [`AGENTS.md`](./AGENTS.md) | Codex Agent 工作指南 |
+为保障本地资产的高纯净性，`do-what` 在你的本地硬盘执行时，会按照统一且严格的目录结构标准划分布局，用以集中管控相关存量状态文件：
 
----
-
-## 运行时文件布局
-
-```
+```text
 ~/.do-what/
   run/
-    session_token          # Core HTTP 鉴权 token（权限 600）
-    hook-policy-cache.json # Hook Runner 策略缓存
+    session_token          # 当前 Core 运行进程关键的 HTTP 鉴权访问凭证密钥（严格 chmod 600 处理）
+    hook-policy-cache.json # 动态策略缓存表（指引 Hook Runner 的外联校验准出）
   state/
-    state.db               # Core SQLite（Run/Workspace/Event Log）
-    soul.db                # Soul SQLite（memory_cues/edges/evidence）
+    state.db               # Core 核心运行库（结构化存储 Run 进度 / Workspace 元数据 / Event Log 等底层执行历史及轨迹溯源）
+    soul.db                # Soul 长记忆专属独立运行库（维护多维 memory_cues / 关系 edges / 长期存留的核心证据索引）
   memory/
     <fingerprint>/
-      memory_repo/         # Git 版本锚（证据真相层）
+      memory_repo/         # 以 Git 化形态作为版本锚存储底座，归档核心演进与典藏记忆快照的历史重演区
   worktrees/
-    <runId>/               # 每个 Run 的隔离 worktree（临时）
-  policy.json              # 工具审批策略配置
-  soul-config.json         # Soul 计算后端配置
+    <runId>/               # 随着每一个后台运行流动态生成并提供给 Agent 分配隔离演练与独立验证的临时快照挂载区（具备阅后即焚或定级合并的安全收尾处理）
+  policy.json              # 定义给 Tools 工具下发的跨全局强拦截、规则审批与安全审计主配置
+  soul-config.json         # 定义 Soul 长记忆内核的各类关联计算与权重控制逻辑
 ```
 
 ---
 
-## 四条承重墙
+## 文档架构与详细约定索引
 
-1. **单一真相源** — 状态只在 Core，可恢复、可回放
-2. **危险动作收口** — 文件/命令/网络 → Tools API → Policy Engine 仲裁
-3. **证据可溯源** — 结论可引用原文；证据不常驻上下文，按需拉取
-4. **Token 预算契约** — 注入预算写死；超预算本地熔断并降级
+若需深入了解当前本系统底层的宏观设计渊源及全链路演进过程，可深入检视查阅以下关键知识库资源：
 
----
-
-## 贡献指南
-
-本项目为单人 + AI 辅助开发模式。
-
-- v0.1 的执行队列、Ticket 卡片与方案文档已归档到 `docs/archive/v0.1/`
-- 若需追溯既有接口或实现依据，优先查看 `docs/INTERFACE_INDEX.md`、`docs/PLAN.md` 与 `docs/archive/v0.1/`
-- 后续规划建议新增独立文档，不回写 v0.1 归档材料
+- **顶层架构与迭代演进方案（归档向）**
+  - [`docs/archive/v0.1/do-what-proposal-v0.1.md`](./docs/archive/v0.1/do-what-proposal-v0.1.md) - 系统 V0.1 基础阶段构建基石的完整推演主方案
+  - [`docs/archive/v0.1.x/do-what-v0.1.x.md`](./docs/archive/v0.1.x/do-what-v0.1.x.md) 或 [`do-what-v0.1.x.md`](./do-what-v0.1.x.md) - **阶段升级重要核心纲领**：引入 Soul 长期记忆重整构建、业务状态流极简化收敛及并发隔离设计的实施基准
+- **底层开发接口、核心契约及规范（研发向）**
+  - [`docs/INTERFACE_INDEX.md`](./docs/INTERFACE_INDEX.md) - 全盘洞悉所有宏观事件循环生命周期、服务级别通信定义、核心模块交互接口与系统级调度的通讯模型拓扑视图
+  - [`CLAUDE.md`](./CLAUDE.md) / [`AGENTS.md`](./AGENTS.md) - 对于外部 LLM Driver 与接入 Worker，进行工程化对接与环境治理的核心引导性规范要求指令集

@@ -6,19 +6,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目状态
 
-**当前阶段：全部完成（E0–E7 已全部交付）。**
+**当前阶段：v0.1.x 进行中（Phase 0–3 规划就绪，待实现）。**
 
 规划文档：
 - `docs/archive/v0.1/do-what-proposal-v0.1.md` — v0.1 完整方案（归档，约 800 行，所有架构决策来源）
 - `docs/archive/v0.1/do-what-v0.1.x.md` — v0.1.x 收敛/清理方案（归档）
 - `docs/PLAN.md` — Epic/Ticket 总览 + 依赖 DAG + 关键路径 + **当前进度表**
-- `docs/archive/v0.1/tasks/T001~T027` — 每个 Ticket 的详细实现卡（含文件清单、DoD、验收命令）
+- `docs/archive/v0.1/tasks/T001~T027` — v0.1 Ticket 详细实现卡（归档，参考用）
 - `docs/archive/v0.1/CODEX_QUEUE.md` — v0.1 可直接执行的 Codex 指令块
+- `docs/archive/v0.1.x/tasks/T028~T045` — v0.1.x 每个 Ticket 的详细实现卡（含文件清单、DoD、验收命令）
+- `AGENTS.md` — Codex 原生引导规则（四条承重墙 + v0.1.x 阶段状态 + 新增约束）
 
-已完成：E0（T001–T004）、E1（T005–T009）、E1.5/T010 门控、E2（T011–T013）、E3（T014–T016）、E4（T017–T019）、E5（T020–T022）、E6（T023–T024）、**E7（T025–T027）**。
+已完成（v0.1）：E0（T001–T004）、E1（T005–T009）、E1.5/T010 门控、E2（T011–T013）、E3（T014–T016）、E4（T017–T019）、E5（T020–T022）、E6（T023–T024）、**E7（T025–T027）**。
 **全部 E0–E7 已交付，40 个 soul 测试全通过。**
 
-**若任务涉及 v0.1 历史实现，先读归档 Ticket；若是新阶段规划/实现，不要默认沿用这套旧队列。**
+v0.1.x 阶段进度：
+- Phase 0（T028–T030）：清理减法 — 待开始
+- Phase 1（T031–T037）：SOUL 补全 — 待开始
+- Phase 2（T038–T041）：Core 四层分离 — 待开始
+- Phase 3（T042–T045）：编排与治理 — 待开始
+
+**若任务涉及 v0.1 历史实现，先读 `docs/archive/v0.1/tasks/` 归档 Ticket；若是 v0.1.x 新实现，读 `docs/archive/v0.1.x/tasks/`。**
 
 ---
 
@@ -122,6 +130,12 @@ Core → 引擎（spawn 子进程，Job Object 管理进程树）
 - 所有引擎事件 schema 必须使用 `.passthrough()`，保持对未知字段的前向兼容。
 - 关键字段缺失/类型错误时：降级 + 上报 warn，不 throw（不能因 CLI 版本更新崩溃适配器）。
 
+**v0.1.x 新增约束：**
+- **dormant 字段启用**：`formation_kind`/`dimension`/`focus_surface`/`claim_*` 必须经 migration v6（T031）激活，不允许在 v5 schema 上直接写入。
+- **Claim 写入门控**：`claim_*` 字段只能通过 `checkpoint-writer.ts` 的 `writeClaimAtCheckpoint()` 写入（仅 `run_checkpoint` 事件触发），引擎不得直接写入。
+- **memory_repo 降格**：Working/Consolidated 级 cue 只写 SQLite；只有 `level = 'canon'` 的 cue 才经 `writeToRepo()` 门控写入 memory_repo。
+- **编排拓扑约束**：仅允许 4 种合法拓扑（linear/parallel_merge ≤5/revise_loop ≤3/bounded_fan_out ≤3），提交前经 `TopologyValidator` 验证，禁止任意自由 DAG。
+
 ---
 
 ## 数据存储
@@ -135,4 +149,5 @@ Core → 引擎（spawn 子进程，Job Object 管理进程树）
 | `~/.do-what/run/hook-policy-cache.json` | Hook Runner 策略缓存（无 Core 即可读）| `packages/core` 写，`packages/engines/claude` 读 |
 | `~/.do-what/policy.json` | 工具审批策略配置 | `packages/core` |
 | `~/.do-what/worktrees/<runId>/` | 每个 Run 的 git worktree（临时）| `packages/tools` |
+| `~/.do-what/evidence/user_decisions.jsonl` | 用户决策 append-only ledger（T037 新增）| `packages/soul` |
 
