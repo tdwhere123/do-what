@@ -99,9 +99,21 @@ class HotStateManager {
 
 ---
 
+## 现状与偏差说明（实现前必读）
+
+**实际文件位置与 T038 规划存在以下偏差，实现时以此为准：**
+
+- `StateStore` 实际位于 `packages/core/src/db/state-store.ts`（不在 `state/` 目录）
+- `getSnapshot()` 当前逻辑：**每次调用都打开一个只读 SQLite 连接**，依次读取
+  `event_log`（MAX revision + 最近 20 条）和 `approval_queue`（pending 行），连接用完立即 close
+- 对外 JSON 结构已固定为 `{ revision, recentEvents, pendingApprovals }`，**T038 迁移后必须保持该结构不变**
+- `getEventsSince(revision)` 也在同文件，同样走 per-call 只读连接，T038 同步迁移
+
+**迁移目标**：把 `getSnapshot()` 内部的 SQLite 直查替换为 `HotStateManager.snapshot()` 内存访问，外部接口签名不变。
+
 ## 假设
 
-- `packages/core/src/state/state-store.ts` 存在，且有直接查询 `event_log` 的代码
+- `StateStore` 目前在 `packages/core/src/db/state-store.ts`，直接查询 `event_log` 和 `approval_queue`
 - 事件回放速度：1000 个事件 < 50ms（内存操作，无 I/O）
 - `CoreHotState` 内存占用：每个 Run ~200 字节，10000 个 Run 约 2MB（可接受）
 
@@ -110,10 +122,10 @@ class HotStateManager {
 ## 文件清单
 
 ```
-packages/protocol/src/core/hot-state.ts           ← CoreHotState 类型定义
-packages/core/src/state/hot-state-manager.ts      ← HotStateManager 实现
-packages/core/src/state/state-store.ts            ← 迁移为使用 HotStateManager
-packages/core/src/__tests__/hot-state.test.ts     ← 新建测试
+packages/protocol/src/core/hot-state.ts              ← CoreHotState 类型定义
+packages/core/src/state/hot-state-manager.ts         ← HotStateManager 实现（新建目录）
+packages/core/src/db/state-store.ts                  ← 迁移为使用 HotStateManager（已有文件）
+packages/core/src/__tests__/hot-state.test.ts        ← 新建测试
 packages/core/src/__tests__/hot-state-bootstrap.test.ts  ← 重放测试
 ```
 

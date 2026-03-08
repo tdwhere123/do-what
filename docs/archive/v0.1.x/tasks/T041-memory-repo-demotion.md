@@ -62,20 +62,56 @@ async function writeToRepo(cue: MemoryCue): Promise<void> {
 
 ---
 
+## 现状与偏差说明（实现前必读）
+
+**任务卡中的写入入口 `packages/soul/src/memory/repo-writer.ts` 在当前仓库中不存在。**
+
+实际 git 写入路径：
+
+```
+packages/soul/src/write/repo-committer.ts
+  └── RepoCommitter.commitCue(input: RepoCommitterInput)
+        ├── if (input.impactLevel === 'working') return { committed: false }  ← 已有 working 跳过
+        └── this.memoryRepoManager.commit(...)  ← 走 MemoryRepoManager.commit() 落 git
+```
+
+**偏差详情：**
+- `packages/soul/src/memory/` 目录不存在，无需新建
+- 实际门控文件是 `packages/soul/src/write/repo-committer.ts`（已有文件）
+- 当前 `commitCue()` 已跳过 `working` 级，**但 `consolidated` 级仍会写 git**——这正是 T041 需要修复的
+- `MemoryRepoManager` 位于 `packages/soul/src/repo/memory-repo-manager.ts`
+
+**T041 核心修改**：在 `repo-committer.ts` 第 31 行，将条件从 `=== 'working'` 改为 `!== 'canon'`：
+
+```typescript
+// 修改前（当前代码）：
+if (input.impactLevel === 'working') {
+  return { committed: false };
+}
+
+// 修改后（T041 目标）：
+if (input.impactLevel !== 'canon') {
+  logger.warn('memory-repo-demotion: skip non-canon write', { impactLevel: input.impactLevel });
+  return { committed: false };
+}
+```
+
+grep 验证命令也需要对应调整（见下方 DoD）。
+
 ## 假设
 
 - `memory_cue.level` 枚举已在 T031 中明确定义（`'working' | 'consolidated' | 'canon'`）
-- 现有 `memory_repo` 写入逻辑集中在 `packages/soul/src/memory/` 目录
-- `memory_repo` 是标准 git 仓库（`simple-git` 操作）
+- 实际 git 写入入口是 `packages/soul/src/write/repo-committer.ts`（已确认）
+- `memory_repo` 是标准 git 仓库，通过 `MemoryRepoManager.commit()` 操作
 
 ---
 
 ## 文件清单
 
 ```
-packages/soul/src/memory-tier.ts                  ← 新建：三级写入策略常量
-packages/soul/src/memory/repo-writer.ts           ← 添加 canon 门控
-packages/soul/src/__tests__/memory-tier.test.ts   ← 新建测试
+packages/soul/src/memory-tier.ts                    ← 新建：三级写入策略常量
+packages/soul/src/write/repo-committer.ts           ← 修改门控条件（已有文件，非新建）
+packages/soul/src/__tests__/memory-tier.test.ts     ← 新建测试
 ```
 
 ---
@@ -89,8 +125,9 @@ pnpm --filter @do-what/soul test -- --testNamePattern "memory-tier"
 # 验证 working/consolidated 写入被 warn + 跳过
 pnpm --filter @do-what/soul test -- --testNamePattern "repo-write-guard"
 
-# 确认无绕过门控的直接 git 调用
-grep -rn "git\.add\|git\.commit\|simpleGit" packages/soul/src/ | grep -v "repo-writer\|\.test\."
+# 确认无绕过门控的直接 git 调用（实际门控文件是 repo-committer.ts）
+grep -rn "memoryRepoManager\.commit\|MemoryRepoManager" packages/soul/src/ | grep -v "repo-committer\|memory-repo-manager\|\.test\."
+# 预期：无输出（所有 git 写入均经过 repo-committer.ts）
 
 # 全量 soul 测试
 pnpm --filter @do-what/soul test
@@ -99,7 +136,7 @@ pnpm --filter @do-what/soul test
 **DoD 标准：**
 - [ ] Working/Consolidated 级 cue 触发写入时产生 warn 日志，不写 git
 - [ ] Canon 级 cue 正常写入 memory_repo（现有行为不变）
-- [ ] 所有 git 调用均经过 `repo-writer.ts` 门控（grep 验证）
+- [ ] 所有 git 调用均经过 `repo-committer.ts` 的 canon 门控（grep 验证）
 - [ ] soul 包全量测试通过
 
 ---

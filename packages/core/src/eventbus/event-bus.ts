@@ -5,6 +5,7 @@ import { RevisionCounter } from './revision-counter.js';
 import type { SseManager } from '../server/sse.js';
 
 type EventListener<T extends BaseEvent = BaseEvent> = (event: T) => void;
+const ANY_EVENT_CHANNEL = '*';
 
 export interface EventBusOptions {
   revisionCounter?: RevisionCounter;
@@ -56,6 +57,14 @@ export class EventBus {
     this.emitter.on(eventType, listener);
   }
 
+  offAny(listener: EventListener): void {
+    this.emitter.off(ANY_EVENT_CHANNEL, listener);
+  }
+
+  onAny(listener: EventListener): void {
+    this.emitter.on(ANY_EVENT_CHANNEL, listener);
+  }
+
   publish(event: Omit<BaseEvent, 'revision'> | BaseEvent): BaseEvent {
     const assignedRevision = this.revisionCounter.next();
     const eventWithRevision = {
@@ -83,6 +92,7 @@ export class EventBus {
       });
 
     this.sseManager.broadcast(eventWithRevision);
+    this.emitter.emit(ANY_EVENT_CHANNEL, eventWithRevision);
     this.emitter.emit(getEventChannel(eventWithRevision), eventWithRevision);
     return eventWithRevision;
   }

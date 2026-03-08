@@ -63,14 +63,26 @@ type MergeDecision = {
   - Soft-Stale：允许合并（不计入 reconcile_count）
   - Ignore：直接允许合并
 
-**与 FastGate 集成：**
-- 替换/增强现有 `packages/core/src/integrator/fast-gate.ts` 中的漂移判定
-- FastGate 的粗粒度判定（文件集合不相交）→ 映射到 `DriftKind.ignore`
-- 新增精细判定（artifact_kind 区分）→ 区分 `soft_stale` vs `hard_stale`
+**与 Integrator 集成（不修改 FastGate）：**
+- `IntegrationGate` 在 `Integrator.integrateCandidate()`（私有方法，`packages/core/src/integrator/integrator.ts` 第 101 行）的 patch apply **之前**调用，即在 `this.gitQueue.enqueue()` 之前
+- FastGate 是代码质量门控（tsc/eslint/test），与漂移判定无关，**不修改 fast-gate.ts**
+- 集成点为 `packages/core/src/integrator/integrator.ts`，不是 `fast-gate.ts`
+
+调用顺序：
+```
+integrateCandidate(candidate)
+  ↓
+  IntegrationGate.assess(branch_lock, main_fingerprint, ...)   ← 新增
+  ↓ hard_stale 二次 → 直接 return false（不继续 patch+gate）
+  ↓ ignore / soft_stale / hard_stale 首次 → 继续
+  gitQueue.enqueue(apply patch)
+  ↓
+  FastGate.run()（不变）
+```
 
 **并行分支降级串行流程：**
 1. `hard_stale_serialize` 决策触发
-2. 编排层（Orchestrator）停止当前并行 Run
+2. `Integrator`（`packages/core/src/integrator/integrator.ts`）停止当前并行 Run
 3. 发出 `run_serialized` 事件（新增，需在 T029 之后的 protocol 中添加）
 4. 将任务重新入队为串行执行
 
@@ -86,6 +98,8 @@ type MergeDecision = {
 - `main_current_fingerprint` 来自主干的最新 BaselineLock（每次主干提交后更新）
 - `DriftKind.soft_stale` 不阻塞合并，只记录 warn 日志
 - `run_serialized` 事件在 T029 后作为新增事件（不删减事件）
+- `packages/core/src/integrator/fast-gate.ts` 的 `FastGate.run()` 只做代码质量门控（tsc/eslint/test），**与漂移判定无关**；`IntegrationGate` 在 FastGate 之前运行，两者职责正交，不存在集成或替换关系
+- 不存在 `orchestration/orchestrator.ts`；编排入口是 `integrator/integrator.ts` 的 `Integrator.submit()`
 
 ---
 
@@ -93,12 +107,13 @@ type MergeDecision = {
 
 ```
 packages/protocol/src/core/drift.ts                   ← DriftKind + DriftAssessment 类型
-packages/core/src/governance/integration-gate.ts      ← IntegrationGate 实现
+packages/core/src/governance/integration-gate.ts      ← IntegrationGate 实现（新建目录）
 packages/core/src/governance/reconcile-tracker.ts     ← 防活锁追踪
-packages/core/src/integrator/fast-gate.ts             ← 集成 IntegrationGate（增强现有）
+packages/core/src/integrator/integrator.ts            ← 在 integrateCandidate() 中集成 IntegrationGate（已有文件，添加调用）
 packages/core/src/__tests__/integration-gate.test.ts
 packages/core/src/__tests__/reconcile-tracker.test.ts
 ```
+注意：**不修改** `packages/core/src/integrator/fast-gate.ts`。
 
 ---
 

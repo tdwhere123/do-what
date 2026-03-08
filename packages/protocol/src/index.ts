@@ -1,3 +1,4 @@
+export * from './core/index.js';
 export * from './events/index.js';
 export * from './mcp/index.js';
 export * from './machines/index.js';

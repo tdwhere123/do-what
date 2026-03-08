@@ -78,9 +78,23 @@ class ProjectionManager {
 
 ---
 
+## 现状与偏差说明（实现前必读）
+
+**任务卡假定的 `/workspaces/:id/soul` 等聚合路由在当前仓库中不存在。**
+
+Core HTTP Server 现有 Soul 相关路由（`packages/core/src/server/soul-routes.ts`）只有两条：
+- `GET /soul/proposals` → `toolDispatcher.listPendingProposals()`
+- `GET /soul/healing/stats` → `toolDispatcher.getHealingStats()`
+
+**T039 实际接线范围：**
+- 建立 `ProjectionManager` + 4 个 calculator 基础设施
+- 仅将 `GET /soul/proposals` 接入 `soul_cue_list` projection（`soul-routes.ts` 路由签名不变）
+- `GET /soul/healing/stats` 直连 `toolDispatcher`（healing stats 不属于 Projection 管辖范围）
+- `run_history_agg` / `evidence_index_view` / `graph_explore_cache` calculator 实现后只有测试调用，等 UI 路由有需求时再接线
+
 ## 假设
 
-- Core HTTP API 中已有 `GET /workspaces/:id/soul` 等聚合路由（T005/T006 已实现）
+- Core HTTP Server 中现有 soul 读口只有 `/soul/proposals` 和 `/soul/healing/stats`（已确认）
 - Soul 提供 HTTP 查询接口（或直接共享 SQLite 文件路径进行只读查询）
 - Projection 重算是幂等的（相同输入 → 相同输出）
 

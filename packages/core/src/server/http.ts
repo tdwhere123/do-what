@@ -18,6 +18,7 @@ import { EventBus } from '../eventbus/event-bus.js';
 import { ApprovalMachineController } from '../machines/approval-machine.js';
 import { rehydrateRuns, RunRegistry } from '../machines/run-registry.js';
 import { PolicyEngine } from '../policy/policy-engine.js';
+import { HotStateManager } from '../state/index.js';
 import { BaselineTracker, FastGate, Integrator } from '../integrator/index.js';
 import { WorktreeLifecycle } from '../run/index.js';
 import { authMiddleware, generateAndSaveToken } from './auth.js';
@@ -104,8 +105,25 @@ export async function startHttpServer(
 
   const token = generateAndSaveToken(tokenPath);
   const workerClient = new WorkerClient(stateDbPath);
+  const hotStateManager = new HotStateManager({
+    dbPath: stateDbPath,
+  });
   const approvalMachine = new ApprovalMachineController({
     dbWriter: workerClient,
+    onDecision: (decision) => {
+      hotStateManager.syncApprovalDecision({
+        approval_id: decision.approvalId,
+        approved: decision.approved,
+        resolved_at: new Date().toISOString(),
+        resolver:
+          decision.status === 'timeout'
+            ? 'timeout'
+            : decision.approved
+              ? 'policy'
+              : 'user',
+        status: decision.status,
+      });
+    },
   });
   const policyEngine = new PolicyEngine({
     approvalMachine,
@@ -120,11 +138,15 @@ export async function startHttpServer(
     sseManager,
     workerClient,
   });
+  eventBus.onAny((event) => {
+    hotStateManager.apply(event);
+  });
   await rehydrateRuns({
     dbPath: stateDbPath,
     dbWriter: workerClient,
     eventBus,
   });
+  await hotStateManager.bootstrap();
 
   const worktreeManager = new WorktreeManager({
     baseDir: worktreeBasePath,
@@ -159,6 +181,24 @@ export async function startHttpServer(
     dbWriter: workerClient,
     eventBus,
     onStatusChange: async (event) => {
+      hotStateManager.syncRunStatus({
+        agent_id: event.agentId,
+        engine_type: event.engineType,
+        run_id: event.runId,
+        status:
+          event.status === 'created'
+          || event.status === 'started'
+          || event.status === 'running'
+          || event.status === 'waiting_approval'
+          || event.status === 'completed'
+          || event.status === 'failed'
+          || event.status === 'cancelled'
+          || event.status === 'interrupted'
+            ? event.status
+            : 'running',
+        updated_at: new Date().toISOString(),
+        workspace_id: event.workspaceId,
+      });
       await worktreeLifecycle.handleStatusChange({
         runId: event.runId,
         status: event.status,
@@ -216,6 +256,7 @@ export async function startHttpServer(
     workspaceRoot,
   });
   const stateStore = new StateStore(stateDbPath);
+  const hotStateStore = new StateStore(stateDbPath, hotStateManager);
   const app = Fastify({ logger: options.logger ?? true });
   const host = options.host ?? HOST;
   const requestedPort = options.port ?? PORT;
@@ -281,6 +322,7 @@ export async function startHttpServer(
         }
         : undefined,
     stateStore,
+    stateStore: hotStateStore,
     sseManager,
     token,
   });

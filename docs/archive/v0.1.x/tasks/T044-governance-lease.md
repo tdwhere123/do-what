@@ -92,9 +92,11 @@ async function generateReport(workspace_id: string): Promise<NativeSurfaceReport
 
 ## 假设
 
-- `GovernanceLease` 存储在 `state.db` 的 `governance_leases` 表（migration 008）
+- `GovernanceLease` 存储在 `state.db` 的 `governance_leases` 表（**migration v4**；T042 用 v3，T044 用 v4）；
+  文件名：`packages/core/src/db/migrations/v4.ts`（TypeScript 格式，与 v1/v2/v3 一致）
 - 失效检测：主干提交通过 `run_completed` 事件触发（主干 Run 完成即视为主干更新）
 - 单个 workspace 最多 5 个并发 Run（超过时拒绝新启动）
+- 不存在 `orchestration/` 目录；编排入口为 `integrator/integrator.ts`
 
 ---
 
@@ -105,7 +107,7 @@ packages/protocol/src/core/governance.ts              ← GovernanceLease + Nati
 packages/core/src/governance/native-surface-report.ts ← NativeSurfaceReport 生成
 packages/core/src/governance/preflight.ts             ← 预飞行治理流程
 packages/core/src/governance/lease-manager.ts         ← GovernanceLease 签发/失效
-packages/core/src/db/migrations/008_governance_lease.sql
+packages/core/src/db/migrations/v4.ts                 ← DDL migration（TypeScript 格式）
 packages/core/src/__tests__/governance-lease.test.ts
 packages/core/src/__tests__/native-surface-report.test.ts
 ```

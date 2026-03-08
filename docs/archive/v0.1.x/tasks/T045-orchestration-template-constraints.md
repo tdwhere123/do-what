@@ -94,7 +94,7 @@ type TopologyViolation = {
 - 无汇聚的纯分叉（fan-out 后无收口）
 
 **编排层集成：**
-- 在 `packages/core/src/orchestration/orchestrator.ts` 的 `submit()` 入口处添加验证
+- 在 `packages/core/src/integrator/integrator.ts` 的 `Integrator.submit()`（第 65 行）入口处、`processPending()` 调用前添加验证
 - 验证失败时：拒绝 Run 启动，发出 `run_topology_invalid` 事件（需在 protocol 中添加）
 - 验证通过时：记录 `topology_kind` 到 `baseline_locks` 或新建 `run_metadata` 字段
 
@@ -108,7 +108,8 @@ type TopologyViolation = {
 ## 假设
 
 - 编排模板由调用方（Claude Code / Codex）在 Run 启动时提交
-- 当前代码中有 `packages/core/src/orchestration/orchestrator.ts`（T024 Integrator 实现）
+- 实际编排入口是 `packages/core/src/integrator/integrator.ts` 的 `Integrator.submit()`（第 65 行）；**不存在** `packages/core/src/orchestration/orchestrator.ts`
+- `TopologyValidator` 新建在 `packages/core/src/orchestration/topology-validator.ts`（新建目录 + 新建文件）
 - `run_topology_invalid` 事件为新增（不影响 T029 的减法结果）
 
 ---
@@ -117,8 +118,8 @@ type TopologyViolation = {
 
 ```
 packages/protocol/src/core/topology.ts                 ← 拓扑类型 + OrchestrationTemplate
-packages/core/src/orchestration/topology-validator.ts  ← TopologyValidator
-packages/core/src/orchestration/orchestrator.ts        ← 添加 validate() 调用
+packages/core/src/orchestration/topology-validator.ts  ← TopologyValidator（新建目录 + 新建文件）
+packages/core/src/integrator/integrator.ts             ← 在 submit() 入口添加 validate() 调用（已有文件）
 packages/core/src/__tests__/topology-validator.test.ts
 ```
 
@@ -155,6 +156,6 @@ pnpm --filter @do-what/core test
 ## 风险与降级策略
 
 - **风险：** 调用方提交的编排模板格式与 `OrchestrationTemplate` 不一致（字段命名差异）
-  - **降级：** 在 `orchestrator.ts` 的 `submit()` 入口添加 zod schema 适配层，兼容旧格式
+  - **降级：** 在 `integrator.ts` 的 `Integrator.submit()` 入口添加 zod schema 适配层，兼容旧格式
 - **风险：** 合法拓扑识别逻辑过于严格，将用户的合理编排误判为非法
   - **降级：** 增加 `topology_hint` 字段（调用方显式声明拓扑类型），验证器优先信任 hint，仅在明显违规时 override

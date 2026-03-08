@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3';
+import type { HotStateManager } from '../state/hot-state-manager.js';
 import { TABLE_APPROVAL_QUEUE, TABLE_EVENT_LOG } from './schema.js';
 import { createReadConnection } from './read-connection.js';
 
@@ -13,9 +14,11 @@ export interface EventLogRow {
 
 export class StateStore {
   private readonly dbPath: string;
+  private readonly hotStateManager?: HotStateManager;
 
-  constructor(dbPath: string) {
+  constructor(dbPath: string, hotStateManager?: HotStateManager) {
     this.dbPath = dbPath;
+    this.hotStateManager = hotStateManager;
   }
 
   close(): void {
@@ -45,6 +48,22 @@ export class StateStore {
   }
 
   getSnapshot(): Record<string, unknown> {
+    if (this.hotStateManager) {
+      const snapshot = this.hotStateManager.snapshot();
+      return {
+        pendingApprovals: [...snapshot.pending_approvals.values()]
+          .sort((left, right) => left.requested_at.localeCompare(right.requested_at))
+          .map((approval) => ({
+            approvalId: approval.approval_id,
+            createdAt: approval.requested_at,
+            runId: approval.run_id,
+            toolName: approval.tool_name,
+          })),
+        recentEvents: snapshot.recent_events.map((event) => ({ ...event })),
+        revision: snapshot.last_event_seq,
+      };
+    }
+
     // This serves `/state`: a hot_state snapshot, not an async projection or ledger view.
     const db = this.open();
     if (!db) {

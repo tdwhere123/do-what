@@ -24,23 +24,23 @@
 
 | Token | 值 | 用途 |
 |-------|----|------|
-| `--bg` | `#F5F0E8` | 应用主背景（暖纸） |
-| `--surface` | `#FAF6EF` | 面板/卡片背景 |
+| `--bg` | `#F3EFEA` | 应用主背景（灰石米色，复古纸质感） |
+| `--surface` | `#FAF8F5` | 面板/卡片背景（旧书页浅色） |
 | `--surface-raised` | `#FFFFFF` | 悬浮弹窗、模态框 |
-| `--border` | `#E2DAC8` | 分割线、边框 |
-| `--border-strong` | `#C8BDA6` | 强调边框 |
-| `--text-primary` | `#1C1A14` | 主文字（暖黑，非纯黑）|
-| `--text-secondary` | `#7A6E5A` | 次要文字 |
-| `--text-muted` | `#B5A890` | 弱化文字、占位符 |
+| `--border` | `#E6DCD1` | 分割线、边框（温和奶咖边线） |
+| `--border-strong` | `#D1C7BB` | 强调边框 |
+| `--text-primary` | `#2D2520` | 主文字（深咖，柔和的碳黑色）|
+| `--text-secondary` | `#8F8176` | 次要文字（复古灰褐） |
+| `--text-muted` | `#B3A89F` | 弱化文字、占位符 |
 
 ### 2.2 强调色
 
 | Token | 值 | 用途 |
 |-------|----|------|
-| `--accent-indigo` | `#2F2965` | 主强调色（来源：geometric sparkle SVG）|
-| `--accent-indigo-light` | `#4A4490` | hover/active 状态 |
-| `--accent-warm` | `#A85E2D` | 暖强调（来源：organic star SVG）|
-| `--accent-warm-light` | `#D4936A` | 暖强调 hover |
+| `--accent-primary` | `#654E40` | 主强调色（深摩卡棕，稳重人文）|
+| `--accent-primary-light` | `#826859` | hover/active 状态 |
+| `--accent-warm` | `#C48A7E` | 暖强调（灰调黏土橘，植物生命感）|
+| `--accent-warm-light` | `#DFAB9F` | 暖强调 hover |
 | `--accent-gold` | `#C99B4A` | 高亮/晋升标记（Canon 级记忆）|
 
 ### 2.3 状态色
@@ -108,24 +108,22 @@
 
 | 用途 | SVG 路径 | 颜色 |
 |------|----------|------|
-| Automations（导航） | `geometric/shape/star/Elements-geometric-shape-star-sparkle.svg` | `--accent-indigo` |
+| Automations（导航） | `organic/shape/flower/Elements-organic-shape-flower-nature-splash.svg` | `--accent-primary` |
 | Soul（导航） | `organic/shape/spiral/Elements-organic-shape-spiral.svg` | `--accent-warm` |
-| Skills（导航） | `organic/shape/flower/Elements-organic-shape-flower-nature-cute.svg` | `--accent-warm` |
-| Extensions（导航） | `geometric/shape/hexagon/Elements-geometric-shape-hexagon.svg` | `--text-secondary` |
-| Settings | `geometric/shape/square/Elements-geometric-shape-square-corner.svg` | `--text-secondary` |
+| Settings（导航底部） | `organic/shape/sun/Elements-organic-shape-sun.svg` | `--text-secondary` |
 | 运行中（旋转） | `organic/shape/circle/Elements-organic-shape-circle--loading-spin.svg` | `--status-running` |
-| 完成 | `geometric/shape/star/Elements-geometric-shape-star-sparkle-wink.svg` | `--status-success` |
+| 完成 | `organic/shape/star/Elements-organic-shape-star-wink.svg` | `--status-success` |
 | 等待审批 | `organic/shape/hand/Elements-organic-shape-hand.svg` | `--status-waiting` |
 | 失败 | `organic/shape/abstract/Elements-organic-shape-abstract-comet.svg` | `--status-error` |
-| 发送/Run | `geometric/shape/abstract/Elements-geometric-shape-abstract-rocket.svg` | `--accent-warm` |
-| 对话 | `geometric/shape/abstract/Elements-geometric-shape-abstract-bubble-comment-ballon.svg` | `--text-secondary` |
-| Agent | `organic/shape/abstract/Elements-organic-shape-abstract-m-bird.svg` | `--accent-indigo` |
-| Soul cue Working | `organic/shape/moon/Elements-organic-shape-moon.svg` | `--soul-working` |
-| Soul cue Consolidated | `organic/shape/star/Elements-organic-shape-star.svg` | `--soul-consolidated` |
-| Soul cue Canon | `organic/shape/star/Elements-organic-shape-star-sharp.svg` | `--soul-canon` |
+| 发送/Run | `organic/shape/abstract/Elements-organic-shape-abstract-sparkle-dash.svg` | `--accent-warm` |
+| 用户头像 | `organic/shape/face/Elements-organic-shape-face.svg` | `--text-secondary` |
+| 引擎头像 | `organic/shape/smile/Elements-organic-shape-smile-eye.svg` | `--accent-primary` |
+| Soul cue Working | `organic/shape/leaves/Elements-organic-shape-leaves-nature-twig.svg` | `--soul-working` (不透明度 20%) |
+| Soul cue Consolidated | `organic/shape/leaves/Elements-organic-shape-leaves-nature-2.svg` | `--soul-consolidated` (不透明度 60%) |
+| Soul cue Canon | `organic/shape/flower/Elements-organic-shape-flower-nature-cute.svg` | `--soul-canon` (不透明度 100%) |
 | Checkpoint | `organic/shape/abstract/Elements-organic-shape-abstract-footprint-tulip.svg` | `--accent-warm` |
 | 提案/Proposal | `organic/shape/abstract/Elements-organic-shape-abstract-sparkle-dash.svg` | `--accent-gold` |
-| 闲置星星（装饰） | `geometric/shape/star/Elements-geometric-shape-star-sparkle.svg` | `--accent-indigo @0.35` |
+| 闲置星星（装饰） | `geometric/shape/star/Elements-geometric-shape-star-sparkle.svg` | `--accent-primary @0.35` |
 
 ---
 
@@ -134,34 +132,35 @@
 ### 5.1 三栏结构
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  顶栏（40px）：[do-what] [工作区名] [Claude|Codex] [+ New Run] [⚙] │
-├──────────────────┬───────────────────────────────┬──────────────┤
-│ 左：Run 列表      │  中：对话时间线（fluid）          │ 右：多模式面板│
-│ （200px）        │                               │ （260px）    │
-│                  │  ┌──────────────────────────┐ │              │
-│ [● Run #1]       │  │ 用户消息                  │ │ [Files][CTX] │
-│ [◎ Run #2]       │  │              [Soul: ●●○] │ │ [CLI][Tasks] │
-│ [○ Run #3]       │  └──────────────────────────┘ │              │
-│ ──────────────── │                               │ （面板内容随  │
-│ + New Run        │  [tool: file_write ✓ 23ms]    │  Tab 切换）   │
-│                  │                               │              │
-│                  │  ┌──────────────────────────┐ │              │
-│                  │  │ 引擎回复                  │ │              │
-│                  │  │              [Soul: ●○○] │ │              │
-│                  │  └──────────────────────────┘ │              │
-│                  │                               │              │
-│                  │  [输入框 ─────────────── 发送] │              │
-├──────────────────┴───────────────────────────────┴──────────────┤
-│  状态栏（28px）：Core ● | Claude ● | 网络 ● | Soul: 完整           │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│  顶栏（40px）：[do-what] [工作区名] [Claude|Codex] [+ New Run] [⚙]  │
+├──────────────────┬───────────────────────────────┬───────────────┤
+│ 左：Run 列表      │  中：对话时间线（fluid）          │ 右：多模式纵向栏│
+│ （200px）        │                               │ （260px）     │
+│                  │  ┌──────────────────────────┐ │ ┌───────────┐ │
+│ [● Run #1]       │  │ [face] 你          21:30 │ │ │ ▼ 概览     │ │
+│ [◎ Run #2]       │  │        帮我分析错误...     │ │ │  (未选中)  │ │
+│ [○ Run #3]       │  │                          │ │ ├───────────┤ │
+│ ──────────────── │  │ [smile] do-what [Cl]21:31│ │ │ ▼ 历史     │ │
+│ + New Run        │  │         好的，我看看...    │ │ └───────────┘ │
+│                  │  │                          │ │  或 (选中态): │
+│                  │  │         → [▶ shell_exe]  │ │ ┌───────────┐ │
+│                  │  └──────────────────────────┘ │ │ ▼ Files     │ │
+│                  │                               │ ├───────────┤ │
+│                  │  [输入框 ─────────────── 发送] │ │ ▼ Tasks     │ │
+│                  │                               │ ├───────────┤ │
+│                  │                               │ │ ▼ CLI/Git ⟷ │ │
+│                  │                               │ └───────────┘ │
+├──────────────────┴───────────────────────────────┴───────────────┤
+│  状态栏（28px）：Core ● | Claude ● | 网络 ● | Soul: 完整            │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ### 5.2 顶栏（40px）
 
 - 背景 `--surface`，底边 1px `--border`
 - 左：`do-what` 用 Kalam 16px + 工作区名 Inter 13px `--text-secondary`
-- 中：引擎 Pill（Claude / Codex），选中态 `--accent-indigo` 填充
+- 中：引擎 Pill（Claude / Codex），选中态 `--accent-primary` 填充
 - 右：`[+ New Run]` 主按钮 + `[⚙]` Ghost 按钮（点击进入 Settings 页）
 
 ### 5.3 左侧 Run 列表（200px）
@@ -171,14 +170,14 @@
 - 运行中：`circle--loading-spin.svg` 旋转
 - 完成：`star-sparkle-wink.svg` 静态
 - 等待审批：`hand.svg` 轻微脉冲
-- 激活项：左侧 2px `--accent-indigo` 实线 + 背景 `--surface`
+- 激活项：左侧 2px `--accent-primary` 实线 + 背景 `--surface`
 - 底部：`[+ New Run]` Ghost 按钮
 
 ### 5.4 状态栏（28px，底部固定）
 
-- 背景 `--accent-indigo`，文字 `rgba(255,255,255,0.85)`，Inter 11px weight 500
+- 背景 `--accent-primary`，文字 `rgba(255,255,255,0.85)`，Inter 11px weight 500
 - 分段：`Core ●` · `Claude ●` · `Codex ●` · `网络 ●` · `Soul: 完整`
-- 异常时对应段变 `--status-error`（保持 indigo 底色不变）
+- 异常时对应段变 `--status-error`（保持 mocha 底色不变）
 
 ---
 
@@ -186,36 +185,27 @@
 
 **对话与 CLI 工具调用共用同一条时间线**，不再分割为独立区域。
 
-### 6.1 消息气泡
+### 6.1 消息区文档流排版
 
-- 用户消息：右对齐，`--surface-raised` 背景，圆角 12px，最大宽 72%
-- 引擎消息：左对齐，`--surface` 背景，圆角 12px，最大宽 80%
+不再使用气泡，改为文档型排版，用头像区分发言人：
+
+- 头像：20px 有机 SVG，`face.svg`（用户） / `smile-eye.svg`（引擎），置于消息块左侧
+- 发言人标签：Inter 12px `--text-secondary`，头像右侧
+- 时间戳：最右侧，Inter 11px `--text-muted`
+- 消息正文：头像右方，与发言人标签同容器向下延展，`--text-primary` 13px
 - 代码块：深色背景（`#1C1A14`），JetBrains Mono 12px，圆角 8px
-- Diff 块：增行绿色 tint / 删行红色 tint / 变行琥珀 tint
+- 消息间距：消息块之间用垂直间距（16px）自然区分，不需要气泡框与水平分割线
 
-### 6.2 Soul 气泡角标（右上角）
+### 6.2 Soul 边注系统（左侧）
 
-每条消息气泡右上角有微型 Soul 指示区：
+取消原有的气泡角标，改为在整个时间线左侧预留 16px 的边注通道：
 
-```html
-<div class="soul-badge">
-  <span class="soul-dot canon"></span>    <!-- 金色实心，rgba透明度最高 -->
-  <span class="soul-dot consolidated"></span> <!-- 暖棕，中等透明 -->
-  <span class="soul-dot working"></span>   <!-- 极淡，几乎隐形 -->
-</div>
-```
-
-- 每个点 = 一条 active cue（同级别多条则叠加一个点）
-- 点径：5px，间距 3px，横排排列
-- **Hover** 气泡：展开 tooltip 显示 cue gist 列表（Mono 11px，按级别渲染字色）
-- **点击** 角标：展开完整证据 Pointer 详情（模态框）
-- 无 cue 时：不显示角标（不占空间）
-
-| 级别 | 点色 | Tooltip 字色 |
-|------|------|------------|
-| Working | `rgba(28,26,20,0.18)` | 极淡灰斜体 11px |
-| Consolidated | `rgba(168,94,45,0.45)` | 中等暖色斜体 12px |
-| Canon | `#C99B4A` | 金色 12px，左 2px 金线 |
+- **图标通过形态和透明度（颜色深浅）区分显影程度：**
+  - **Working**：`organic/shape/leaves/Elements-organic-shape-leaves-nature-twig.svg`（单枝桠），不透明度 `20%`
+  - **Consolidated**：`organic/shape/leaves/Elements-organic-shape-leaves-nature-2.svg`（双叶），不透明度 `60%`
+  - **Canon**：`organic/shape/flower/Elements-organic-shape-flower-nature-cute.svg`（开花），不透明度 `100%`，带 `--accent-gold` 点缀
+- Hover：展开 tooltip（Mono 11px），点击进入 Soul 详情
+- 无 cue 时：通道为空白，不显示任何占位元素
 
 ### 6.3 工具调用内联卡片
 
@@ -228,57 +218,59 @@
 - 左侧工具图标（对应 SVG 16px）+ 工具名 Mono 12px
 - 右侧状态徽章（running/success/error）+ 耗时
 - 点击展开参数/输出详情（折叠）
-- 背景：`--bg`（略深于气泡，区分层次）
+- 背景：`--bg`（与主体区分层次）
+
+### 6.4 审批与 Ask 操作区
+
+当引擎处于 WaitingApproval 或 Ask 状态时，**在输入框正上方弹出 CLI 风格操作区**：
+
+```
+┌───────────────────────────┐
+│ ⚠ Claude 请求执行：shell_exec  │
+│ ❯ 允许一次                  │
+│   本次会话允许              │
+│   查看详情 ↗                │
+│   拒绝                      │
+└───────────────────────────┘
+```
+
+- 背景 `--surface-raised`，风格极致收敛，贴近代码终端体验
+- 使用上下方向键或鼠标悬浮高亮当前选项（`❯` 前缀，行内高亮背景色）
+- 选项纵向排列，最新审批在最前
 
 ---
 
-## 7. 右侧多模式面板（260px）
+## 7. 右侧多模式纵向栏（260px）
 
-顶部 4 个 Tab：`[Files] [Context] [CLI] [Tasks]`
+不再使用横向 Tab 切换，改为纵向堆叠的区块布局，所有信息一览无余。内容区背景使用 `--bg`，overflow-y 滚动。
 
-- Tab 栏背景 `--surface`，底边 1px `--border`
-- 激活 Tab：`--accent-indigo` 底边 2px + 文字加粗
-- 面板内容区：`--bg` 背景，overflow-y scroll
+### 7.1 空闲状态（无活跃 Run 时）
 
-### 7.1 Tab — Files（改动文件）
+固定分为上下两栏：
 
-- 当前 Run 影响到的文件列表
-- 每行：`文件路径（mono 12px）` + `+N`（绿）`-M`（红）diff 统计
-- 点击 → 展开统一 diff 预览（+行绿 tint，-行红 tint）
-- 空状态：`wave.svg` + "No files changed yet"
+- **概览 (Overview)**：引擎状态、Soul 模式、工具链健康摘要等全局指标。
+- **历史记录 (History)**：所有历史 Run 的精简列表。
 
-### 7.2 Tab — Context（Soul 上下文）
+### 7.2 活跃状态（有一项及以上活跃 Run 时）
 
-- 当前活跃 Soul cues，按确定程度降序排列
-- 每条：级别徽章（7×7 点图标）+ gist（Mono 12px）+ Pointer 来源文件路径
-- 操作行：`[降权] [归档] [查看证据]`
-- 空状态：`spiral-circle.svg` + "Memory is blank"
+固定分为竖向三个区块：
 
-### 7.3 Tab — CLI Cluster（并行集群）
+1. **文件 (Files)**（顶部）：
+   - 当前 Run 影响到的文件列表。
+   - 每行展示 `文件路径（mono 12px）` + `+N`（绿）`-M`（红）增删量。
+   - 点击查看统一的 Diff 预览区。
+   - 空状态："No files changed yet"。
 
-对应 v0.1 §3.2 Worktree 并行 + Integrator 流程：
+2. **任务 (Tasks)**（中部）：
+   - 对话中产生的当前 Todo 清单。
+   - 每行前置 checkbox 复选框，已完成条目使用删除线并置灰（`--text-muted`）。
+   - 空状态："Nothing to do"。
 
-```
-Proposal 阶段（可并行）
-  ├─ Run #1 [Claude]  auth-module    ✓ patch ready
-  ├─ Run #2 [Codex]   db-layer       ⟳ running
-  └─ Run #3 [Claude]  tests          ✓ patch ready
-
-Integrator（串行合入）
-  [✓ Run#1 merged] → [Run#3 queued] → [Fast Gate ⟳]
-```
-
-- DAG 节点连线用内联 SVG
-- Integrator 队列顺序可视化
-- Fast Gate 结果（pass 绿/fail 红）
-- 空状态：`m-bird.svg` + "No parallel runs"
-
-### 7.4 Tab — Tasks（任务清单）
-
-- 当前对话中提取/生成的 Todo 列表
-- 每条：`[checkbox] 描述文字（Inter 13px）` + 关联 Run 编号小标
-- 支持手动添加任务（底部输入行）
-- 已完成条目：strike-through + `--text-muted`
+3. **CLI Cluster / Git Tree**（底部）：
+   - 提供区块右上角 toggle 图标，在这两项视图中来回切换。
+   - **CLI Cluster**：DAG 节点连线视图，展示当前 Worktree 并行状态，反映 Proposal / Integrator 并发执行情况。
+   - **Git 树**：代码版本树状结构。
+   - 空状态："No parallel runs"。
 
 ---
 
@@ -328,7 +320,7 @@ Integrator（串行合入）
 ### 10.1 按钮
 
 ```
-Primary:   bg --accent-indigo, text white, border-radius 8px, px 16 py 8
+Primary:   bg --accent-primary, text white, border-radius 8px, px 16 py 8
 Secondary: bg transparent, border 1px --border, text --text-primary
 Danger:    bg transparent, border 1px --status-error, text --status-error
 Ghost:     bg transparent, no border, text --text-secondary, hover bg --border@0.4
@@ -395,11 +387,11 @@ Ghost:     bg transparent, no border, text --text-secondary, hover bg --border@0
 
 | 区域 | SVG | 主文 |
 |------|-----|------|
-| 无 Run | `organic/abstract/wave.svg` | No runs yet |
-| Soul 无记忆 | `organic/spiral/spiral-circle.svg` | Memory is blank |
-| Files 无改动 | `geometric/abstract/wave.svg` | No files changed |
-| CLI 无并行 | `organic/abstract/m-bird.svg` | No parallel runs |
-| Tasks 空 | `organic/hand/hand.svg` | Nothing to do |
+| 无 Run | `organic/shape/abstract/Elements-organic-shape-abstract-wave.svg` | No runs yet |
+| Soul 无记忆 | `organic/shape/spiral/Elements-organic-shape-spiral-circle.svg` | Memory is blank |
+| Files 无改动 | `organic/shape/leaves/Elements-organic-shape-leaves-nature-twig.svg` | No files changed |
+| CLI 无并行 | `organic/shape/bush/Elements-organic-shape-bush-curly-nature.svg` | No parallel runs |
+| Tasks 空 | `organic/shape/leaves/Elements-organic-shape-leaves-nature-vine.svg` | Nothing to do |
 
 ---
 
@@ -407,11 +399,11 @@ Ghost:     bg transparent, no border, text --text-secondary, hover bg --border@0
 
 ```
 packages/app/src/assets/icons/
-  nav/          ← sparkle, spiral, flower, hexagon, square-corner
-  status/       ← circle-loading, star-wink, hand, comet, cloud
-  actions/      ← rocket, bubble, stamp, filter-funnel, target
-  soul/         ← moon, star-sharp, footprint-tulip, sparkle-dash
-  decorative/   ← line-curly, wave, dot-grain, star-sparkle-wink
+  nav/          ← flower-nature-splash, spiral, sun
+  status/       ← circle-loading, star-wink, hand, comet
+  actions/      ← sparkle-dash, face, smile-eye
+  soul/         ← leaves-nature-twig, leaves-nature-2, flower-nature-cute
+  empty/        ← wave, spiral-circle, leaves-nature-twig, bush-curly-nature, leaves-nature-vine
 ```
 
 每个 SVG 封装为 React 组件，接受 `size?: number` 和 `className?: string`。

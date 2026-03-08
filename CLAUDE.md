@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目状态
 
-**当前阶段：v0.1.x 进行中（Phase 0 已完成，Phase 1–3 待实现）。**
+**当前阶段：v0.1.x 进行中（Phase 0–1 已完成，Phase 2–3 待实现）。**
 
 规划文档：
 - `docs/archive/v0.1/do-what-proposal-v0.1.md` — v0.1 完整方案（归档，约 800 行，所有架构决策来源）
@@ -22,7 +22,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 v0.1.x 阶段进度：
 - Phase 0（T028–T030）：清理减法 — 已完成
-- Phase 1（T031–T037）：SOUL 补全 — 待开始
+- Phase 1（T031–T037）：SOUL 补全 — 已完成（61/61 soul 测试，29/29 protocol 测试）
 - Phase 2（T038–T041）：Core 四层分离 — 待开始
 - Phase 3（T042–T045）：编排与治理 — 待开始
 
