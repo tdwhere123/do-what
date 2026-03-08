@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   ClaimDraftSchema,
   ClaimResolutionSchema,
+  EvidenceCapsuleSchema,
   MemoryCueSchema,
   SoulEventSchema,
+  UserDecisionSchema,
 } from '../index.js';
 
 describe('Soul protocol schemas', () => {
@@ -56,5 +58,40 @@ describe('Soul protocol schemas', () => {
     });
 
     expect(success.success).toBe(true);
+  });
+
+  it('parses user decision payloads', () => {
+    const parsed = UserDecisionSchema.safeParse({
+      claim_draft_id: 'draft-1',
+      context_snapshot: {
+        cue_gist: 'auth note',
+        formation_kind: 'observation',
+        run_id: 'run-1',
+        workspace_id: 'proj-1',
+      },
+      decision_id: 'decision-1',
+      decision_type: 'accept',
+      linked_capsule_id: 'capsule-1',
+      linked_memory_id: 'cue-1',
+      timestamp: new Date().toISOString(),
+      user_note: 'looks good',
+    });
+
+    expect(parsed.success).toBe(true);
+  });
+
+  it('enforces evidence capsule limits', () => {
+    const parsed = EvidenceCapsuleSchema.safeParse({
+      capsule_id: 'capsule-1',
+      confidence: 0.8,
+      context_fingerprint: 'fp',
+      created_at: new Date().toISOString(),
+      cue_id: 'cue-1',
+      git_commit: 'abcdef1',
+      repo_path: 'src/auth.ts',
+      snippet_excerpt: 'export function authenticate() {}',
+    });
+
+    expect(parsed.success).toBe(true);
   });
 });

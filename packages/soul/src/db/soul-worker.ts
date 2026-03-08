@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import { parentPort, workerData } from 'node:worker_threads';
+import { shouldWarnClaimWrite } from '../claim/write-guard.js';
 import { runPendingMigrations } from './migration-runner.js';
 
 interface WorkerData {
@@ -58,6 +59,9 @@ function main(): void {
         }
 
         try {
+          if (shouldWarnClaimWrite(item.sql)) {
+            console.warn('[soul][db-worker] claim_* write attempted outside checkpoint path');
+          }
           db.prepare(item.sql).run(item.params);
           postResult({ id: item.id, ok: true, type: 'result' });
         } catch (error) {

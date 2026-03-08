@@ -20,6 +20,7 @@ export interface ReviewExecutorRequest {
 }
 
 export interface ReviewHandlerOptions {
+  claimQueue?: import('../claim/claim-queue.js').ClaimQueue;
   cueWriter: CueWriter;
   edgeWriter: EdgeWriter;
   proposalService: ProposalService;
@@ -47,6 +48,14 @@ export function createReviewExecutor(options: ReviewHandlerOptions) {
         resolver: request.resolver,
         status: 'rejected',
       });
+      publishSoulEvent(options.publishEvent, {
+        event: 'memory_cue_rejected',
+        proposalId: request.proposalId,
+        resolver: request.resolver === 'auto' ? 'auto' : 'user',
+        runId: 'soul',
+        source: 'soul.review',
+        timestamp: new Date().toISOString(),
+      });
       return {
         committed: false,
         proposal_id: request.proposalId,
@@ -66,6 +75,13 @@ export function createReviewExecutor(options: ReviewHandlerOptions) {
       cueId: cueWrite.cueId,
       edgeDrafts: prepared.edgeDrafts,
       projectId: proposal.projectId,
+    });
+    const pendingClaim = options.claimQueue?.enqueue({
+      cueDraft: prepared.cueDraft,
+      cueId: cueWrite.cueId,
+      impactLevel: cueWrite.impactLevel,
+      projectId: proposal.projectId,
+      proposalId: request.proposalId,
     });
     const repoCommit = request.action === 'hint_only'
       ? { committed: false }
@@ -95,6 +111,29 @@ export function createReviewExecutor(options: ReviewHandlerOptions) {
         proposalId: request.proposalId,
       }),
     );
+    publishSoulEvent(options.publishEvent, {
+      claimDraftId: pendingClaim?.draft_id,
+      cueId: cueWrite.cueId,
+      event: 'memory_cue_accepted',
+      impactLevel: cueWrite.impactLevel,
+      projectId: proposal.projectId,
+      proposalId: request.proposalId,
+      resolver: request.resolver === 'auto' ? 'auto' : 'user',
+      runId: 'soul',
+      source: 'soul.review',
+      timestamp: new Date().toISOString(),
+    });
+    if (request.action === 'edit' && request.edits) {
+      publishSoulEvent(options.publishEvent, {
+        changedFields: Object.keys(request.edits),
+        cueId: cueWrite.cueId,
+        event: 'memory_cue_modified',
+        projectId: proposal.projectId,
+        runId: 'soul',
+        source: 'soul.review',
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     return {
       committed: repoCommit.committed,
@@ -162,4 +201,15 @@ function prepareProposal(
   }
 
   return edited;
+}
+
+function publishSoulEvent(
+  publisher: SoulEventPublisher | undefined,
+  event: Omit<import('@do-what/protocol').BaseEvent, 'revision'>,
+): void {
+  if (!publisher) {
+    return;
+  }
+
+  publisher(event);
 }

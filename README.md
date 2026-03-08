@@ -127,6 +127,8 @@ curl http://127.0.0.1:3847/health
   state/
     state.db               # Core 核心运行库（结构化存储 Run 进度 / Workspace 元数据 / Event Log 等底层执行历史及轨迹溯源）
     soul.db                # Soul 长记忆专属独立运行库（维护多维 memory_cues / 关系 edges / 长期存留的核心证据索引）
+    evidence/
+      user_decisions.jsonl # 用户对 Soul 记忆的 accept/reject/modify/supersede ledger（JSONL，0600 权限）
   memory/
     <fingerprint>/
       memory_repo/         # 以 Git 化形态作为版本锚存储底座，归档核心演进与典藏记忆快照的历史重演区

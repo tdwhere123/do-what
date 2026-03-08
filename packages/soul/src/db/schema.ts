@@ -73,6 +73,13 @@ export interface EvidenceRow {
   level: string;
   content_hash: string | null;
   embedding: Uint8Array | null;
+  git_commit: string | null;
+  repo_path: string | null;
+  symbol: string | null;
+  snippet_excerpt: string | null;
+  context_fingerprint: string | null;
+  confidence: number;
+  created_at: string | null;
   last_accessed: string | null;
   access_count: number;
   relocated_pointer: string | null;

@@ -32,8 +32,8 @@ v0.1.x 是收敛/清理/补魂阶段，4 个 Phase：
 
 | Phase | Tickets | 主题 | 状态 |
 |-------|---------|------|------|
-| Phase 0 | T028–T030 | 清理减法（shim 删除/事件合并/命名统一） | 待开始 |
-| Phase 1 | T031–T037 | SOUL 补全（dormant 字段激活/ContextLens/ClaimForm/记忆动力学） | 待开始 |
+| Phase 0 | T028–T030 | 清理减法（shim 删除/事件合并/命名统一） | 完成 |
+| Phase 1 | T031–T037 | SOUL 补全（dormant 字段激活/ContextLens/ClaimForm/记忆动力学） | 完成 |
 | Phase 2 | T038–T041 | Core 四层分离（HotState/Projection/AckOverlay/memory_repo 降格） | 待开始 |
 | Phase 3 | T042–T045 | 编排与治理（FocusSurface/IntegrationGate/GovernanceLease/拓扑约束） | 待开始 |
 
@@ -160,7 +160,7 @@ pnpm --filter @do-what/soul exec tsc --noEmit
 pnpm --filter @do-what/protocol exec tsc --noEmit
 
 # user ledger 文件权限验证
-ls -la ~/.do-what/evidence/user_decisions.jsonl
+ls -la ~/.do-what/state/evidence/user_decisions.jsonl
 # 预期：-rw------- (0600)
 
 # ContextLens budget 约束（输出不超过 600 tokens）

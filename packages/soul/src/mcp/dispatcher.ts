@@ -26,6 +26,7 @@ import { SnippetMatcher } from '../pointer/snippet-matcher.js';
 import { SymbolSearcher } from '../pointer/symbol-searcher.js';
 import { createProposeHandler } from './propose-handler.js';
 import { createReviewExecutor, createReviewHandler } from './review-handler.js';
+import { ClaimQueue, CheckpointWriter } from '../claim/index.js';
 import { CueWriter } from '../write/cue-writer.js';
 import { EdgeWriter } from '../write/edge-writer.js';
 import { RepoCommitter } from '../write/repo-committer.js';
@@ -34,6 +35,10 @@ import { ProposalService } from '../write/proposal-service.js';
 import { MemoryRepoManager } from '../repo/memory-repo-manager.js';
 import { MemorySearchService } from '../search/memory-search.js';
 import { RetrievalRouter } from '../search/retrieval-router.js';
+import { EvidenceCapsuleWriter } from '../evidence/capsule-writer.js';
+import { DecisionRecorder, LedgerWriter } from '../ledger/index.js';
+import { KarmaListener, RetentionScheduler } from '../dynamics/index.js';
+import { ContextLens } from '../context/lens.js';
 import { createExploreGraphHandler } from './explore-graph-handler.js';
 import { createOpenPointerHandler } from './open-pointer-handler.js';
 import { createSearchHandler } from './search-handler.js';
@@ -122,6 +127,7 @@ export function createSoulToolDispatcher(
     stateStore,
     writer,
   });
+  const contextLens = new ContextLens(stateStore);
   const memoryRepoManager = new MemoryRepoManager({
     memoryRepoBasePath,
     stateStore,
@@ -144,7 +150,38 @@ export function createSoulToolDispatcher(
   const repoCommitter = new RepoCommitter({
     memoryRepoManager,
   });
+  const claimQueue = new ClaimQueue();
+  const evidenceCapsuleWriter = new EvidenceCapsuleWriter({
+    extractor: new EvidenceExtractor({
+      workspaceRoot: options.workspaceRoot,
+    }),
+    publishEvent: options.publishEvent,
+    stateStore,
+    writer,
+  });
+  const checkpointWriter = new CheckpointWriter({
+    claimQueue,
+    evidenceCapsuleWriter,
+    publishEvent: options.publishEvent,
+    stateStore,
+    writer,
+  });
+  const ledgerWriter = new LedgerWriter({
+    ledgerPath: path.join(path.dirname(dbPath), 'evidence', 'user_decisions.jsonl'),
+  });
+  const decisionRecorder = new DecisionRecorder({
+    ledgerWriter,
+  });
+  const karmaListener = new KarmaListener({
+    stateStore,
+    writer,
+  });
+  const retentionScheduler = new RetentionScheduler({
+    stateStore,
+    writer,
+  });
   const reviewExecutor = createReviewExecutor({
+    claimQueue,
     cueWriter,
     edgeWriter,
     proposalService,
@@ -201,7 +238,7 @@ export function createSoulToolDispatcher(
     }),
     'soul.memory_search': createSearchHandler({
       publishEvent: options.publishEvent,
-      retrievalRouter: new RetrievalRouter(searchService),
+      retrievalRouter: new RetrievalRouter(searchService, contextLens, options.publishEvent),
     }),
     'soul.open_pointer': createOpenPointerHandler({
       extractor: new EvidenceExtractor({
@@ -214,6 +251,7 @@ export function createSoulToolDispatcher(
     }),
     'soul.propose_memory_update': createProposeHandler({
       checkpointQueue,
+      claimQueue,
       cueWriter,
       edgeWriter,
       proposalService,
@@ -221,6 +259,7 @@ export function createSoulToolDispatcher(
       repoCommitter,
     }),
     'soul.review_memory_proposal': createReviewHandler({
+      claimQueue,
       cueWriter,
       edgeWriter,
       proposalService,
@@ -229,8 +268,73 @@ export function createSoulToolDispatcher(
     }),
   };
 
+  const checkpointListener = (event: unknown) => {
+    void checkpointWriter.handle(event as import('@do-what/protocol').RunCheckpointEvent);
+  };
+  options.eventSubscriber?.on('run_checkpoint', checkpointListener);
+  const detachKarmaListener = options.eventSubscriber
+    ? karmaListener.attach(options.eventSubscriber)
+    : undefined;
+  const detachDecisionRecorder = options.eventSubscriber
+    ? decisionRecorder.attach(options.eventSubscriber, async (event) => {
+        const cueId =
+          'cueId' in event && typeof event.cueId === 'string'
+            ? event.cueId
+            : undefined;
+        if (!cueId) {
+          return null;
+        }
+
+        const cue = stateStore.read(
+          (db) =>
+            (db
+              .prepare(`SELECT cue_id, gist, formation_kind, project_id FROM memory_cues WHERE cue_id = ?`)
+              .get(cueId) as
+              | {
+                  cue_id: string;
+                  formation_kind: string | null;
+                  gist: string;
+                  project_id: string | null;
+                }
+              | undefined) ?? null,
+          null,
+        );
+        if (!cue) {
+          return null;
+        }
+
+        return {
+          claim_draft_id:
+            'claimDraftId' in event && typeof event.claimDraftId === 'string'
+              ? event.claimDraftId
+              : 'draftId' in event && typeof event.draftId === 'string'
+                ? event.draftId
+                : undefined,
+          context_snapshot: {
+            cue_gist: cue.gist,
+            formation_kind:
+              cue.formation_kind === 'observation'
+              || cue.formation_kind === 'inference'
+              || cue.formation_kind === 'synthesis'
+              || cue.formation_kind === 'interaction'
+                ? cue.formation_kind
+                : 'observation',
+            run_id: event.runId,
+            workspace_id: cue.project_id ?? '',
+          },
+          linked_capsule_id: evidenceCapsuleWriter.findByCueId(cueId)?.evidence_id ?? undefined,
+        };
+      })
+    : undefined;
+  retentionScheduler.start();
+
   return {
     async close() {
+      options.eventSubscriber?.off('run_checkpoint', checkpointListener);
+      detachKarmaListener?.();
+      detachDecisionRecorder?.();
+      await decisionRecorder.flush();
+      retentionScheduler.stop();
       await compilerTrigger?.close();
       await memoryRepoManager.close();
       await writer.close();

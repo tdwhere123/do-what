@@ -48,7 +48,7 @@ describe('soul ddl migrations', () => {
     const versionRow = db
       .prepare('SELECT COALESCE(MAX(version), 0) AS version FROM soul_schema_version')
       .get() as { version: number };
-    assert.equal(versionRow.version, 6);
+    assert.equal(versionRow.version, 7);
 
     const cueColumns = db
       .prepare('PRAGMA table_info(memory_cues)')
@@ -61,6 +61,18 @@ describe('soul ddl migrations', () => {
     assert.equal(cueColumnNames.has('claim_source'), true);
     assert.equal(cueColumnNames.has('snippet_excerpt'), true);
     assert.equal(cueColumnNames.has('pruned'), true);
+
+    const evidenceColumns = db
+      .prepare('PRAGMA table_info(evidence_index)')
+      .all() as Array<{ name: string }>;
+    const evidenceColumnNames = new Set(evidenceColumns.map((row) => row.name));
+    assert.equal(evidenceColumnNames.has('git_commit'), true);
+    assert.equal(evidenceColumnNames.has('repo_path'), true);
+    assert.equal(evidenceColumnNames.has('symbol'), true);
+    assert.equal(evidenceColumnNames.has('snippet_excerpt'), true);
+    assert.equal(evidenceColumnNames.has('context_fingerprint'), true);
+    assert.equal(evidenceColumnNames.has('confidence'), true);
+    assert.equal(evidenceColumnNames.has('created_at'), true);
 
     db.close();
   });

@@ -5,6 +5,7 @@ import { v3Migration } from './v3.js';
 import { v4Migration } from './v4.js';
 import { v5Migration } from './v5.js';
 import { v6Migration } from './v6.js';
+import { v7Migration } from './v7.js';
 
 export const SOUL_DB_MIGRATIONS: readonly SoulDbMigration[] = [
   v1Migration,
@@ -13,6 +14,7 @@ export const SOUL_DB_MIGRATIONS: readonly SoulDbMigration[] = [
   v4Migration,
   v5Migration,
   v6Migration,
+  v7Migration,
 ];
 
 export { v1Migration };
@@ -21,3 +23,4 @@ export { v3Migration };
 export { v4Migration };
 export { v5Migration };
 export { v6Migration };
+export { v7Migration };

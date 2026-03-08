@@ -3,12 +3,18 @@ import { spawnSync } from 'node:child_process';
 const TEST_FILES = [
   'dist/__tests__/soul-ddl.test.js',
   'dist/__tests__/concept-unification.test.js',
+  'dist/__tests__/slot-winner.test.js',
+  'dist/__tests__/claim-form.test.js',
+  'dist/__tests__/evidence-capsule.test.js',
+  'dist/__tests__/memory-dynamics.test.js',
   'dist/__tests__/fingerprint.test.js',
   'dist/__tests__/memory-repo.test.js',
   'dist/__tests__/local-heuristics.test.js',
   'dist/__tests__/official-api.test.js',
   'dist/__tests__/memory-compiler.test.js',
   'dist/__tests__/memory-search.test.js',
+  'dist/__tests__/context-lens.test.js',
+  'dist/__tests__/graph-recall.test.js',
   'dist/__tests__/pointer-parser.test.js',
   'dist/__tests__/pointer-relocator.test.js',
   'dist/__tests__/healing-queue.test.js',
@@ -17,6 +23,7 @@ const TEST_FILES = [
   'dist/__tests__/proposal-service.test.js',
   'dist/__tests__/cue-writer.test.js',
   'dist/__tests__/review-handler.test.js',
+  'dist/__tests__/user-ledger.test.js',
   'dist/__tests__/bootstrapping.test.js',
 ];
 
