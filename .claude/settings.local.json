@@ -10,7 +10,8 @@
       "Bash(wc:*)",
       "Bash(xargs grep:*)",
       "Bash(grep:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

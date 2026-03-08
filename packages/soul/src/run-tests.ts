@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 
 const TEST_FILES = [
   'dist/__tests__/soul-ddl.test.js',
+  'dist/__tests__/concept-unification.test.js',
   'dist/__tests__/fingerprint.test.js',
   'dist/__tests__/memory-repo.test.js',
   'dist/__tests__/local-heuristics.test.js',

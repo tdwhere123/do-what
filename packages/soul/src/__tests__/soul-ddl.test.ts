@@ -48,7 +48,19 @@ describe('soul ddl migrations', () => {
     const versionRow = db
       .prepare('SELECT COALESCE(MAX(version), 0) AS version FROM soul_schema_version')
       .get() as { version: number };
-    assert.equal(versionRow.version, 5);
+    assert.equal(versionRow.version, 6);
+
+    const cueColumns = db
+      .prepare('PRAGMA table_info(memory_cues)')
+      .all() as Array<{ name: string }>;
+    const cueColumnNames = new Set(cueColumns.map((row) => row.name));
+    assert.equal(cueColumnNames.has('type'), true);
+    assert.equal(cueColumnNames.has('claim_draft'), true);
+    assert.equal(cueColumnNames.has('claim_confidence'), true);
+    assert.equal(cueColumnNames.has('claim_gist'), true);
+    assert.equal(cueColumnNames.has('claim_source'), true);
+    assert.equal(cueColumnNames.has('snippet_excerpt'), true);
+    assert.equal(cueColumnNames.has('pruned'), true);
 
     db.close();
   });

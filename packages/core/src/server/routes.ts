@@ -87,7 +87,19 @@ export function registerRoutes(
     }
 
     app.post('/_dev/publish', async (request, reply) => {
-      const parsed = AnyEventSchema.safeParse(request.body);
+      const payload =
+        request.body && typeof request.body === 'object' ? { ...request.body } : null;
+      if (!payload) {
+        await reply.code(400).send({
+          error: 'Invalid event payload',
+        });
+        return;
+      }
+
+      const parsed = AnyEventSchema.safeParse({
+        ...payload,
+        revision: 0,
+      });
       if (!parsed.success) {
         await reply.code(400).send({
           error: 'Invalid event payload',
@@ -96,7 +108,8 @@ export function registerRoutes(
         return;
       }
 
-      options.eventBus.publish(parsed.data);
+      const { revision: _revision, ...eventWithoutRevision } = parsed.data;
+      options.eventBus.publish(eventWithoutRevision);
       await reply.code(200).send({ ok: true });
     });
   }

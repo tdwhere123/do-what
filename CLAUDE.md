@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目状态
 
-**当前阶段：v0.1.x 进行中（Phase 0–3 规划就绪，待实现）。**
+**当前阶段：v0.1.x 进行中（Phase 0 已完成，Phase 1–3 待实现）。**
 
 规划文档：
 - `docs/archive/v0.1/do-what-proposal-v0.1.md` — v0.1 完整方案（归档，约 800 行，所有架构决策来源）
@@ -21,7 +21,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **全部 E0–E7 已交付，40 个 soul 测试全通过。**
 
 v0.1.x 阶段进度：
-- Phase 0（T028–T030）：清理减法 — 待开始
+- Phase 0（T028–T030）：清理减法 — 已完成
 - Phase 1（T031–T037）：SOUL 补全 — 待开始
 - Phase 2（T038–T041）：Core 四层分离 — 待开始
 - Phase 3（T042–T045）：编排与治理 — 待开始
@@ -150,4 +150,3 @@ Core → 引擎（spawn 子进程，Job Object 管理进程树）
 | `~/.do-what/policy.json` | 工具审批策略配置 | `packages/core` |
 | `~/.do-what/worktrees/<runId>/` | 每个 Run 的 git worktree（临时）| `packages/tools` |
 | `~/.do-what/evidence/user_decisions.jsonl` | 用户决策 append-only ledger（T037 新增）| `packages/soul` |
-

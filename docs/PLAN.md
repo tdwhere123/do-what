@@ -199,7 +199,7 @@ E4/E5/E7 可以在 E2/E3 并行进行，不阻塞。
 ## 最小可运行 Demo 路径（Minimal Viable Demo）
 
 **目标：一条完整的 end-to-end 事件流**
-`SSE → Claude hook 事件 → Tool 审批 → audit log → Soul snapshot`
+`SSE → Claude hook 事件 → Tool 审批 → audit log → Soul cue write`
 
 所需 Ticket（最少）：
 

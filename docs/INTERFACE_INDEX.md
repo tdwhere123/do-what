@@ -117,6 +117,14 @@
 
 ---
 
+### AnyEvent
+
+**用途：** 开发态 `POST /_dev/publish` 使用的聚合事件 union，覆盖 `RunLifecycleEvent`、`ToolExecutionEvent`、`EngineOutputEvent`、`MemoryOperationEvent`、`SystemHealthEvent`、`IntegrationEvent` 六类事件。`revision` 由 Core 注入，调用方无需自行分配。
+
+> 源文件：`packages/protocol/src/events/index.ts`
+
+---
+
 ## MCP Tools — Tools API
 
 > 源文件：`packages/protocol/src/mcp/tools-api.ts`
@@ -179,7 +187,7 @@
 |------|------|------|------|
 | `GET` | `/health` | 无 | 返回 `{ ok, version, uptime }` |
 | `GET` | `/events` | ✓ | SSE 事件流（`Content-Type: text/event-stream`） |
-| `GET` | `/state` | ✓ | 当前状态快照：`{ revision, pendingApprovals, recentEvents }` |
+| `GET` | `/state` | ✓ | 当前 `hot_state` 视图：`{ revision, pendingApprovals, recentEvents }` |
 
 ### Run 管理
 
@@ -216,14 +224,14 @@
 |------|------|------|
 | `POST` | `/internal/hook-event` | Hook Runner 异步转发标准化 `ToolExecutionEvent`（仅 loopback + Bearer token） |
 
-`/internal/hook-event` 请求体须通过 `ToolExecutionEventSchema` 校验（`revision` 字段忽略，由 EventBus 统一分配）。
+`/internal/hook-event` 请求体须通过 `ToolExecutionEventSchema` 校验（服务端会先补 `revision: 0` 再校验，调用方无需分配 revision，由 EventBus 统一写回真实 revision）。
 响应格式：`{ ok: true, revision: number }`（成功）/ `{ error: string, issues? }` + 4xx（失败）。
 
 ### 开发专用（`NODE_ENV=development` 才激活）
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| `POST` | `/_dev/publish` | 注入 mock 事件到 EventBus |
+| `POST` | `/_dev/publish` | 注入经 `AnyEventSchema` 校验的开发事件到 EventBus；`revision` 由服务端填充 |
 | `POST` | `/_dev/start-run` | 仅限 loopback + Bearer token 的 dev-only Run 入口：分配 worktree、当 prompt 命中 `write/create/test file` 时写入最小测试文件、执行 `git status --short`、延时自动 `COMPLETE`，并在终态后触发 Integrator / Fast Gate / Memory Compiler |
 
 ---
@@ -235,7 +243,7 @@
 
 | 表名 | 主键 | 关键字段 | 说明 |
 |------|------|---------|------|
-| `event_log` | `revision` | `timestamp, event_type, run_id, source, payload(JSON)` | 只追加，不可改；索引：`(run_id, revision)`, `(event_type, revision)` |
+| `event_log` | `revision` | `timestamp, event_type, run_id, source, payload(JSON)` | 只追加，不可改；`event_type` 派生优先级：`eventType -> type -> event -> status`；索引：`(run_id, revision)`, `(event_type, revision)` |
 | `runs` | `run_id` | `workspace_id, agent_id?, engine_type, status, created_at, updated_at, completed_at?, error?, metadata(JSON)?` | Run 生命周期记录；`metadata` 现承载 `worktreePath/branchName/patch/touchedPaths/integrationStatus` |
 | `workspaces` | `workspace_id` | `name, root_path, engine_type?, created_at, last_opened_at?` | 工作区配置 |
 | `agents` | `agent_id` | `name, role?, engine_type, memory_ns, created_at, config(JSON)?` | Agent 定义 |
@@ -376,7 +384,6 @@ git_commit:abc1234 repo_path:docs/design.md#heading:Architecture
 
 ```jsonc
 {
-  "revision": 0,
   "status": "requested",
   "toolName": "tools.shell_exec",
   "rawToolName": "Bash",
@@ -462,6 +469,8 @@ git_commit:abc1234 repo_path:docs/design.md#heading:Architecture
 | 2026-03-07 | T025 | 新增 `ComputeProvider` / `LocalHeuristics` / `soul_mode` 降级事件，支持基于 git diff 的本地 cue 草稿提取 |
 | 2026-03-07 | T026 | 新增 `OfficialAPI` / `CustomAPI` / `DailyBudget` / `MemoryCompiler` / `CompilerTrigger`，并接通 Run 完成后的自动编译链路 |
 | 2026-03-07 | T027 | 新增 `refactor_events`、`evidence_index` 自愈字段、`PointerRelocator` / `HealingQueue` 与 Core `GET /soul/healing/stats` |
+
+| 2026-03-07 | T029 | 新增 `AnyEventSchema` 聚合 union，明确 `/_dev/publish` 校验面与 `event_log.event_type` 派生优先级，并将 `/state` 文档统一为 `hot_state` 术语 |
 
 ---
 

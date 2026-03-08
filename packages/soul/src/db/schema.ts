@@ -14,6 +14,7 @@ export interface CueRow {
   gist: string;
   summary: string | null;
   source: string;
+  type: string | null;
   formation_kind: string | null;
   dimension: string | null;
   scope: string;
@@ -24,6 +25,7 @@ export interface CueRow {
   pointers: string;
   evidence_refs: string | null;
   focus_surface: string | null;
+  snippet_excerpt: string | null;
   activation_score: number;
   retention_score: number;
   manifestation_state: string;
@@ -38,12 +40,17 @@ export interface CueRow {
   reinforcement_count: number;
   contradiction_count: number;
   superseded_by: string | null;
+  claim_draft: string | null;
+  claim_confidence: number | null;
+  claim_gist: string | null;
   claim_namespace: string | null;
   claim_key: string | null;
   claim_value: string | null;
   claim_scope: string | null;
   claim_mode: string | null;
+  claim_source: string | null;
   claim_strength: number | null;
+  pruned: number;
   metadata: string | null;
 }
 

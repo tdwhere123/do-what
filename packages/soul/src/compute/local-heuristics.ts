@@ -143,13 +143,16 @@ function buildPointer(filePath: string, symbol?: string): string {
 
 function createDraft(input: {
   confidence: number;
+  dimension: 'technical' | 'contextual';
   filePath: string;
-  formationKind: 'fact' | 'pattern' | 'risk';
+  formationKind: 'observation' | 'inference' | 'synthesis';
   gist: string;
   symbol?: string;
 }): Record<string, unknown> {
   return {
     anchors: extractAnchors(input.filePath, input.symbol),
+    dimension: input.dimension,
+    focus_surface: 'default',
     formation_kind: input.formationKind,
     gist: input.gist,
     pointers: [buildPointer(input.filePath, input.symbol)],
@@ -216,8 +219,9 @@ export class LocalHeuristics implements ComputeProvider {
         cueDrafts.push(
           createDraft({
             confidence: RULE_CONFIDENCE.module,
+            dimension: 'technical',
             filePath: file.path,
-            formationKind: 'pattern',
+            formationKind: 'inference',
             gist: `New module: ${file.path}`,
           }),
         );
@@ -229,8 +233,9 @@ export class LocalHeuristics implements ComputeProvider {
           cueDrafts.push(
             createDraft({
               confidence: RULE_CONFIDENCE.export,
+              dimension: 'technical',
               filePath: file.path,
-              formationKind: 'fact',
+              formationKind: 'observation',
               gist: `Added export ${exportedName}`,
               symbol: exportedName,
             }),
@@ -241,8 +246,9 @@ export class LocalHeuristics implements ComputeProvider {
           cueDrafts.push(
             createDraft({
               confidence: RULE_CONFIDENCE.risk,
+              dimension: 'contextual',
               filePath: file.path,
-              formationKind: 'risk',
+              formationKind: 'synthesis',
               gist: createRiskGist(file.path, line),
             }),
           );
@@ -256,8 +262,9 @@ export class LocalHeuristics implements ComputeProvider {
         cueDrafts.push(
           createDraft({
             confidence: RULE_CONFIDENCE.interface,
+            dimension: 'technical',
             filePath: file.path,
-            formationKind: 'pattern',
+            formationKind: 'inference',
             gist: `Interface changed: ${name} in ${file.path}`,
             symbol: name,
           }),
@@ -269,8 +276,9 @@ export class LocalHeuristics implements ComputeProvider {
         cueDrafts.push(
           createDraft({
             confidence: RULE_CONFIDENCE.significant,
+            dimension: 'technical',
             filePath: file.path,
-            formationKind: 'fact',
+            formationKind: 'observation',
             gist: `Significant change in ${file.path} (+${file.additions.length}/-${file.deletions.length} lines)`,
           }),
         );

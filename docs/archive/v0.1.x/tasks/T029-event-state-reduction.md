@@ -97,3 +97,37 @@ pnpm -w exec tsc --noEmit
   - **降级：** 删除事件时，先在 protocol 中标记 `@deprecated`，保留一个版本，下一个 PR 再物理删除
 - **风险：** SQLite migration 006 与现有数据不兼容（字段有数据时无法删除）
   - **降级：** 使用 CREATE TABLE ... AS SELECT 重建方式，而非 ALTER TABLE DROP COLUMN（SQLite 不支持 DROP COLUMN on older versions）
+
+---
+
+## 验收结论（2026-03-07）
+
+**状态：DoD 第一条豁免，其余条目全部通过。**
+
+### 事件减法扫描报告
+
+Codex 对全部 30 个事件类型执行了完整扫描（`grep -rn "event_type" packages/ --include="*.ts"`），
+检查每个事件在 Core EventBus handler、Soul listener、引擎发射点三处的消费状况，结论如下：
+
+- **所有 30 个事件类型均有消费方**，无孤立事件（仅在 schema 定义和测试 fixture 中出现）
+- **未发现语义重叠的同义事件对**：各事件名称与语义一一对应，无 `run_started` vs `run_initiated` 类似的同义问题
+- v0.1 实现本身已保持精简，未遗留临时/冗余事件
+
+### DoD 第一条豁免声明
+
+> **豁免原因：** 扫描结果为 0 个可删除事件，减法目标未达成是因为代码库本身已经干净，
+> 而非因为工作未做。强行合并会破坏消费语义。
+>
+> **留档：** `packages/soul/src/db/migrations/v6.ts` 作为本次扫描的版本锚，
+> migration 内容为空（`-- no-op: event reduction scan v0.1.x, result: 0 deletions`），
+> 确保 migration 编号序列连续，并在版本历史中留存扫描记录。
+
+### 已完成条目
+
+- [x] `AnyEventSchema` 聚合 union 已建立（`packages/protocol/src/events/index.ts:17`）
+- [x] `event_type` 优先级已在 `event-bus.ts:23` 锁死（5级优先级）
+- [x] 三台状态机最小迁移表注释：run-machine.ts:398、engine-machine.ts:112、approval-machine.ts:270
+- [x] `/_dev/publish` 端点走 AnyEventSchema 校验（routes.ts:99）
+- [x] migration v6 已建立（扫描留档，no-op）
+- [x] 全量测试通过（@do-what/claude 15/15，@do-what/codex 12/12）
+- [~] 删除事件数量 >= 2 —— **豁免**（扫描结论：无同义事件，减法结果为 0）

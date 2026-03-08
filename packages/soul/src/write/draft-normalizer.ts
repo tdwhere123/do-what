@@ -5,10 +5,14 @@ export type CueImpactLevel = 'working' | 'consolidated' | 'canon';
 export interface NormalizedCueDraft {
   activationScore: number | null;
   anchors: string[];
+  claimConfidence: number | null;
+  claimDraft: string | null;
+  claimGist: string | null;
   claimKey: string | null;
   claimMode: string | null;
   claimNamespace: string | null;
   claimScope: string | null;
+  claimSource: string | null;
   claimStrength: number | null;
   claimValue: string | null;
   confidence: number | null;
@@ -20,6 +24,7 @@ export interface NormalizedCueDraft {
   formationKind: string | null;
   gist: string;
   impactLevel: CueImpactLevel;
+  legacyType: string | null;
   manifestationState: string | null;
   metadata: string | null;
   pointers: string[];
@@ -45,10 +50,14 @@ export interface NormalizedEdgeDraft {
 const KNOWN_CUE_KEYS = new Set([
   'activation_score',
   'anchors',
+  'claim_confidence',
+  'claim_draft',
+  'claim_gist',
   'claim_key',
   'claim_mode',
   'claim_namespace',
   'claim_scope',
+  'claim_source',
   'claim_strength',
   'claim_value',
   'confidence',
@@ -66,9 +75,11 @@ const KNOWN_CUE_KEYS = new Set([
   'retention_score',
   'retention_state',
   'scope',
+  'snippet_excerpt',
   'source',
   'summary',
   'track',
+  'type',
 ]);
 
 function readNumber(value: unknown): number | null {
@@ -77,6 +88,14 @@ function readNumber(value: unknown): number | null {
 
 function readOptionalString(value: unknown): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+}
+
+function readOptionalJsonString(value: unknown): string | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return stableStringify(value);
+  }
+
+  return readOptionalString(value);
 }
 
 function readStringArray(value: unknown): string[] {
@@ -125,24 +144,36 @@ export function normalizeCueDraft(
     throw new Error('cue_draft.gist is required');
   }
 
+  const legacyType = readOptionalString(draft.type);
+  const classification = resolveClassification(
+    readOptionalString(draft.formation_kind),
+    readOptionalString(draft.dimension),
+    legacyType,
+  );
+
   return {
     activationScore: readNumber(draft.activation_score),
     anchors: readStringArray(draft.anchors),
+    claimConfidence: readNumber(draft.claim_confidence),
+    claimDraft: readOptionalJsonString(draft.claim_draft),
+    claimGist: readOptionalString(draft.claim_gist),
     claimKey: readOptionalString(draft.claim_key),
     claimMode: readOptionalString(draft.claim_mode),
     claimNamespace: readOptionalString(draft.claim_namespace),
     claimScope: readOptionalString(draft.claim_scope),
+    claimSource: readOptionalString(draft.claim_source),
     claimStrength: readNumber(draft.claim_strength),
     claimValue: readOptionalString(draft.claim_value),
     confidence: readNumber(draft.confidence),
     decayProfile: readOptionalString(draft.decay_profile),
-    dimension: readOptionalString(draft.dimension),
+    dimension: classification.dimension,
     domainTags: readStringArray(draft.domain_tags),
     evidenceRefs: readStringArray(draft.evidence_refs),
-    focusSurface: readOptionalString(draft.focus_surface),
-    formationKind: readOptionalString(draft.formation_kind),
+    focusSurface: readOptionalString(draft.focus_surface) ?? 'default',
+    formationKind: classification.formationKind,
     gist,
     impactLevel: toImpactLevel(draft.impact_level, fallbackImpactLevel),
+    legacyType,
     manifestationState: readOptionalString(draft.manifestation_state),
     metadata: readMetadata(draft),
     pointers: readStringArray(draft.pointers),
@@ -190,4 +221,33 @@ function toImpactLevel(
   }
 
   return fallbackImpactLevel;
+}
+
+function resolveClassification(
+  formationKind: string | null,
+  dimension: string | null,
+  legacyType: string | null,
+): {
+  dimension: string | null;
+  formationKind: string | null;
+} {
+  if (formationKind || dimension) {
+    return {
+      dimension,
+      formationKind,
+    };
+  }
+
+  switch (legacyType) {
+    case 'fact':
+      return { dimension: 'technical', formationKind: 'observation' };
+    case 'pattern':
+      return { dimension: 'technical', formationKind: 'inference' };
+    case 'decision':
+      return { dimension: 'behavioral', formationKind: 'interaction' };
+    case 'risk':
+      return { dimension: 'contextual', formationKind: 'synthesis' };
+    default:
+      return { dimension: 'technical', formationKind: 'observation' };
+  }
 }

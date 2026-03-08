@@ -3,6 +3,7 @@ import { EngineOutputEventSchema } from './engine.js';
 import { IntegrationEventSchema } from './integration.js';
 import { MemoryOperationEventSchema } from './memory.js';
 import { RunLifecycleEventSchema } from './run.js';
+import { SoulEventSchema } from './soul.js';
 import { SystemHealthEventSchema } from './system.js';
 import { ToolExecutionEventSchema } from './tool.js';
 
@@ -13,6 +14,7 @@ export * from './engine.js';
 export * from './memory.js';
 export * from './system.js';
 export * from './integration.js';
+export * from './soul.js';
 
 export const AnyEventSchema = z.union([
   RunLifecycleEventSchema,
@@ -21,6 +23,7 @@ export const AnyEventSchema = z.union([
   MemoryOperationEventSchema,
   SystemHealthEventSchema,
   IntegrationEventSchema,
+  SoulEventSchema,
 ]);
 
 export type AnyEvent = z.infer<typeof AnyEventSchema>;

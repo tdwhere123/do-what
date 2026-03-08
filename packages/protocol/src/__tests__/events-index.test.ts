@@ -18,6 +18,7 @@ describe('AnyEventSchema', () => {
       { ...base, operation: 'search', query: 'auth', results: [] },
       { ...base, event: 'engine_connect', engineType: 'codex', version: '1.0.0' },
       { ...base, event: 'gate_passed', workspaceId: 'ws-1' },
+      { ...base, event: 'run_checkpoint', checkpointId: 'cp-1', projectId: 'proj-1' },
     ] as const;
 
     for (const payload of cases) {
