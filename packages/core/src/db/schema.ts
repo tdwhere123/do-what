@@ -6,6 +6,8 @@ export const TABLE_APPROVAL_QUEUE = 'approval_queue';
 export const TABLE_SNAPSHOTS = 'snapshots';
 export const TABLE_SCHEMA_VERSION = 'schema_version';
 export const TABLE_DIAGNOSTICS_BASELINE = 'diagnostics_baseline';
+export const TABLE_BASELINE_LOCKS = 'baseline_locks';
+export const TABLE_GOVERNANCE_LEASES = 'governance_leases';
 
 export interface EventLogRow {
   revision: number;
@@ -77,4 +79,27 @@ export interface DiagnosticsBaselineRow {
   error_count: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface BaselineLockRow {
+  lock_id: string;
+  run_id: string;
+  surface_id: string;
+  workspace_id: string;
+  baseline_fingerprint: string;
+  locked_at: string;
+  files_snapshot: string;
+}
+
+export interface GovernanceLeaseRow {
+  lease_id: string;
+  run_id: string;
+  workspace_id: string;
+  surface_id: string;
+  valid_snapshot: string;
+  conflict_conclusions: string;
+  invalidation_conditions: string;
+  issued_at: string;
+  expires_at: string;
+  status: string;
 }

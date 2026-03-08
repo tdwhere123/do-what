@@ -4,9 +4,11 @@ import os from 'node:os';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 import { afterEach, describe, it } from 'node:test';
+import type { GitRunner } from '@do-what/tools';
 import { runPendingMigrations } from '../db/migration-runner.js';
 import type { FastGateResult } from '../integrator/fast-gate.js';
 import { Integrator } from '../integrator/integrator.js';
+import { writeRepoFile } from './git-fixture.js';
 
 const tempDirs: string[] = [];
 
@@ -31,7 +33,52 @@ class FakeEventBus {
   }
 }
 
-function createTempState(): { dbPath: string; repoPath: string } {
+async function waitFor(
+  predicate: () => boolean,
+  timeoutMs = 1000,
+): Promise<void> {
+  const startedAt = Date.now();
+  while (!predicate()) {
+    if (Date.now() - startedAt > timeoutMs) {
+      throw new Error('timed out waiting for condition');
+    }
+    await new Promise((resolve) => {
+      setTimeout(resolve, 10);
+    });
+  }
+}
+
+function createFakeGitRunner(
+  files: Record<string, string>,
+  options: {
+    applyError?: string;
+  } = {},
+): GitRunner {
+  return async (args) => {
+    if (args[0] === 'ls-files') {
+      const requested = args.slice(args.indexOf('--') + 1);
+      const matched = Object.keys(files).filter((filePath) => requested.includes(filePath));
+      return { exitCode: 0, stderr: '', stdout: matched.join('\n') };
+    }
+    if (args[0] === 'hash-object') {
+      const hash = files[String(args[1])];
+      return { exitCode: 0, stderr: '', stdout: `${hash ?? ''}\n` };
+    }
+    if (args[0] === 'apply') {
+      if (options.applyError) {
+        throw new Error(options.applyError);
+      }
+      return { exitCode: 0, stderr: '', stdout: '' };
+    }
+    throw new Error(`unexpected git command: ${args.join(' ')}`);
+  };
+}
+
+function createTempState(): {
+  dbPath: string;
+  repoPath: string;
+  trackedFiles: Record<string, string>;
+} {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'do-what-integrator-'));
   tempDirs.push(tempDir);
   const dbPath = path.join(tempDir, 'state.db');
@@ -42,7 +89,16 @@ function createTempState(): { dbPath: string; repoPath: string } {
   runPendingMigrations(db);
   db.close();
 
-  return { dbPath, repoPath };
+  writeRepoFile(repoPath, 'packages/core/src/index.ts', 'export const repo = true;\n');
+  writeRepoFile(repoPath, 'packages/core/src/other.ts', 'export const other = true;\n');
+  return {
+    dbPath,
+    repoPath,
+    trackedFiles: {
+      'packages/core/src/index.ts': 'hash-index',
+      'packages/core/src/other.ts': 'hash-other',
+    },
+  };
 }
 
 function insertRun(dbPath: string, runId: string): void {
@@ -89,7 +145,7 @@ afterEach(() => {
 
 describe('Integrator', () => {
   it('publishes gate_passed and updates run metadata on success', async () => {
-    const { dbPath, repoPath } = createTempState();
+    const { dbPath, repoPath, trackedFiles } = createTempState();
     insertRun(dbPath, 'run-success');
 
     const eventBus = new FakeEventBus();
@@ -110,6 +166,7 @@ describe('Integrator', () => {
           };
         },
       },
+      gitRunner: createFakeGitRunner(trackedFiles),
       repoPath,
     });
 
@@ -117,7 +174,7 @@ describe('Integrator', () => {
       completedAt: '2026-01-01T00:00:01.000Z',
       patch: '',
       runId: 'run-success',
-      touchedPaths: [],
+      touchedPaths: ['packages/core/src/index.ts'],
       workspaceId: 'ws-integrator',
     });
 
@@ -133,7 +190,7 @@ describe('Integrator', () => {
   });
 
   it('publishes conflict when git apply fails', async () => {
-    const { dbPath, repoPath } = createTempState();
+    const { dbPath, repoPath, trackedFiles } = createTempState();
     insertRun(dbPath, 'run-conflict');
 
     const eventBus = new FakeEventBus();
@@ -146,9 +203,7 @@ describe('Integrator', () => {
           throw new Error('fast gate should not run on conflict');
         },
       },
-      gitRunner: async () => {
-        throw new Error('git apply failed');
-      },
+      gitRunner: createFakeGitRunner(trackedFiles, { applyError: 'git apply failed' }),
       repoPath,
     });
 
@@ -164,7 +219,7 @@ describe('Integrator', () => {
   });
 
   it('publishes gate_failed and replay_requested when the fast gate fails', async () => {
-    const { dbPath, repoPath } = createTempState();
+    const { dbPath, repoPath, trackedFiles } = createTempState();
     insertRun(dbPath, 'run-a');
     insertRun(dbPath, 'run-b');
 
@@ -181,6 +236,7 @@ describe('Integrator', () => {
             resolveGate = resolve;
           }),
       },
+      gitRunner: createFakeGitRunner(trackedFiles),
       repoPath,
     });
 
@@ -199,6 +255,7 @@ describe('Integrator', () => {
       workspaceId: 'ws-integrator',
     });
 
+    await waitFor(() => resolveGate !== undefined);
     resolveGate?.({
       afterErrorCount: 3,
       baselineErrorCount: 1,

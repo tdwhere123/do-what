@@ -8,7 +8,8 @@ export type RunHotStatus =
   | 'completed'
   | 'failed'
   | 'cancelled'
-  | 'interrupted';
+  | 'interrupted'
+  | 'governance_invalid';
 
 export type EngineHotStatus =
   | 'disconnected'
@@ -65,4 +66,3 @@ export interface CoreHotState {
   readonly recent_events: readonly BaseEvent[];
   readonly last_event_seq: number;
 }
-

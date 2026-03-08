@@ -17,7 +17,7 @@ describe('AnyEventSchema', () => {
       { ...base, type: 'token_stream', text: 'hello', isComplete: false },
       { ...base, operation: 'search', query: 'auth', results: [] },
       { ...base, event: 'engine_connect', engineType: 'codex', version: '1.0.0' },
-      { ...base, event: 'gate_passed', workspaceId: 'ws-1' },
+      { ...base, event: 'run_topology_invalid', violations: [], workspaceId: 'ws-1' },
       { ...base, event: 'run_checkpoint', checkpointId: 'cp-1', projectId: 'proj-1' },
     ] as const;
 

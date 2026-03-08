@@ -159,25 +159,7 @@ export async function startHttpServer(
   const fastGate = new FastGate({
     baselineTracker,
   });
-  const integrator = new Integrator({
-    dbPath: stateDbPath,
-    dbWriter: workerClient,
-    eventBus,
-    fastGate,
-    repoPath: workspaceRoot,
-  });
-  const worktreeLifecycle = new WorktreeLifecycle({
-    dbPath: stateDbPath,
-    dbWriter: workerClient,
-    integrator,
-    repoPath: workspaceRoot,
-    worktreeManager,
-  });
-  try {
-    await worktreeLifecycle.cleanupOrphans([]);
-  } catch (error) {
-    console.warn('[core][http] skipped orphan worktree cleanup', error);
-  }
+  let worktreeLifecycle: WorktreeLifecycle;
   const runRegistry = new RunRegistry({
     dbWriter: workerClient,
     eventBus,
@@ -195,6 +177,7 @@ export async function startHttpServer(
           || event.status === 'failed'
           || event.status === 'cancelled'
           || event.status === 'interrupted'
+          || event.status === 'governance_invalid'
             ? event.status
             : 'running',
         updated_at: new Date().toISOString(),
@@ -213,6 +196,48 @@ export async function startHttpServer(
       }).result,
     source: 'core.run-registry',
   });
+  const integrator = new Integrator({
+    dbPath: stateDbPath,
+    dbWriter: workerClient,
+    eventBus,
+    fastGate,
+    governanceInvalidator: {
+      invalidateRun: async (runId, reason) => {
+        const invalidated = runRegistry.invalidateGovernance(runId, reason);
+        if (invalidated) {
+          return;
+        }
+        await workerClient.write({
+          params: [new Date().toISOString(), new Date().toISOString(), runId],
+          sql: `UPDATE runs
+                SET status = 'governance_invalid',
+                    updated_at = ?,
+                    completed_at = ?
+                WHERE run_id = ?`,
+        });
+        eventBus.publish({
+          reason,
+          runId,
+          source: 'core.governance',
+          status: 'governance_invalid',
+          timestamp: new Date().toISOString(),
+        });
+      },
+    },
+    repoPath: workspaceRoot,
+  });
+  worktreeLifecycle = new WorktreeLifecycle({
+    dbPath: stateDbPath,
+    dbWriter: workerClient,
+    integrator,
+    repoPath: workspaceRoot,
+    worktreeManager,
+  });
+  try {
+    await worktreeLifecycle.cleanupOrphans([]);
+  } catch (error) {
+    console.warn('[core][http] skipped orphan worktree cleanup', error);
+  }
   const soulToolDispatcher = createSoulToolDispatcher({
     configPath: options.soulConfigPath,
     dbPath: path.join(stateDir, 'soul.db'),
@@ -365,7 +390,7 @@ export async function startHttpServer(
     stopping = true;
 
     await app.close();
-    runRegistry.stopAll();
+    await runRegistry.stopAll();
     sseManager.closeAll();
     ackTracker.close();
     policyEngine.stop();

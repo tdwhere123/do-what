@@ -19,6 +19,7 @@ describe('RunLifecycleEventSchema', () => {
       { ...base, status: 'failed', error: 'boom', code: 'E_FAIL' },
       { ...base, status: 'cancelled', cancelledBy: 'user' },
       { ...base, status: 'interrupted', reason: 'agent_stuck' },
+      { ...base, status: 'governance_invalid', reason: 'lease invalidated' },
     ] as const;
 
     for (const item of cases) {

@@ -4,7 +4,12 @@ import { createReadConnection } from '../db/read-connection.js';
 import { TABLE_APPROVAL_QUEUE, TABLE_EVENT_LOG, TABLE_RUNS } from '../db/schema.js';
 
 const DEFAULT_MAX_RECENT_EVENTS = 20;
-const RUN_EVENT_SOURCES = new Set(['core.rehydrate', 'core.run-machine', 'core.run-registry']);
+const RUN_EVENT_SOURCES = new Set([
+  'core.governance',
+  'core.rehydrate',
+  'core.run-machine',
+  'core.run-registry',
+]);
 
 interface EventLogBootstrapRow {
   payload: string;
@@ -102,6 +107,7 @@ function toRunHotStatus(value: string): RunHotState['status'] | null {
     case 'created':
     case 'failed':
     case 'interrupted':
+    case 'governance_invalid':
     case 'running':
     case 'started':
     case 'waiting_approval':
@@ -129,7 +135,13 @@ function isRunLifecycleEvent(event: BaseEvent): boolean {
     return false;
   }
 
-  if (status === 'started' || status === 'waiting_approval' || status === 'cancelled' || status === 'interrupted') {
+  if (
+    status === 'started'
+    || status === 'waiting_approval'
+    || status === 'cancelled'
+    || status === 'interrupted'
+    || status === 'governance_invalid'
+  ) {
     return true;
   }
 
@@ -214,7 +226,13 @@ function upsertRunFromEvent(
   if (nextStatus !== 'waiting_approval') {
     clearPendingApprovalsForRun(state, event.runId);
   }
-  if (nextStatus === 'completed' || nextStatus === 'failed' || nextStatus === 'cancelled' || nextStatus === 'interrupted') {
+  if (
+    nextStatus === 'completed'
+    || nextStatus === 'failed'
+    || nextStatus === 'cancelled'
+    || nextStatus === 'interrupted'
+    || nextStatus === 'governance_invalid'
+  ) {
     clearCheckpointsForRun(state, event.runId);
   }
 }
@@ -486,7 +504,13 @@ export class HotStateManager {
     if (change.status !== 'waiting_approval') {
       clearPendingApprovalsForRun(nextState, change.run_id);
     }
-    if (change.status === 'completed' || change.status === 'failed' || change.status === 'cancelled' || change.status === 'interrupted') {
+    if (
+      change.status === 'completed'
+      || change.status === 'failed'
+      || change.status === 'cancelled'
+      || change.status === 'interrupted'
+      || change.status === 'governance_invalid'
+    ) {
       clearCheckpointsForRun(nextState, change.run_id);
     }
     this.state = nextState;

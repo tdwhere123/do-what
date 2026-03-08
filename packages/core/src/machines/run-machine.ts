@@ -4,7 +4,12 @@ import { AGENT_STUCK_THRESHOLD } from '../config.js';
 import type { DbWriteRequest } from '../db/worker-client.js';
 
 type PolicyResult = 'allow' | 'ask' | 'deny';
-type RunTerminalStatus = 'completed' | 'failed' | 'cancelled' | 'interrupted';
+type RunTerminalStatus =
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+  | 'interrupted'
+  | 'governance_invalid';
 type RunMachineStatus =
   | 'idle'
   | 'created'
@@ -72,6 +77,7 @@ export type RunMachineEvent =
       reason?: string;
       toolName: string;
     }
+  | { type: 'GOVERNANCE_INVALIDATE'; reason?: string }
   | { type: 'COMPLETE' }
   | { type: 'FAIL'; error: string }
   | { type: 'CANCEL'; cancelledBy: string }
@@ -82,6 +88,7 @@ export const RUN_TERMINAL_STATES: readonly RunTerminalStatus[] = [
   'failed',
   'cancelled',
   'interrupted',
+  'governance_invalid',
 ];
 
 const RUN_UPSERT_SQL = `
@@ -234,6 +241,11 @@ export const runMachine = setup({
       error: ({ event }) => (event.type === 'FAIL' ? event.error : undefined),
       status: () => 'failed' as const,
     }),
+    markGovernanceInvalid: assign({
+      error: ({ event }) =>
+        event.type === 'GOVERNANCE_INVALIDATE' ? event.reason : undefined,
+      status: () => 'governance_invalid' as const,
+    }),
     markInterrupted: assign({
       status: () => 'interrupted' as const,
     }),
@@ -285,6 +297,16 @@ export const runMachine = setup({
         ...buildBaseLifecycleEvent(context),
         error: event.error,
         status: 'failed',
+      });
+    },
+    publishGovernanceInvalid: ({ context, event }) => {
+      if (event.type !== 'GOVERNANCE_INVALIDATE') {
+        return;
+      }
+      publishRunLifecycle(context, {
+        ...buildBaseLifecycleEvent(context),
+        reason: event.reason,
+        status: 'governance_invalid',
       });
     },
     publishInterrupted: ({ context, event }) => {
@@ -356,6 +378,13 @@ export const runMachine = setup({
     saveFailed: ({ context, event }) => {
       persistRunStatus(context, 'failed', event.type === 'FAIL' ? event.error : undefined);
     },
+    saveGovernanceInvalid: ({ context, event }) => {
+      persistRunStatus(
+        context,
+        'governance_invalid',
+        event.type === 'GOVERNANCE_INVALIDATE' ? event.reason : undefined,
+      );
+    },
     saveInterrupted: ({ context }) => {
       persistRunStatus(context, 'interrupted');
     },
@@ -403,11 +432,13 @@ export const runMachine = setup({
    * running -> FAIL -> failed
    * running -> CANCEL -> cancelled
    * running -> INTERRUPT -> interrupted
+   * running -> GOVERNANCE_INVALIDATE -> governance_invalid
    * running -> TOOL_FAILED[threshold] -> interrupted
    * waiting_approval -> TOOL_RESOLVED[approved] -> running
    * waiting_approval -> TOOL_RESOLVED[denied] -> running|interrupted
    * waiting_approval -> CANCEL -> cancelled
    * waiting_approval -> INTERRUPT -> interrupted
+   * waiting_approval -> GOVERNANCE_INVALIDATE -> governance_invalid
    */
   context: ({ input }) => ({
     agentId: input.agentId,
@@ -436,6 +467,7 @@ export const runMachine = setup({
       },
     },
     failed: { type: 'final' },
+    governance_invalid: { type: 'final' },
     idle: {
       on: {
         START: {
@@ -455,6 +487,14 @@ export const runMachine = setup({
         COMPLETE: {
           actions: ['markCompleted', 'saveCompleted', 'publishCompleted'],
           target: 'completed',
+        },
+        GOVERNANCE_INVALIDATE: {
+          actions: [
+            'markGovernanceInvalid',
+            'saveGovernanceInvalid',
+            'publishGovernanceInvalid',
+          ],
+          target: 'governance_invalid',
         },
         FAIL: {
           actions: ['markFailed', 'saveFailed', 'publishFailed'],
@@ -516,6 +556,14 @@ export const runMachine = setup({
         CANCEL: {
           actions: ['markCancelled', 'saveCancelled', 'publishCancelled'],
           target: 'cancelled',
+        },
+        GOVERNANCE_INVALIDATE: {
+          actions: [
+            'markGovernanceInvalid',
+            'saveGovernanceInvalid',
+            'publishGovernanceInvalid',
+          ],
+          target: 'governance_invalid',
         },
         INTERRUPT: {
           actions: ['markInterrupted', 'saveInterrupted', 'publishInterrupted'],

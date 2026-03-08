@@ -40,6 +40,33 @@ describe('IntegrationEventSchema', () => {
         event: 'replay_requested',
         touchedPaths: ['packages/core/src/index.ts'],
       },
+      {
+        ...base,
+        event: 'run_serialized',
+        reason: 'hard_stale_serialize',
+        reconcileCount: 1,
+        workspaceId: 'ws-1',
+      },
+      {
+        ...base,
+        conflictKind: 'migration_conflict',
+        event: 'run_start_denied',
+        reason: 'conflicting governance lease',
+        surfaceId: 'surface-1',
+        workspaceId: 'ws-1',
+      },
+      {
+        ...base,
+        event: 'run_topology_invalid',
+        topologyKind: 'invalid',
+        violations: [
+          {
+            description: 'free DAG is not allowed',
+            node_ids: ['merge'],
+            violation_type: 'free_dag',
+          },
+        ],
+      },
     ] as const;
 
     for (const payload of cases) {

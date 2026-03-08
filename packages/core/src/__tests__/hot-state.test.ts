@@ -88,4 +88,33 @@ describe('HotStateManager', () => {
     assert.equal(snapshot.runs.get('run-1')?.status, 'running');
     assert.equal(snapshot.runs.get('run-1')?.active_approval_id, undefined);
   });
+
+  it('tracks governance_invalid as a terminal run status', () => {
+    const manager = new HotStateManager({
+      dbPath: ':memory:',
+    });
+
+    manager.apply(
+      createEvent(1, {
+        engineType: 'claude',
+        runId: 'run-2',
+        source: 'core.run-registry',
+        status: 'created',
+        timestamp: '2026-03-08T09:10:00.000Z',
+        workspaceId: 'ws-2',
+      }),
+    );
+    manager.apply(
+      createEvent(2, {
+        reason: 'lease invalidated',
+        runId: 'run-2',
+        source: 'core.governance',
+        status: 'governance_invalid',
+        timestamp: '2026-03-08T09:10:01.000Z',
+      }),
+    );
+
+    const snapshot = manager.snapshot();
+    assert.equal(snapshot.runs.get('run-2')?.status, 'governance_invalid');
+  });
 });

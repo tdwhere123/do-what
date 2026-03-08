@@ -51,6 +51,7 @@ const NON_TERMINAL_RUN_STATUSES = ['created', 'started', 'running', 'waiting_app
 export class RunRegistry {
   private readonly actors = new Map<string, RunActor>();
   private readonly options: RunRegistryOptions;
+  private readonly pendingStatusChanges = new Set<Promise<void>>();
 
   constructor(options: RunRegistryOptions) {
     this.options = options;
@@ -83,12 +84,18 @@ export class RunRegistry {
         return;
       }
       previousStatus = nextStatus;
-      void this.options.onStatusChange?.({
-        agentId: input.agentId,
-        engineType: input.engineType,
-        runId: input.runId,
-        status: nextStatus,
-        workspaceId: input.workspaceId,
+      const task = Promise.resolve(
+        this.options.onStatusChange?.({
+          agentId: input.agentId,
+          engineType: input.engineType,
+          runId: input.runId,
+          status: nextStatus,
+          workspaceId: input.workspaceId,
+        }),
+      ).then(() => undefined);
+      this.pendingStatusChanges.add(task);
+      void task.finally(() => {
+        this.pendingStatusChanges.delete(task);
       });
     });
 
@@ -111,6 +118,18 @@ export class RunRegistry {
     return this.actors.get(runId);
   }
 
+  invalidateGovernance(runId: string, reason?: string): boolean {
+    const actor = this.actors.get(runId);
+    if (!actor) {
+      return false;
+    }
+    actor.send({
+      reason,
+      type: 'GOVERNANCE_INVALIDATE',
+    });
+    return true;
+  }
+
   listRunIds(): string[] {
     return [...this.actors.keys()];
   }
@@ -124,11 +143,12 @@ export class RunRegistry {
     return true;
   }
 
-  stopAll(): void {
+  async stopAll(): Promise<void> {
     for (const actor of this.actors.values()) {
       actor.stop();
     }
     this.actors.clear();
+    await Promise.allSettled([...this.pendingStatusChanges]);
   }
 }
 

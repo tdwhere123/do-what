@@ -1,5 +1,7 @@
 # T042 · focus-surface-baseline-lock（FocusSurface + BaselineLock 精确漂移判定）
 
+**状态:** ✅ 完成
+
 **Epic:** v0.1.x Phase 3 — 编排与治理
 **路线:** F：精确漂移判定（第一步）
 **依赖:** T040（AckOverlay 路径切分），T041（memory_repo 降格）

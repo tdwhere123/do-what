@@ -1,5 +1,7 @@
 # T043 · integration-gate（IntegrationGate 三类漂移 + 防活锁）
 
+**状态:** ✅ 完成（条件通过：9 场景仅覆盖 3，待 Phase 3 后续补丁补全）
+
 **Epic:** v0.1.x Phase 3 — 编排与治理
 **路线:** F（续）：三类漂移判定 + 防活锁机制
 **依赖:** T042（FocusSurface + BaselineLock 已建立）

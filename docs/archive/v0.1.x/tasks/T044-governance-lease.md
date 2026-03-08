@@ -1,5 +1,7 @@
 # T044 · governance-lease（预飞行治理 + 原生表面报告）
 
+**状态:** ✅ 完成
+
 **Epic:** v0.1.x Phase 3 — 编排与治理
 **路线:** G：GovernanceLease 预飞行治理 + NativeSurfaceReport
 **依赖:** T042（FocusSurface），T043（IntegrationGate 漂移判定）

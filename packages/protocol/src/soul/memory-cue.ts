@@ -43,5 +43,5 @@ export const MemoryCueSchema = z.object({
 export type LegacyCueType = z.infer<typeof LegacyCueTypeSchema>;
 export type FormationKind = z.infer<typeof FormationKindSchema>;
 export type Dimension = z.infer<typeof DimensionSchema>;
-export type FocusSurface = z.infer<typeof FocusSurfaceSchema>;
+export type MemoryFocusSurface = z.infer<typeof FocusSurfaceSchema>;
 export type MemoryCue = z.infer<typeof MemoryCueSchema>;

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { createRunActor } from '../machines/run-machine.js';
+import { createRunActor, RUN_TERMINAL_STATES } from '../machines/run-machine.js';
 
 class FakeEventBus {
   public readonly events: Array<Record<string, unknown>> = [];
@@ -97,5 +97,28 @@ describe('RunMachine', () => {
     );
     assert.equal(Boolean(interrupted), true);
   });
-});
 
+  it('marks governance_invalid when governance invalidation is raised', () => {
+    const eventBus = new FakeEventBus();
+    const actor = createRunActor({
+      engineType: 'claude',
+      eventBus,
+      runId: 'run-governance',
+      workspaceId: 'ws-4',
+    });
+    actor.start();
+
+    actor.send({ type: 'START' });
+    actor.send({
+      reason: 'lease invalidated',
+      type: 'GOVERNANCE_INVALIDATE',
+    });
+
+    assert.equal(String(actor.getSnapshot().value), 'governance_invalid');
+    const invalidated = eventBus.events.find(
+      (event) => event.status === 'governance_invalid',
+    );
+    assert.equal(Boolean(invalidated), true);
+    assert.equal(RUN_TERMINAL_STATES.includes('governance_invalid'), true);
+  });
+});

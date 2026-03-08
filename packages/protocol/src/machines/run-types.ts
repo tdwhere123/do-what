@@ -42,4 +42,8 @@ export type RunEvent =
   | ({
       type: 'RUN_INTERRUPTED';
       data: Extract<RunLifecycleEvent, { status: 'interrupted' }>;
+    } & EventObject)
+  | ({
+      type: 'RUN_GOVERNANCE_INVALID';
+      data: Extract<RunLifecycleEvent, { status: 'governance_invalid' }>;
     } & EventObject);

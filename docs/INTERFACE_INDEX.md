@@ -50,6 +50,7 @@
 | `failed` | `error`, `code?` | 执行失败 |
 | `cancelled` | `cancelledBy` | 用户或系统取消 |
 | `interrupted` | `reason: 'agent_stuck' \| 'core_restart' \| 'network_error'` | 中断结束 |
+| `governance_invalid` | `reason?` | 治理租约失效或被主干变更作废 |
 
 源文件：`packages/protocol/src/events/run.ts`
 
@@ -122,6 +123,9 @@
 | `gate_failed` | `workspaceId`, `afterErrorCount`, `baselineErrorCount`, `newDiagnostics`, `touchedPaths` | 集成门失败 |
 | `conflict` | `workspaceId`, `reason`, `touchedPaths` | 合并冲突 |
 | `replay_requested` | `workspaceId`, `affectedRunIds`, `touchedPaths` | 请求重放 |
+| `run_serialized` | `workspaceId`, `reason`, `reconcileCount`, `touchedPaths` | 第二次 `hard_stale` 后降级为串行 |
+| `run_start_denied` | `workspaceId`, `reason`, `surfaceId`, `conflictKind?` | 预飞行治理拒绝启动 |
+| `run_topology_invalid` | `workspaceId`, `topologyKind`, `violations[]` | 编排模板拓扑不合法 |
 
 源文件：`packages/protocol/src/events/integration.ts`
 
@@ -163,6 +167,7 @@
 补充说明：
 - `/state` 读路径现基于 `HotStateManager` 的内存热态，而不是每次直接从 SQLite 现查。
 - `/state` 对外 JSON 结构保持兼容，仍返回 `revision`, `recentEvents`, `pendingApprovals`。
+- `RunHotState.status` 当前覆盖 `created | started | running | waiting_approval | completed | failed | cancelled | interrupted | governance_invalid`。
 
 ### projection
 
@@ -187,6 +192,63 @@
 补充说明：
 - 同步路径负责校验、分配 revision、进入事件总线并创建 pending ack。
 - 异步路径负责 SSE 广播、Projection 失效以及最终 ack 状态收敛。
+
+### focus-surface
+
+| 类型 | 关键字段 | 说明 |
+|---|---|---|
+| `ArtifactKind` | `'source_file' \| 'test_file' \| 'schema_type' \| 'migration' \| 'config'` | FocusSurface 文件分类 |
+| `FocusSurface` | `surface_id`, `workspace_id`, `package_scope[]`, `path_globs[]`, `artifact_kind[]`, `baseline_fingerprint`, `created_at` | Run 提交前声明的影响面与基线指纹 |
+
+补充说明：
+- `path_globs` 为空时，Core 默认退化为 `candidate.touchedPaths`，不做整仓扫描。
+
+### baseline-lock
+
+| 类型 | 关键字段 | 说明 |
+|---|---|---|
+| `FileSnapshot` | `path`, `git_hash`, `size_bytes` | 单文件基线快照 |
+| `BaselineLock` | `lock_id`, `run_id`, `surface_id`, `workspace_id`, `baseline_fingerprint`, `locked_at`, `files_snapshot[]` | FocusSurface 在提交时刻冻结出的文件基线 |
+
+补充说明：
+- `baseline_fingerprint` 由排序后的 `path:git_hash` 列表做 SHA256 得到。
+
+### drift
+
+| 类型 | 关键字段 | 说明 |
+|---|---|---|
+| `DriftKind` | `'ignore' \| 'soft_stale' \| 'hard_stale'` | 三类漂移等级 |
+| `DriftAssessment` | `drift_kind`, `overlapping_files[]`, `assessment_reason` | 基线锁与当前主干的漂移判定 |
+| `MergeDecision` | `allowed`, `reason: 'no_drift' \| 'soft_stale_ok' \| 'hard_stale_reconcile' \| 'hard_stale_serialize' \| 'already_reconciled'`, `reconcile_count` | IntegrationGate 的合并许可结果 |
+
+### governance
+
+| 类型 | 关键字段 | 说明 |
+|---|---|---|
+| `ConflictKind` | `'path_overlap' \| 'schema_conflict' \| 'migration_conflict'` | 并行 surface 冲突种类 |
+| `ConflictResolution` | `'serialize' \| 'allow_soft' \| 'block'` | 治理冲突处置策略 |
+| `ConflictConclusion` | `conflicting_surface_ids[]`, `conflict_kind`, `resolution` | 预飞行治理对冲突的结论 |
+| `InvalidationCondition` | `trigger: 'main_commit' \| 'schema_change' \| 'migration_added'`, `affected_paths[]` | lease 失效触发条件 |
+| `GovernanceLease` | `lease_id`, `run_id`, `workspace_id`, `surface_id`, `valid_snapshot`, `conflict_conclusions[]`, `invalidation_conditions[]`, `issued_at`, `expires_at`, `status` | Run 启动前签发的治理租约 |
+| `SurfaceStatus` | `surface_id`, `run_id`, `status: 'aligned' \| 'shadowed' \| 'conflicting'`, `lease_id?`, `drift_kind?` | 某个 surface 在 report 中的状态 |
+| `NativeSurfaceReport` | `report_id`, `workspace_id`, `generated_at`, `surfaces[]` | 当前 workspace 活跃 surface 的原生治理报告 |
+
+补充说明：
+- `GovernanceLease.status` 为 `active | invalidated | expired | released`。
+- `shadowed` 表示 candidate surface 被另一个 surface 严格覆盖；等价覆盖仍按 `conflicting` 处理。
+
+### topology
+
+| 类型 | 关键字段 | 说明 |
+|---|---|---|
+| `TopologyKind` | `'linear' \| 'parallel_merge' \| 'revise_loop' \| 'bounded_fan_out'` | 唯一允许的四类编排拓扑 |
+| `TopologyConstraints` | `max_parallel`, `max_loop_count`, `max_fan_out` | 模板级硬约束 |
+| `OrchestrationTemplate` | `template_id`, `topology?`, `topology_hint?`, `nodes[]`, `edges[]`, `constraints` | `Integrator.submit()` 的显式编排输入 |
+| `TopologyViolation` | `violation_type`, `node_ids[]`, `description` | 拓扑校验失败项 |
+| `ValidationResult` | `valid`, `topology_kind`, `violations[]` | TopologyValidator 输出 |
+
+补充说明：
+- `TopologyViolation.violation_type` 当前覆盖 `free_dag | parallel_limit | loop_limit | fan_out_limit | nested_parallel | multi_merge_point`。
 
 ---
 
@@ -273,18 +335,20 @@
 
 ## SQLite 表结构 — state.db
 
-来源：`packages/core/src/db/migrations/v1.ts`、`packages/core/src/db/migrations/v2.ts`
+来源：`packages/core/src/db/migrations/v1.ts`、`packages/core/src/db/migrations/v2.ts`、`packages/core/src/db/migrations/v3.ts`、`packages/core/src/db/migrations/v4.ts`
 
 | 表名 | 迁移版本 | 关键列 | 说明 |
 |---|---|---|---|
 | `event_log` | `v1` | `revision`, `timestamp`, `event_type`, `run_id`, `source`, `payload` | 事件主日志 |
-| `runs` | `v1` | `run_id`, `workspace_id`, `agent_id`, `engine_type`, `status`, `created_at`, `updated_at`, `completed_at`, `error`, `metadata` | run 热状态持久化 |
+| `runs` | `v1` | `run_id`, `workspace_id`, `agent_id`, `engine_type`, `status`, `created_at`, `updated_at`, `completed_at`, `error`, `metadata` | run 热状态持久化；`status` 已包含 `governance_invalid`，`metadata` 持久化 `focusSurface`、`baselineLock`、`governanceLease`、`topologyKind` 等 Phase 3 元数据 |
 | `workspaces` | `v1` | `workspace_id`, `name`, `root_path`, `engine_type`, `created_at`, `last_opened_at` | 工作区元数据 |
 | `agents` | `v1` | `agent_id`, `name`, `role`, `engine_type`, `memory_ns`, `created_at`, `config` | agent 注册信息 |
 | `approval_queue` | `v1` | `approval_id`, `run_id`, `tool_name`, `args`, `status`, `created_at`, `resolved_at`, `resolver` | 审批队列 |
 | `snapshots` | `v1` | `snapshot_id`, `revision`, `created_at`, `payload` | 历史快照表 |
 | `schema_version` | `v1` | `version`, `applied_at`, `description` | Core schema migration 版本 |
 | `diagnostics_baseline` | `v2` | `workspace_id`, `error_count`, `created_at`, `updated_at` | 集成门诊断基线 |
+| `baseline_locks` | `v3` | `lock_id`, `run_id`, `surface_id`, `workspace_id`, `baseline_fingerprint`, `locked_at`, `files_snapshot` | FocusSurface 基线锁；`files_snapshot` 以 JSON 持久化 |
+| `governance_leases` | `v4` | `lease_id`, `run_id`, `workspace_id`, `surface_id`, `valid_snapshot`, `conflict_conclusions`, `invalidation_conditions`, `issued_at`, `expires_at`, `status` | Run 预飞行治理租约；复杂结构均以 JSON 持久化 |
 
 `event_log.event_type` 写入优先级固定为：
 
@@ -334,7 +398,7 @@
 
 | 状态机 | 主要状态 | 主要事件 | 说明 |
 |---|---|---|---|
-| `runMachine` | `idle`, `created`, `started`, `running`, `waiting_approval`, `completed`, `failed`, `cancelled`, `interrupted` | `START`, `TOOL_REQUEST`, `TOOL_RESOLVED`, `TOOL_FAILED`, `COMPLETE`, `FAIL`, `CANCEL`, `INTERRUPT` | 负责 run 生命周期与 run 状态持久化 |
+| `runMachine` | `idle`, `created`, `started`, `running`, `waiting_approval`, `completed`, `failed`, `cancelled`, `interrupted`, `governance_invalid` | `START`, `TOOL_REQUEST`, `TOOL_RESOLVED`, `TOOL_FAILED`, `COMPLETE`, `FAIL`, `CANCEL`, `INTERRUPT`, `GOVERNANCE_INVALIDATE` | 负责 run 生命周期与 run 状态持久化 |
 | `engineMachine` | `disconnected`, `connecting`, `connected`, `degraded`, `circuit_open` | `CONNECT`, `DISCONNECT`, `HEARTBEAT_TIMEOUT`, `PARSE_ERROR`, `RECOVER` | 负责引擎连接状态与熔断 |
 | `approvalMachine` | `idle`, `waiting` | `ENQUEUE`, `USER_APPROVE`, `USER_DENY`, `TIMEOUT` | 负责审批队列串行消费与 timeout |
 
@@ -500,3 +564,7 @@ Codex 原始事件类型当前归一化规则：
 | 2026-03-08 | T039 | 补充 `ProjectionKind` / `ProjectionEntry` 与 `/soul/proposals`、`/soul/healing/stats` 的 projection 读模型说明 |
 | 2026-03-08 | T040 | 补充 `AckOverlay`、`GET /acks/:ack_id` 与 `/internal/hook-event`、`/_dev/publish` 的 `ackId` 返回体 |
 | 2026-03-08 | T041 | 明确 `memory_repo` 仅接收 `impact_level = 'canon'` 的 cue 写入 |
+| 2026-03-09 | T042 | 补充 `FocusSurface`、`BaselineLock`、`baseline_locks` 表与基线锁指纹规则 |
+| 2026-03-09 | T043 | 补充 `DriftAssessment` / `MergeDecision`、`run_serialized` 事件与串行降级说明 |
+| 2026-03-09 | T044 | 补充 `GovernanceLease`、`NativeSurfaceReport`、`run_start_denied` 与 `governance_leases` 表 |
+| 2026-03-09 | T045 | 补充 `OrchestrationTemplate`、`TopologyValidator`、`run_topology_invalid` 与 `governance_invalid` 终态 |

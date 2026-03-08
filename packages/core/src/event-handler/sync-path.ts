@@ -24,6 +24,7 @@ function deriveEntityType(event: BaseEvent): 'approval' | 'checkpoint' | 'engine
     || candidate.status === 'failed'
     || candidate.status === 'cancelled'
     || candidate.status === 'interrupted'
+    || candidate.status === 'governance_invalid'
     || candidate.status === 'waiting_approval'
   ) {
     return 'run';
@@ -67,4 +68,3 @@ export function runSyncPath(
     event: published,
   };
 }
-

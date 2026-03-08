@@ -42,6 +42,11 @@ export const RunInterruptedEventSchema = BaseEventSchema.extend({
   reason: z.enum(['agent_stuck', 'core_restart', 'network_error']),
 }).passthrough();
 
+export const RunGovernanceInvalidEventSchema = BaseEventSchema.extend({
+  status: z.literal('governance_invalid'),
+  reason: z.string().optional(),
+}).passthrough();
+
 export const RunLifecycleEventSchema = z.discriminatedUnion('status', [
   RunCreatedEventSchema,
   RunStartedEventSchema,
@@ -50,6 +55,7 @@ export const RunLifecycleEventSchema = z.discriminatedUnion('status', [
   RunFailedEventSchema,
   RunCancelledEventSchema,
   RunInterruptedEventSchema,
+  RunGovernanceInvalidEventSchema,
 ]);
 
 export type RunCreatedEvent = z.infer<typeof RunCreatedEventSchema>;
@@ -59,4 +65,5 @@ export type RunCompletedEvent = z.infer<typeof RunCompletedEventSchema>;
 export type RunFailedEvent = z.infer<typeof RunFailedEventSchema>;
 export type RunCancelledEvent = z.infer<typeof RunCancelledEventSchema>;
 export type RunInterruptedEvent = z.infer<typeof RunInterruptedEventSchema>;
+export type RunGovernanceInvalidEvent = z.infer<typeof RunGovernanceInvalidEventSchema>;
 export type RunLifecycleEvent = z.infer<typeof RunLifecycleEventSchema>;

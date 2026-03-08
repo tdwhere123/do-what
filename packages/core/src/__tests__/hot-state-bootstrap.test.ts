@@ -93,5 +93,36 @@ describe('HotStateManager bootstrap', () => {
     assert.equal(snapshot.runs.get('run-bootstrap')?.active_approval_id, 'approval-bootstrap');
     assert.equal(snapshot.pending_approvals.get('approval-bootstrap')?.tool_name, 'tools.shell_exec');
   });
-});
 
+  it('loads governance_invalid rows from the run table', async () => {
+    const dbPath = createTempDb();
+    const db = new Database(dbPath);
+    runPendingMigrations(db);
+
+    db.prepare(
+      `INSERT INTO runs (
+        run_id, workspace_id, agent_id, engine_type, status, created_at, updated_at, completed_at, error, metadata
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      'run-governance',
+      'ws-governance',
+      null,
+      'claude',
+      'governance_invalid',
+      '2026-03-08T10:00:01.000Z',
+      '2026-03-08T10:00:02.000Z',
+      '2026-03-08T10:00:02.000Z',
+      'lease invalidated',
+      null,
+    );
+    db.close();
+
+    const manager = new HotStateManager({
+      dbPath,
+    });
+    await manager.bootstrap();
+
+    const snapshot = manager.snapshot();
+    assert.equal(snapshot.runs.get('run-governance')?.status, 'governance_invalid');
+  });
+});

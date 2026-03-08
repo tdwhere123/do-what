@@ -5,8 +5,10 @@ import { runPendingMigrations, type DbMigration } from '../db/migration-runner.j
 import {
   TABLE_AGENTS,
   TABLE_APPROVAL_QUEUE,
+  TABLE_BASELINE_LOCKS,
   TABLE_DIAGNOSTICS_BASELINE,
   TABLE_EVENT_LOG,
+  TABLE_GOVERNANCE_LEASES,
   TABLE_RUNS,
   TABLE_SCHEMA_VERSION,
   TABLE_SNAPSHOTS,
@@ -33,8 +35,10 @@ describe('MigrationRunner', () => {
     for (const expected of [
       TABLE_AGENTS,
       TABLE_APPROVAL_QUEUE,
+      TABLE_BASELINE_LOCKS,
       TABLE_DIAGNOSTICS_BASELINE,
       TABLE_EVENT_LOG,
+      TABLE_GOVERNANCE_LEASES,
       TABLE_RUNS,
       TABLE_SCHEMA_VERSION,
       TABLE_SNAPSHOTS,
@@ -55,6 +59,8 @@ describe('MigrationRunner', () => {
     assert.deepEqual(versions, [
       { description: 'Initial schema', version: 1 },
       { description: 'Add diagnostics baseline table', version: 2 },
+      { description: 'Add baseline lock table', version: 3 },
+      { description: 'Add governance leases table', version: 4 },
     ]);
 
     db.close();
@@ -69,7 +75,7 @@ describe('MigrationRunner', () => {
     const row = db
       .prepare(`SELECT COUNT(*) as count FROM ${TABLE_SCHEMA_VERSION}`)
       .get() as { count: number };
-    assert.equal(row.count, 2);
+    assert.equal(row.count, 4);
 
     db.close();
   });

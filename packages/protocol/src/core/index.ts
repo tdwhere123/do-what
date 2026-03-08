@@ -1,4 +1,8 @@
 export * from './ack.js';
+export * from './baseline-lock.js';
+export * from './drift.js';
+export * from './focus-surface.js';
+export * from './governance.js';
 export * from './hot-state.js';
 export * from './projection.js';
-
+export * from './topology.js';
