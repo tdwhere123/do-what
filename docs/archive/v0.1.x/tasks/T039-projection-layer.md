@@ -5,6 +5,7 @@
 **依赖:** T038（CoreHotState 已建立，控制态已隔离）
 **优先级:** P2
 **估算改动:** ~350 行
+**状态:** ✅ 完成（projection: 1 测试通过；calculators 目录按偏差说明未建，已接线 pending_soul_proposals）
 
 ---
 

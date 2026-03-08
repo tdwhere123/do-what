@@ -5,6 +5,7 @@
 **依赖:** T031（soul 概念统一，Canon 级定义明确），T036（EvidenceCapsule 已处理 Canon 级写入）
 **优先级:** P2
 **估算改动:** ~200 行（逻辑删除 + 门控添加）
+**状态:** ✅ 完成（memory-tier: 1 测试通过；soul 61/61 全量通过；memory-tier.ts 在 src/write/ 下）
 
 ---
 

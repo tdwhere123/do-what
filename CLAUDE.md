@@ -23,7 +23,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 v0.1.x 阶段进度：
 - Phase 0（T028–T030）：清理减法 — 已完成
 - Phase 1（T031–T037）：SOUL 补全 — 已完成（61/61 soul 测试，29/29 protocol 测试）
-- Phase 2（T038–T041）：Core 四层分离 — 待开始
+- Phase 2（T038–T041）：Core 四层分离 — 已完成（core 47/47 测试，soul 61/61 测试）
 - Phase 3（T042–T045）：编排与治理 — 待开始
 
 **若任务涉及 v0.1 历史实现，先读 `docs/archive/v0.1/tasks/` 归档 Ticket；若是 v0.1.x 新实现，读 `docs/archive/v0.1.x/tasks/`。**

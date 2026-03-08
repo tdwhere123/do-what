@@ -5,6 +5,7 @@
 **依赖:** T038（CoreHotState），T039（Projection 层）
 **优先级:** P2
 **估算改动:** ~300 行
+**状态:** ✅ 完成（ack-overlay: 2 + sync-async-split: 1 测试通过；GET /acks/:ackId 实现在 routes.ts）
 
 ---
 
