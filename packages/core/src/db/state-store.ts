@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3';
+import type { BaseEvent } from '@do-what/protocol';
 import type { HotStateManager } from '../state/hot-state-manager.js';
 import { TABLE_APPROVAL_QUEUE, TABLE_EVENT_LOG } from './schema.js';
 import { createReadConnection } from './read-connection.js';
@@ -59,7 +60,7 @@ export class StateStore {
             runId: approval.run_id,
             toolName: approval.tool_name,
           })),
-        recentEvents: snapshot.recent_events.map((event) => ({ ...event })),
+        recentEvents: snapshot.recent_events.map((event: BaseEvent) => ({ ...event })),
         revision: snapshot.last_event_seq,
       };
     }

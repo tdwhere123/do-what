@@ -223,6 +223,17 @@ describe('HTTP server auth and SSE', () => {
     });
 
     assert.equal(publishResponse.status, 200);
+    const ackBody = (await publishResponse.json()) as { ackId: string; ok: boolean; revision: number };
+    assert.equal(typeof ackBody.ackId, 'string');
+
+    const ackStatusResponse = await fetch(`${baseUrl}/acks/${ackBody.ackId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    assert.equal(ackStatusResponse.status, 200);
+    const ackStatus = (await ackStatusResponse.json()) as { status: string };
+    assert.equal(ackStatus.status === 'pending' || ackStatus.status === 'committed', true);
 
     const body = await waitForStateMatch(baseUrl, token, (snapshot) => {
       const recentEvents = snapshot.recentEvents;
@@ -235,7 +246,7 @@ describe('HTTP server auth and SSE', () => {
         );
     });
 
-    assert.equal(body.revision, 1);
+    assert.equal(body.revision, ackBody.revision);
   });
 
   it('starts and completes a dev run with worktree allocation and integration events', async () => {

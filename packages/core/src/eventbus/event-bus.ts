@@ -2,14 +2,12 @@ import type { BaseEvent } from '@do-what/protocol';
 import EventEmitter from 'node:events';
 import type { WorkerClient } from '../db/worker-client.js';
 import { RevisionCounter } from './revision-counter.js';
-import type { SseManager } from '../server/sse.js';
 
 type EventListener<T extends BaseEvent = BaseEvent> = (event: T) => void;
 const ANY_EVENT_CHANNEL = '*';
 
 export interface EventBusOptions {
   revisionCounter?: RevisionCounter;
-  sseManager: SseManager;
   workerClient: WorkerClient;
 }
 
@@ -40,12 +38,10 @@ function getEventChannel(event: BaseEvent): string {
 export class EventBus {
   private readonly emitter = new EventEmitter();
   private readonly revisionCounter: RevisionCounter;
-  private readonly sseManager: SseManager;
   private readonly workerClient: WorkerClient;
 
   constructor(options: EventBusOptions) {
     this.revisionCounter = options.revisionCounter ?? new RevisionCounter();
-    this.sseManager = options.sseManager;
     this.workerClient = options.workerClient;
   }
 
@@ -91,7 +87,6 @@ export class EventBus {
         }
       });
 
-    this.sseManager.broadcast(eventWithRevision);
     this.emitter.emit(ANY_EVENT_CHANNEL, eventWithRevision);
     this.emitter.emit(getEventChannel(eventWithRevision), eventWithRevision);
     return eventWithRevision;

@@ -7,6 +7,7 @@
 ## 目录
 
 - [Protocol 事件类型](#protocol-事件类型)
+- [Protocol Core 类型](#protocol-core-类型)
 - [MCP Tools — Tools API](#mcp-tools--tools-api)
 - [MCP Tools — Soul API](#mcp-tools--soul-api)
 - [Core HTTP 端点](#core-http-端点)
@@ -145,6 +146,50 @@
 
 ---
 
+## Protocol Core 类型
+
+源文件：`packages/protocol/src/core/`
+
+### hot-state
+
+| 类型 | 关键字段 | 说明 |
+|---|---|---|
+| `RunHotState` | `run_id`, `status`, `workspace_id?`, `engine_type?`, `agent_id?`, `active_approval_id?`, `active_tool_name?`, `started_at?`, `updated_at`, `error?` | Core 对单个 run 的热态视图 |
+| `EngineHotState` | `engine_id`, `kind: 'claude' \| 'codex'`, `status`, `current_run_id?`, `updated_at`, `version?`, `reason?` | 引擎连接与退化状态 |
+| `ApprovalHotState` | `approval_id`, `run_id`, `tool_name`, `status: 'pending' \| 'approved' \| 'denied' \| 'timeout'`, `requested_at`, `resolved_at?`, `resolver?` | 当前审批热态 |
+| `CheckpointHotState` | `checkpoint_id`, `run_id`, `project_id?`, `active`, `triggered_at` | 当前激活的 checkpoint |
+| `CoreHotState` | `runs`, `engines`, `pending_approvals`, `active_checkpoints`, `recent_events`, `last_event_seq` | Core 内存控制态总视图 |
+
+补充说明：
+- `/state` 读路径现基于 `HotStateManager` 的内存热态，而不是每次直接从 SQLite 现查。
+- `/state` 对外 JSON 结构保持兼容，仍返回 `revision`, `recentEvents`, `pendingApprovals`。
+
+### projection
+
+| 类型 | 关键字段 | 说明 |
+|---|---|---|
+| `ProjectionKind` | `'pending_soul_proposals' \| 'healing_stats_view' \| 'run_history_agg'` | Projection 视图种类 |
+| `ProjectionEntry<T>` | `kind`, `scope_id`, `data`, `computed_at`, `staleness_ms` | Projection 统一包装 |
+
+补充说明：
+- Projection 只承载内部读模型，不参与控制流判定。
+- 当前 Core 已将 `/soul/proposals` 与 `/soul/healing/stats` 接到 `ProjectionManager`。
+- `ProjectionManager` 负责 TTL 缓存、按 `kind + scope_id` 失效与单飞重算。
+
+### ack
+
+| 类型 | 关键字段 | 说明 |
+|---|---|---|
+| `AckStatus` | `'pending' \| 'committed' \| 'failed'` | ack 生命周期 |
+| `AckEntityType` | `'run' \| 'engine' \| 'approval' \| 'checkpoint' \| 'event'` | ack 对应实体类别 |
+| `AckOverlay` | `ack_id`, `entity_type`, `entity_id`, `revision`, `status`, `created_at`, `committed_at?`, `error?` | 同步接收后、异步收敛前的叠加确认层 |
+
+补充说明：
+- 同步路径负责校验、分配 revision、进入事件总线并创建 pending ack。
+- 异步路径负责 SSE 广播、Projection 失效以及最终 ack 状态收敛。
+
+---
+
 ## MCP Tools — Tools API
 
 源文件：`packages/protocol/src/mcp/tools-api.ts`
@@ -199,12 +244,13 @@
 | `GET` | `/health` | 健康检查 | 返回 `ok`, `uptime`, `version` |
 | `GET` | `/events` | SSE 事件流 | 每条消息为 `data: <BaseEvent JSON>` |
 | `GET` | `/state` | 当前 `hot_state` 读模型 | 返回 `revision`, `recentEvents`, `pendingApprovals` |
-| `POST` | `/internal/hook-event` | Claude hook 工具事件入口 | 仅 loopback + Bearer token；校验 `ToolExecutionEventSchema` |
+| `GET` | `/acks/:ack_id` | 查询单个 ack overlay | 返回 `ack_id`, `entity_type`, `entity_id`, `revision`, `status`, `created_at`, `committed_at?`, `error?` |
+| `POST` | `/internal/hook-event` | Claude hook 工具事件入口 | 仅 loopback + Bearer token；校验 `ToolExecutionEventSchema`，返回 `ok`, `revision`, `ackId` |
 | `POST` | `/mcp/call` | MCP 工具调用入口 | 仅 loopback + Bearer token；支持 `tool`/`name` 与 `args`/`arguments` |
-| `GET` | `/soul/proposals` | 查询待决 memory proposal | 支持 `project_id` 查询参数 |
-| `GET` | `/soul/healing/stats` | 查询 pointer healing 统计 | 透传 `healingQueue.stats()` |
+| `GET` | `/soul/proposals` | 查询待决 memory proposal | 支持 `project_id` 查询参数；经 `ProjectionManager` 读 `pending_soul_proposals` |
+| `GET` | `/soul/healing/stats` | 查询 pointer healing 统计 | 经 `ProjectionManager` 读 `healing_stats_view` |
 | `POST` | `/_dev/start-run` | 开发环境启动 run | 仅 `isDevelopment` 时注册，且仅 loopback |
-| `POST` | `/_dev/publish` | 开发环境直接发布事件 | 仅 `isDevelopment` 时注册；服务端补 `revision: 0` 后用 `AnyEventSchema` 校验 |
+| `POST` | `/_dev/publish` | 开发环境直接发布事件 | 仅 `isDevelopment` 时注册；服务端补 `revision: 0` 后用 `AnyEventSchema` 校验，返回 `ok`, `ackId` |
 
 `/state` 当前返回结构：
 
@@ -386,12 +432,29 @@ git_commit:abc1234 repo_path:packages/core/src/server/routes.ts symbol:registerR
 
 ```json
 {
+  "ackId": "3f4d8d6a-7d62-4f6d-91a1-2a2f88d93210",
   "ok": true,
   "revision": 42
 }
 ```
 
-### 3. Claude 本地 MCP Server
+### 3. Core Dev Publish
+
+源文件：`packages/core/src/server/routes.ts`
+
+- `POST /_dev/publish`
+- 仅开发环境启用，且仅 loopback
+- 请求体服务端补 `revision: 0` 后，用 `AnyEventSchema` 校验
+- 成功返回：
+
+```json
+{
+  "ackId": "3f4d8d6a-7d62-4f6d-91a1-2a2f88d93210",
+  "ok": true
+}
+```
+
+### 4. Claude 本地 MCP Server
 
 源文件：`packages/engines/claude/src/mcp-server.ts`
 
@@ -400,7 +463,7 @@ git_commit:abc1234 repo_path:packages/core/src/server/routes.ts symbol:registerR
 | `GET` | `/tools` | 返回 `ToolsApiJsonSchemas` 生成的工具列表 |
 | `POST` | `/call` | 调用单个 Tools API 工具，返回 `ok`, `status`, `approvalId?`, `result?`, `error?` |
 
-### 4. Codex JSONL 归一化
+### 5. Codex JSONL 归一化
 
 源文件：`packages/engines/codex/src/event-normalizer.ts`
 
@@ -433,3 +496,7 @@ Codex 原始事件类型当前归一化规则：
 | 2026-03-08 | T032 / T035 | 补充 `soul.memory_search`、`soul.explore_graph`、ContextLens 与 graph recall 读路径说明 |
 | 2026-03-08 | T033 / T036 | 补充 `run_checkpoint`、`memory_cue_*`、`claim_superseded` 与 `evidence_index` capsule 字段说明 |
 | 2026-03-08 | T037 | 补充 `UserDecisionSchema` 与 `user_decisions.jsonl` ledger 路径说明 |
+| 2026-03-08 | T038 | 补充 `CoreHotState` / `RunHotState` / `ApprovalHotState` 等 hot_state 类型与 `/state` 热态读路径说明 |
+| 2026-03-08 | T039 | 补充 `ProjectionKind` / `ProjectionEntry` 与 `/soul/proposals`、`/soul/healing/stats` 的 projection 读模型说明 |
+| 2026-03-08 | T040 | 补充 `AckOverlay`、`GET /acks/:ack_id` 与 `/internal/hook-event`、`/_dev/publish` 的 `ackId` 返回体 |
+| 2026-03-08 | T041 | 明确 `memory_repo` 仅接收 `impact_level = 'canon'` 的 cue 写入 |

@@ -14,11 +14,13 @@ import {
 import { StateStore } from '../db/state-store.js';
 import { WorkerClient } from '../db/worker-client.js';
 import { createReadConnection } from '../db/read-connection.js';
+import { attachAsyncEventPath, EventDispatcher } from '../event-handler/index.js';
 import { EventBus } from '../eventbus/event-bus.js';
 import { ApprovalMachineController } from '../machines/approval-machine.js';
 import { rehydrateRuns, RunRegistry } from '../machines/run-registry.js';
 import { PolicyEngine } from '../policy/policy-engine.js';
-import { HotStateManager } from '../state/index.js';
+import { ProjectionManager } from '../projection/index.js';
+import { AckTracker, HotStateManager } from '../state/index.js';
 import { BaselineTracker, FastGate, Integrator } from '../integrator/index.js';
 import { WorktreeLifecycle } from '../run/index.js';
 import { authMiddleware, generateAndSaveToken } from './auth.js';
@@ -135,7 +137,6 @@ export async function startHttpServer(
 
   const sseManager = new SseManager();
   const eventBus = new EventBus({
-    sseManager,
     workerClient,
   });
   eventBus.onAny((event) => {
@@ -255,7 +256,33 @@ export async function startHttpServer(
     publishEvent: (event) => eventBus.publish(event),
     workspaceRoot,
   });
-  const stateStore = new StateStore(stateDbPath);
+  const projectionManager = new ProjectionManager({
+    definitions: {
+      healing_stats_view: {
+        load: async () => soulToolDispatcher.getHealingStats(),
+        ttlMs: 5_000,
+      },
+      pending_soul_proposals: {
+        load: async (scopeId) =>
+          soulToolDispatcher.listPendingProposals(scopeId === '*' ? undefined : scopeId),
+        ttlMs: 15_000,
+      },
+      run_history_agg: {
+        load: async () => ({ runs: [] }),
+        ttlMs: 30_000,
+      },
+    },
+  });
+  attachAsyncEventPath({
+    eventBus,
+    projectionManager,
+    sseManager,
+  });
+  const ackTracker = new AckTracker();
+  const eventDispatcher = new EventDispatcher({
+    ackTracker,
+    eventBus,
+  });
   const hotStateStore = new StateStore(stateDbPath, hotStateManager);
   const app = Fastify({ logger: options.logger ?? true });
   const host = options.host ?? HOST;
@@ -272,9 +299,11 @@ export async function startHttpServer(
   );
 
   registerRoutes(app, {
-    eventBus,
+    ackTracker,
+    eventDispatcher,
     isDevelopment,
     mcpToolDispatcher: soulToolDispatcher,
+    projectionManager,
     startDevRun: isDevelopment
       ? async (input) => {
           const runId = `run-${randomUUID()}`;
@@ -321,7 +350,6 @@ export async function startHttpServer(
           }
         }
         : undefined,
-    stateStore,
     stateStore: hotStateStore,
     sseManager,
     token,
@@ -339,9 +367,10 @@ export async function startHttpServer(
     await app.close();
     runRegistry.stopAll();
     sseManager.closeAll();
+    ackTracker.close();
     policyEngine.stop();
     approvalMachine.stop();
-    stateStore.close();
+    hotStateStore.close();
     await soulToolDispatcher.close();
     await workerClient.close();
   };
@@ -363,7 +392,7 @@ export async function startHttpServer(
     eventBus,
     host,
     port: resolveBoundPort(app),
-    stateStore,
+    stateStore: hotStateStore,
     sseManager,
     stop,
     token,

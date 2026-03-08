@@ -3,6 +3,7 @@ import {
   normalizeCueDraft,
   type CueImpactLevel,
 } from './draft-normalizer.js';
+import { canWriteImpactLevelToRepo } from './memory-tier.js';
 
 export interface RepoCommitterInput {
   cueDraft: Record<string, unknown>;
@@ -28,7 +29,12 @@ export class RepoCommitter {
   }
 
   async commitCue(input: RepoCommitterInput): Promise<RepoCommitResult> {
-    if (input.impactLevel === 'working') {
+    if (!canWriteImpactLevelToRepo(input.impactLevel)) {
+      console.warn('[soul][repo-committer] skip non-canon memory_repo write', {
+        cueId: input.cueId,
+        impactLevel: input.impactLevel,
+        projectId: input.projectId,
+      });
       return { committed: false };
     }
 

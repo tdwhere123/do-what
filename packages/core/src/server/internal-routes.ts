@@ -1,10 +1,10 @@
 import { ToolExecutionEventSchema } from '@do-what/protocol';
 import type { FastifyInstance } from 'fastify';
-import type { EventBus } from '../eventbus/event-bus.js';
+import type { EventDispatcher } from '../event-handler/index.js';
 import { getBearerToken, isLoopbackAddress } from './loopback-auth.js';
 
 export interface RegisterInternalRoutesOptions {
-  eventBus: EventBus;
+  eventDispatcher: EventDispatcher;
   token: string;
 }
 
@@ -44,8 +44,9 @@ export function registerInternalRoutes(
     }
 
     const { revision: _revision, ...eventWithoutRevision } = parsed.data;
-    const event = options.eventBus.publish(eventWithoutRevision);
+    const { ack, event } = options.eventDispatcher.dispatch(eventWithoutRevision);
     await reply.code(200).send({
+      ackId: ack.ack_id,
       ok: true,
       revision: event.revision,
     });

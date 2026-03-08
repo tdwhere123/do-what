@@ -2,7 +2,9 @@ import { AnyEventSchema } from '@do-what/protocol';
 import type { FastifyInstance } from 'fastify';
 import type { SoulToolDispatcher } from '@do-what/soul';
 import type { StateStore } from '../db/state-store.js';
-import type { EventBus } from '../eventbus/event-bus.js';
+import type { EventDispatcher } from '../event-handler/index.js';
+import type { ProjectionManager } from '../projection/index.js';
+import type { AckTracker } from '../state/index.js';
 import { registerInternalRoutes } from './internal-routes.js';
 import { isLoopbackAddress } from './loopback-auth.js';
 import { registerMcpRoutes } from './mcp-routes.js';
@@ -22,9 +24,11 @@ export interface DevRunResult {
 }
 
 export interface RegisterRoutesOptions {
-  eventBus: EventBus;
+  ackTracker: AckTracker;
+  eventDispatcher: EventDispatcher;
   isDevelopment: boolean;
   mcpToolDispatcher: SoulToolDispatcher;
+  projectionManager: ProjectionManager;
   startDevRun?: (input: DevRunRequest) => Promise<DevRunResult>;
   stateStore: StateStore;
   sseManager: SseManager;
@@ -53,8 +57,23 @@ export function registerRoutes(
     return options.stateStore.getSnapshot();
   });
 
+  app.get('/acks/:ackId', async (request, reply) => {
+    const params = request.params as { ackId?: unknown };
+    const ackId = typeof params.ackId === 'string' ? params.ackId : '';
+    const ack = ackId ? options.ackTracker.get(ackId) : null;
+    if (!ack) {
+      await reply.code(404).send({ error: 'Ack not found' });
+      return;
+    }
+
+    await reply.code(200).send({
+      ok: true,
+      ...ack,
+    });
+  });
+
   registerInternalRoutes(app, {
-    eventBus: options.eventBus,
+    eventDispatcher: options.eventDispatcher,
     token: options.token,
   });
   registerMcpRoutes(app, {
@@ -62,6 +81,7 @@ export function registerRoutes(
     toolDispatcher: options.mcpToolDispatcher,
   });
   registerSoulRoutes(app, {
+    projectionManager: options.projectionManager,
     toolDispatcher: options.mcpToolDispatcher,
   });
 
@@ -109,8 +129,11 @@ export function registerRoutes(
       }
 
       const { revision: _revision, ...eventWithoutRevision } = parsed.data;
-      options.eventBus.publish(eventWithoutRevision);
-      await reply.code(200).send({ ok: true });
+      const { ack } = options.eventDispatcher.dispatch(eventWithoutRevision);
+      await reply.code(200).send({
+        ackId: ack.ack_id,
+        ok: true,
+      });
     });
   }
 }

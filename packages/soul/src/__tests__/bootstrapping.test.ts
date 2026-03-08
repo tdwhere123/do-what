@@ -61,7 +61,7 @@ afterEach(async () => {
 });
 
 describe('bootstrapping', () => {
-  it('seeds consolidated memory and commits it to memory_repo', async () => {
+  it('seeds consolidated memory without committing it to memory_repo', async () => {
     const { env, service } = createBootstrappingService();
 
     const cueIds = await service.seedMemory('proj-seed', ['first architecture seed']);
@@ -80,7 +80,7 @@ describe('bootstrapping', () => {
     assert.equal(cue?.impact_level, 'consolidated');
     assert.equal(
       fs.existsSync(path.join(project?.memory_repo_path ?? '', 'memory_cues', `${cueIds[0]}.md`)),
-      true,
+      false,
     );
   });
 

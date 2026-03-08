@@ -35,12 +35,12 @@ interface ApprovalBootstrapRow {
 }
 
 interface InternalCoreHotState {
-  readonly active_checkpoints: Map<string, CheckpointHotState>;
-  readonly engines: Map<string, EngineHotState>;
-  readonly last_event_seq: number;
-  readonly pending_approvals: Map<string, ApprovalHotState>;
-  readonly recent_events: readonly BaseEvent[];
-  readonly runs: Map<string, RunHotState>;
+  active_checkpoints: Map<string, CheckpointHotState>;
+  engines: Map<string, EngineHotState>;
+  last_event_seq: number;
+  pending_approvals: Map<string, ApprovalHotState>;
+  recent_events: readonly BaseEvent[];
+  runs: Map<string, RunHotState>;
 }
 
 export interface HotStateManagerOptions {
@@ -76,7 +76,7 @@ function createEmptyState(): InternalCoreHotState {
   };
 }
 
-function cloneMapValues<T extends Record<string, unknown>>(input: ReadonlyMap<string, T>): Map<string, T> {
+function cloneMapValues<T extends object>(input: ReadonlyMap<string, T>): Map<string, T> {
   const cloned = new Map<string, T>();
   for (const [key, value] of input.entries()) {
     cloned.set(key, { ...value });
@@ -510,4 +510,3 @@ function toApprovalResolver(
   }
   return undefined;
 }
-

@@ -30,5 +30,6 @@ export * from './write/bootstrapping.js';
 export * from './write/checkpoint-queue.js';
 export * from './write/cue-writer.js';
 export * from './write/edge-writer.js';
+export * from './write/memory-tier.js';
 export * from './write/proposal-service.js';
 export * from './write/repo-committer.js';

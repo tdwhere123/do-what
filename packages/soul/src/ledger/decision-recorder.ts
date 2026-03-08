@@ -68,6 +68,7 @@ export class DecisionRecorder {
   private readonly warn: (message: string, error?: unknown) => void;
   private readonly pendingWrites = new Set<Promise<void>>();
   private readonly recentWrites = new Map<string, number>();
+  private writeQueue: Promise<void> = Promise.resolve();
 
   constructor(options: DecisionRecorderOptions) {
     this.ledgerWriter = options.ledgerWriter;
@@ -154,14 +155,14 @@ export class DecisionRecorder {
           return;
         }
         this.track(
-          (async () => {
+          this.enqueue(async () => {
             const context = await contextProvider(event);
             if (!context) {
               return;
             }
 
             await this.recordEvent(event, context);
-          })().catch((error) => {
+          }).catch((error) => {
             this.warn('[soul][ledger] failed to record decision event', error);
           }),
         );
@@ -188,6 +189,12 @@ export class DecisionRecorder {
     void task.finally(() => {
       this.pendingWrites.delete(task);
     });
+  }
+
+  private enqueue(taskFactory: () => Promise<void>): Promise<void> {
+    const task = this.writeQueue.then(taskFactory, taskFactory);
+    this.writeQueue = task.catch(() => undefined);
+    return task;
   }
 }
 
