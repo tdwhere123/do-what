@@ -79,7 +79,7 @@
 | **基础统一语言** | TypeScript（全栈闭环，限定 Node.js >= 20 运行时） |
 | **Core daemon 控制端** | Node.js + Fastify + xstate v5 |
 | **关系型与文档存储** | better-sqlite3（高并发 WAL 模式，分配独立 worker_threads 完成全量落盘写操作） |
-| ** Schema 严格准入体系** | zod（核心用于全部 API 通讯、组件状态机及事件传递类型边界检验防呆） |
+| **Schema 严格准入体系** | zod（核心用于全部 API 通讯、组件状态机及事件传递类型边界检验防呆） |
 | **核心链路测试框架** | vitest |
 | **应用大前端界面呈现** | Electron + React |
 
