@@ -1,6 +1,6 @@
 # T045 · orchestration-template-constraints（编排减法 + 四种允许拓扑）
 
-**状态:** ✅ 完成（条件通过：6 种违规仅覆盖 3，待 Phase 3 后续补丁补全 free_dag/fan_out_limit/multi_merge_point）
+**状态:** ✅ 完成
 
 **Epic:** v0.1.x Phase 3 — 编排与治理
 **路线:** E：编排减法 + 四种允许拓扑约束

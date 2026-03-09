@@ -146,7 +146,7 @@ curl http://127.0.0.1:3847/health
 
 - **顶层架构与迭代演进方案（归档向）**
   - [`docs/archive/v0.1/do-what-proposal-v0.1.md`](./docs/archive/v0.1/do-what-proposal-v0.1.md) - 系统 V0.1 基础阶段构建基石的完整推演主方案
-  - [`docs/archive/v0.1.x/do-what-v0.1.x.md`](./docs/archive/v0.1.x/do-what-v0.1.x.md) 或 [`do-what-v0.1.x.md`](./do-what-v0.1.x.md) - **阶段升级重要核心纲领**：引入 Soul 长期记忆重整构建、业务状态流极简化收敛及并发隔离设计的实施基准
+- [`docs/archive/v0.1.x/do-what-v0.1.x.md`](./docs/archive/v0.1.x/do-what-v0.1.x.md) - **v0.1.x 已归档的阶段纲领**：收敛 Soul 长期记忆、状态边界收口与并发治理的实施基准
 - **底层开发接口、核心契约及规范（研发向）**
   - [`docs/INTERFACE_INDEX.md`](./docs/INTERFACE_INDEX.md) - 全盘洞悉所有宏观事件循环生命周期、服务级别通信定义、核心模块交互接口与系统级调度的通讯模型拓扑视图
   - [`CLAUDE.md`](./CLAUDE.md) / [`AGENTS.md`](./AGENTS.md) - 对于外部 LLM Driver 与接入 Worker，进行工程化对接与环境治理的核心引导性规范要求指令集

@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 规划文档：
 - `docs/archive/v0.1/do-what-proposal-v0.1.md` — v0.1 完整方案（归档，约 800 行，所有架构决策来源）
-- `docs/archive/v0.1/do-what-v0.1.x.md` — v0.1.x 收敛/清理方案（归档）
+- `docs/archive/v0.1.x/do-what-v0.1.x.md` — v0.1.x 收敛/清理方案（归档）
 - `docs/PLAN.md` — Epic/Ticket 总览 + 依赖 DAG + 关键路径 + **当前进度表**
 - `docs/archive/v0.1/tasks/T001~T027` — v0.1 Ticket 详细实现卡（归档，参考用）
 - `docs/archive/v0.1/CODEX_QUEUE.md` — v0.1 可直接执行的 Codex 指令块

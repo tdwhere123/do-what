@@ -185,4 +185,68 @@ describe('topology-validator', () => {
     assert.equal(result.valid, false);
     assert.equal(result.violations[0]?.violation_type, 'nested_parallel');
   });
+
+  it('rejects free DAG structures that match no supported topology', () => {
+    const result = validator.validate(
+      createTemplate(
+        undefined,
+        [node('start'), node('branch-a'), node('branch-b'), node('merge')],
+        [
+          edge('start', 'branch-a'),
+          edge('start', 'branch-b'),
+          edge('branch-a', 'merge'),
+          edge('branch-a', 'branch-b'),
+          edge('branch-b', 'merge'),
+        ],
+      ),
+    );
+    assert.equal(result.valid, false);
+    assert.equal(result.topology_kind, 'invalid');
+    assert.equal(result.violations[0]?.violation_type, 'free_dag');
+  });
+
+  it('rejects bounded fan-out structures above the configured limit', () => {
+    const result = validator.validate(
+      createTemplate(
+        'bounded_fan_out',
+        [
+          node('start'),
+          node('a'),
+          node('b'),
+          node('c'),
+          node('d'),
+          node('merge'),
+        ],
+        [
+          edge('start', 'a'),
+          edge('start', 'b'),
+          edge('start', 'c'),
+          edge('start', 'd'),
+          edge('a', 'merge'),
+          edge('b', 'merge'),
+          edge('c', 'merge'),
+          edge('d', 'merge'),
+        ],
+      ),
+    );
+    assert.equal(result.valid, false);
+    assert.equal(result.violations[0]?.violation_type, 'fan_out_limit');
+  });
+
+  it('rejects parallel_merge structures with multiple merge points', () => {
+    const result = validator.validate(
+      createTemplate(
+        'parallel_merge',
+        [node('start'), node('a'), node('b'), node('merge-a'), node('merge-b')],
+        [
+          edge('start', 'a'),
+          edge('start', 'b'),
+          edge('a', 'merge-a'),
+          edge('b', 'merge-b'),
+        ],
+      ),
+    );
+    assert.equal(result.valid, false);
+    assert.equal(result.violations[0]?.violation_type, 'multi_merge_point');
+  });
 });
