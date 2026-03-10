@@ -6,7 +6,7 @@ const workbenchTasks = [
   'T028-T029: settings route 与 lease interruption',
 ];
 
-export function WorkbenchPage(): JSX.Element {
+export function WorkbenchPage() {
   return (
     <section className={styles.page}>
       <div className={styles.hero}>

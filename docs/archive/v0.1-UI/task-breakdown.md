@@ -1,6 +1,6 @@
 # v0.1-UI 任务拆解方案
 
-> 状态：Draft for implementation
+> 状态：In implementation（T001A、T001B 已完成，下一步 T002）
 >
 > 真相源：
 > - `docs/archive/v0.1-UI/frontend_backend_contract_v0.1.md`
@@ -30,7 +30,7 @@
 - 前端只通过 `HTTP snapshot/query + SSE + command` 与 Core 交互。
 - 控制态、Projection、本地 UI 态、Pending Command、Ack Overlay 必须分层。
 - Timeline、Approval、Inspector、Soul、Settings、Governance 都要有稳定落脚点。
-- T001A 已完成 runtime/scaffold 决策，T001B 负责把这些决策落实为正式工程骨架。
+- T001A / T001B 已完成 runtime/scaffold 决策与 `packages/app` 正式工程骨架，后续任务直接在该基础上推进。
 
 ### 本轮范围内的模块边界
 
@@ -63,8 +63,8 @@
 
 ### Foundation / shared types / contracts
 
-- [T001A](./tasks/T001A-runtime-scaffold-decision.md) `runtime-scaffold-decision`
-- [T001B](./tasks/T001B-packages-app-bootstrap.md) `packages-app-bootstrap`
+- [T001A](./tasks/T001A-runtime-scaffold-decision.md) `runtime-scaffold-decision`（已完成）
+- [T001B](./tasks/T001B-packages-app-bootstrap.md) `packages-app-bootstrap`（已完成）
 - [T002](./tasks/T002-frontend-contract-baseline.md) `frontend-contract-baseline`
 - [T003](./tasks/T003-mock-fixtures-and-adapters.md) `mock-fixtures-and-adapters`
 - [T004](./tasks/T004-design-tokens-and-theme-base.md) `design-tokens-and-theme-base`
@@ -115,6 +115,8 @@
 
 ## C. 原子任务清单
 
+当前进度：`T001A`、`T001B` 已完成；后续从 `T002` 开始。
+
 | ID | 标题 | 分组 | 前置依赖 | 可并行 |
 |----|------|------|----------|--------|
 | T001A | runtime-scaffold-decision | Foundation | 无 | 否 |
@@ -159,7 +161,7 @@
 
 ### 必须先做
 
-1. `T001A（已完成） -> T001B`
+1. `T001A（已完成） -> T001B（已完成） -> T002`
 2. `T002 -> T006/T007`
 3. `T008/T009/T012`
 4. `T010 -> T011`

@@ -5,7 +5,7 @@ import { WorkbenchPage } from './routes/workbench-page';
 import { useUiShellStore } from '../stores/ui-shell-store';
 import styles from './app-shell.module.css';
 
-function ShellNavigation(): JSX.Element {
+function ShellNavigation() {
   return (
     <nav className={styles.nav}>
       <NavLink
@@ -29,7 +29,7 @@ function ShellNavigation(): JSX.Element {
   );
 }
 
-export function App(): JSX.Element {
+export function App() {
   const location = useLocation();
   const currentRoute = useUiShellStore((state) => state.currentRoute);
   const setCurrentRoute = useUiShellStore((state) => state.setCurrentRoute);

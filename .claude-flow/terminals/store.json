@@ -1,0 +1,22 @@
+{
+  "sessions": {
+    "term-1773145609406-kc1oei": {
+      "id": "term-1773145609406-kc1oei",
+      "name": "t001b-start-diagnose",
+      "status": "active",
+      "createdAt": "2026-03-10T12:26:49.406Z",
+      "lastActivity": "2026-03-10T12:27:02.861Z",
+      "workingDir": "D:\\个人开发项目\\do-what\\do-what-new",
+      "history": [
+        {
+          "command": "pnpm.cmd --filter @do-what/app start",
+          "output": "[STATE TRACKING] Command recorded: pnpm.cmd --filter @do-what/app start",
+          "timestamp": "2026-03-10T12:27:02.861Z",
+          "exitCode": 0
+        }
+      ],
+      "env": {}
+    }
+  },
+  "version": "3.0.0"
+}

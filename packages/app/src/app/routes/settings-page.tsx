@@ -1,8 +1,17 @@
 import styles from '../app-shell.module.css';
 
-const runtime = window.doWhatRuntime;
+const FALLBACK_RUNTIME = {
+  platform: 'unknown',
+  versions: {
+    chrome: 'unknown',
+    electron: 'unknown',
+    node: 'unknown',
+  },
+} satisfies Window['doWhatRuntime'];
 
-export function SettingsPage(): JSX.Element {
+export function SettingsPage() {
+  const runtime = window.doWhatRuntime ?? FALLBACK_RUNTIME;
+
   return (
     <section className={styles.page}>
       <div className={styles.hero}>

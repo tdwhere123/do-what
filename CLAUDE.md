@@ -6,27 +6,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目状态
 
-**当前阶段：v0.1.x 已全部完成（Phase 0–3 均已交付）。**
+**当前阶段：v0.1-UI（Electron + React UI 工程，进行中）。**
 
 规划文档：
-- `docs/archive/v0.1/do-what-proposal-v0.1.md` — v0.1 完整方案（归档，约 800 行，所有架构决策来源）
+- `docs/archive/v0.1/do-what-proposal-v0.1.md` — v0.1 完整方案（归档）
 - `docs/archive/v0.1.x/do-what-v0.1.x.md` — v0.1.x 收敛/清理方案（归档）
-- `docs/PLAN.md` — Epic/Ticket 总览 + 依赖 DAG + 关键路径 + **当前进度表**
-- `docs/archive/v0.1/tasks/T001~T027` — v0.1 Ticket 详细实现卡（归档，参考用）
-- `docs/archive/v0.1/CODEX_QUEUE.md` — v0.1 可直接执行的 Codex 指令块
-- `docs/archive/v0.1.x/tasks/T028~T045` — v0.1.x 每个 Ticket 的详细实现卡（含文件清单、DoD、验收命令）
-- `AGENTS.md` — Codex 原生引导规则（四条承重墙 + v0.1.x 阶段状态 + 新增约束）
+- `docs/PLAN.md` — Epic/Ticket 总览 + 依赖 DAG + 关键路径
+- `docs/archive/v0.1-UI/frontend_backend_contract_v0.1.md` — 前后端对齐契约（**UI 实现必读**）
+- `docs/archive/v0.1-UI/workbench_state_model_v0.1.md` — Workbench 状态分层模型
+- `docs/archive/v0.1-UI/task-breakdown.md` — v0.1-UI 任务拆解总览（34 个 Ticket）
+- `docs/archive/v0.1-UI/tasks/T001A~T034` — v0.1-UI 每个 Ticket 详细实现卡
+- `AGENTS.md` — Codex 原生引导规则（四条承重墙 + v0.1-UI 阶段状态 + 新增约束）
 
-已完成（v0.1）：E0（T001–T004）、E1（T005–T009）、E1.5/T010 门控、E2（T011–T013）、E3（T014–T016）、E4（T017–T019）、E5（T020–T022）、E6（T023–T024）、**E7（T025–T027）**。
-**全部 E0–E7 已交付，40 个 soul 测试全通过。**
+已完成（后端）：
+- v0.1 E0–E7（T001–T027）全部交付，40 个 soul 测试全通过
+- v0.1.x Phase 0–3（T028–T045）全部交付（core 104/104，soul 61/61）
 
-v0.1.x 阶段进度：
-- Phase 0（T028–T030）：清理减法 — 已完成
-- Phase 1（T031–T037）：SOUL 补全 — 已完成（61/61 soul 测试，29/29 protocol 测试）
-- Phase 2（T038–T041）：Core 四层分离 — 已完成（core 47/47 测试，soul 61/61 测试）
-- Phase 3（T042–T045）：编排与治理 — 已完成（core 104/104 测试，soul 61/61 测试）
+v0.1-UI 阶段进度（`packages/app`）：
 
-**若任务涉及 v0.1 历史实现，先读 `docs/archive/v0.1/tasks/` 归档 Ticket；若是 v0.1.x 新实现，读 `docs/archive/v0.1.x/tasks/`。**
+| 分组 | Tickets | 主题 | 状态 |
+|------|---------|------|------|
+| Foundation | T001A–T007 | scaffold / contract / mock / token / client | T001A 已完成，余待实现 |
+| State Stores | T008–T012 | hot-state / projection / pending / ack / ui-store | 待开始 |
+| Workbench / UI | T013–T029 | Workbench Shell / Timeline / Approval / Inspector / Soul / Settings | 待开始 |
+| Core API 对齐 | T030–T032 | snapshot / command / SSE envelope | 待开始 |
+| 验收 / 清理 | T033–T034 | 集成测试 / 视觉对照 | 待开始 |
+
+**UI 实现必须先读：**
+- `docs/archive/v0.1-UI/frontend_backend_contract_v0.1.md`（接口、事件流、状态来源）
+- `docs/archive/v0.1-UI/workbench_state_model_v0.1.md`（状态分层）
+- 对应任务卡 `docs/archive/v0.1-UI/tasks/T###-*.md`
 
 ---
 

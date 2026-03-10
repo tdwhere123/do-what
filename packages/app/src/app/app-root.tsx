@@ -11,7 +11,7 @@ const queryClient = new QueryClient({
   },
 });
 
-export function AppRoot(): JSX.Element {
+export function AppRoot() {
   return (
     <QueryClientProvider client={queryClient}>
       <HashRouter>

@@ -1,4 +1,4 @@
-# AGENTS.md — do-what v0.1.x 项目引导规则（Codex 原生）
+# AGENTS.md — do-what v0.1-UI 项目引导规则（Codex 原生）
 
 本文件是 Codex 引擎的原生入口文档，提供项目规则、当前阶段状态和关键约束。
 与 `CLAUDE.md` 内容互补（CLAUDE.md 面向 Claude Code，AGENTS.md 面向 Codex）。
@@ -24,220 +24,247 @@ do-what 是一个 AI 编码代理编排系统：
 
 ---
 
-## 当前阶段（v0.1.x — 进行中）
+## 当前阶段（v0.1-UI — 进行中）
 
-**v0.1 主线（E0–E7，T001–T027）已全部交付，40 个 soul 测试全通过。**
+**后端全部完成：v0.1（E0–E7）+ v0.1.x（Phase 0–3），core 104/104，soul 61/61。**
+**当前任务：`packages/app` Electron + React UI 工程，共 34 个 Ticket。**
 
-v0.1.x 是收敛/清理/补魂阶段，4 个 Phase：
+| 分组 | Tickets | 主题 | 状态 |
+|------|---------|------|------|
+| Foundation | T001A–T007 | scaffold / contract / mock / token / HTTP client / SSE client | T001A 已完成，余待实现 |
+| State Stores | T008–T012 | hot-state / projection / pending / ack-overlay / ui-store | 待开始 |
+| Workbench / UI | T013–T029 | Workbench Shell / Timeline / Approval / Inspector / Soul / Settings | 待开始 |
+| Core API 对齐 | T030–T032 | snapshot surface / command routes / SSE envelope | 待开始 |
+| 验收 / 清理 | T033–T034 | 集成测试 / 视觉对照 + 清理 UI/ | 待开始 |
 
-| Phase | Tickets | 主题 | 状态 |
-|-------|---------|------|------|
-| Phase 0 | T028–T030 | 清理减法（shim 删除/事件合并/命名统一） | 完成 |
-| Phase 1 | T031–T037 | SOUL 补全（dormant 字段激活/ContextLens/ClaimForm/记忆动力学） | 完成 |
-| Phase 2 | T038–T041 | Core 四层分离（HotState/Projection/AckOverlay/memory_repo 降格） | 待开始 |
-| Phase 3 | T042–T045 | 编排与治理（FocusSurface/IntegrationGate/GovernanceLease/拓扑约束） | 待开始 |
+**实现任何 UI Ticket 前，必须先读：**
+- `docs/archive/v0.1-UI/frontend_backend_contract_v0.1.md`（接口/事件流/状态来源）
+- `docs/archive/v0.1-UI/workbench_state_model_v0.1.md`（状态分层）
+- 对应任务卡 `docs/archive/v0.1-UI/tasks/T###-*.md`
 
-**实现新功能前，必须阅读对应 Task 卡片：`docs/archive/v0.1.x/tasks/T028-T045`。**
-**历史实现参考：`docs/archive/v0.1/tasks/T001-T027`。**
-
----
-
-## v0.1.x 关键新增约束
-
-### 1. dormant 字段启用流程
-
-`memory_cues` 表中以下字段已建表但 dormant，**必须经 migration v6（T031）激活后才能写入**：
-- `formation_kind`：`'observation' | 'inference' | 'synthesis' | 'interaction'`
-- `dimension`：`'technical' | 'behavioral' | 'contextual' | 'relational'`
-- `focus_surface`：字符串（T042 后细化为结构化类型）
-- `claim_draft`、`claim_confidence`、`claim_gist`、`claim_mode`、`claim_source`
-
-**禁止在 migration v6 运行前写入上述字段。**
-
-### 2. Claim Form 只能经 checkpoint 写入
-
-`claim_*` 字段只能通过 `checkpoint-writer.ts` 的 `writeClaimAtCheckpoint()` 函数写入，
-该函数只在接收到 `run_checkpoint` 事件时触发。
-引擎不允许直接写入 `claim_*` 字段，只能提交 `ClaimDraft` 进入队列。
-
-### 3. memory_repo 只存 Canon 级
-
-`~/.do-what/memory/<fingerprint>/memory_repo/` Git 仓库只接受 `level = 'canon'` 的 cue 写入。
-Working 级和 Consolidated 级 cue 只写 `soul.db`，不写 memory_repo。
-所有 git 写入必须经过 `packages/soul/src/memory/repo-writer.ts` 的门控函数 `writeToRepo()`。
-
-### 4. 编排拓扑约束
-
-编排系统只允许以下 4 种拓扑，提交前经 `TopologyValidator` 验证：
-1. `linear`：线性链，无分叉
-2. `parallel_merge`：最多 5 个并行 Worker → 单一 Merge 节点
-3. `revise_loop`：受控返回循环，最多 3 次
-4. `bounded_fan_out`：最多 3 个扇出 → 收口
-
-禁止任意自由 DAG、嵌套并行、多重循环。
+**历史实现参考（只读）：**
+- v0.1 后端：`docs/archive/v0.1/tasks/T001-T027`
+- v0.1.x 收敛：`docs/archive/v0.1.x/tasks/T028-T045`
 
 ---
 
-## v0.1.x 执行计划（4 个板块，按顺序逐板块交付）
+## v0.1-UI 关键约束
 
-**v0.1（T001–T027）已全部完成，不要碰历史代码。**
-历史 Ticket 仅供参考：`docs/archive/v0.1/tasks/T001-T027`。
+### 1. Core 单一真相源（UI 侧）
 
-当前任务全部在 `docs/archive/v0.1.x/tasks/` 下，共 18 张卡片（T028–T045）。
-**每完成一个板块，等待人工验收通过后再启动下一个板块。**
+前端**不得**自行推断关键控制态，读取来源严格分层：
+
+| 数据类型 | 来源 | 禁止 |
+|---------|------|------|
+| 控制态（Run status / policy / lease） | `CoreHotState`（SSE + HTTP snapshot） | 前端自行推导 |
+| 展示态（timeline events / files diff / plan diff） | `ProjectionStore`（HTTP query + SSE merge） | 把 Projection 当控制态 |
+| 本地 UI 态（active panel / modal / theme） | `UiShellStore`（Zustand，纯本地） | 与 Core 同步 |
+| 待确认命令 | `PendingCommandStore`（乐观 tail） | 写回 Core |
+
+### 2. message 不进入 ackOverlayStore
+
+- message optimistic 只来自 `pendingCommandStore`
+- Timeline 只追加 optimistic tail，不做 K-V overlay
+- `ackOverlayStore` 只跟踪 command → ack 的生命周期
+
+### 3. overlay 超时不能静默删除
+
+- `revision >= ack.revision` 时触发 `reconciling`，必须经 probe/refetch
+- 不一致则进入 `desynced` 状态，必须提供 `Retry Sync` 或 `Dismiss/Rollback` 出路
+- 禁止把 overlay item 静默删除（会造成乐观渲染失忆）
+
+### 4. Timeline 必须支持分页
+
+- 默认只拉最新一页（`beforeRevision + limit`）
+- 历史翻页不得打乱尾部 optimistic tail
+- 对应任务：T018、T019、T020、T030
+
+### 5. Settings lease 打断 dirty form
+
+- 先保存 interrupted draft → 再锁字段 → 再 refresh → 再提示用户
+- 不允许直接覆盖用户未提交的配置变更
+
+### 6. 工程前提（T001A 已决策，不可改变）
+
+| 关注点 | 选型 |
+|--------|------|
+| bundler | Vite |
+| Electron dev runner | Electron Forge + Vite 插件 |
+| packaging | Electron Forge makers |
+| routing | React Router + HashRouter |
+| state | TanStack Query（服务端）+ Zustand（本地）|
+| styling | 全局 design token (CSS variables) + CSS Modules |
+
+以上前提直接影响所有 `packages/app` 任务，**不在任务实现阶段重新讨论**。
 
 ---
 
-### 板块 1：Phase 0 清理减法（T028 → T029 → T030）
+## v0.1-UI 执行计划（6 批，按顺序逐批交付）
 
-**任务卡片：**
-- `docs/archive/v0.1.x/tasks/T028-adapter-layer-cleanup.md`
-- `docs/archive/v0.1.x/tasks/T029-event-state-reduction.md`
-- `docs/archive/v0.1.x/tasks/T030-doc-naming-cleanup.md`
+**历史后端代码（packages/core / soul / engines / tools / protocol）已全部完成，不要改动。**
+当前任务全部在 `docs/archive/v0.1-UI/tasks/` 下，共 34 个 Ticket（T001A–T034）。
+**每完成一批，等待人工验收通过后再启动下一批。**
 
-**执行顺序：** T028 → T029 → T030（严格串行，每步完成后跑测试再继续）
-
-**每步完成条件：**
-```bash
-pnpm -w test                    # 全量测试不减少
-pnpm -w exec tsc --noEmit       # 类型检查通过
-```
-
-**板块 1 验收命令：**
-```bash
-# 无 shim/debug 标记残留
-grep -rn "TODO: remove\|// DEBUG\|// TEMP\|// shim" packages/engines/
-
-# hook-runner 无直连 Core
-grep -rn "fetch.*3847\|localhost:3847" packages/engines/claude/src/hook-runner/
-
-# GLOSSARY.md 存在
-ls packages/protocol/src/GLOSSARY.md
-
-# 全量测试通过，行数不少于 v0.1 基线
-pnpm -w test
-```
+批次依赖关系：第1批→第2批→第3批→（第4批 + 第5批 可同时跑）→第6批
 
 ---
 
-### 板块 2：Phase 1 SOUL 补全（T031 → T032–T035 → T036 → T037）
+### 第1批：Foundation — scaffold / contract / mock / token / client（T001B–T007）
 
-**任务卡片（按顺序）：**
-- `docs/archive/v0.1.x/tasks/T031-soul-concept-unification.md`（必须最先跑，激活 migration v6）
-- `docs/archive/v0.1.x/tasks/T032-context-lens.md`
-- `docs/archive/v0.1.x/tasks/T033-claim-form-memory-slot.md`
-- `docs/archive/v0.1.x/tasks/T034-memory-dynamics.md`
-- `docs/archive/v0.1.x/tasks/T035-graph-recall-bounded.md`
-- `docs/archive/v0.1.x/tasks/T036-evidence-capsule.md`（依赖 T033）
-- `docs/archive/v0.1.x/tasks/T037-user-ledger.md`（依赖 T036）
+**任务卡片（7 张，T001A 已完成）：**
+- `docs/archive/v0.1-UI/tasks/T001B-packages-app-bootstrap.md`
+- `docs/archive/v0.1-UI/tasks/T002-frontend-contract-baseline.md`
+- `docs/archive/v0.1-UI/tasks/T003-mock-fixtures-and-adapters.md`
+- `docs/archive/v0.1-UI/tasks/T004-design-tokens-and-theme-base.md`
+- `docs/archive/v0.1-UI/tasks/T005-svg-icon-and-empty-assets.md`
+- `docs/archive/v0.1-UI/tasks/T006-core-http-client.md`
+- `docs/archive/v0.1-UI/tasks/T007-core-event-client-and-session-guard.md`
 
 **执行顺序：**
 ```
-T031（必须首先完成，migration v6）
-  ↓
-T032、T033、T034、T035（T031 完成后可并行）
-  ↓
-T036（T033 完成后）
-  ↓
-T037（T036 完成后）
+T001B → T002 → T003/T004（并行）→ T005/T006/T007（并行）
 ```
 
-**T031 完成门控（继续前必须验证）：**
+**验收命令：**
 ```bash
-pnpm --filter @do-what/soul exec ts-node src/db/run-migrations.ts
-sqlite3 ~/.do-what/state/soul.db \
-  "SELECT COUNT(*) FROM memory_cues WHERE formation_kind IS NULL"
-# 必须为 0
-```
-
-**板块 2 验收命令：**
-```bash
-# soul 包全量测试（基线 40 个，板块 2 完成后应 >= 52 个）
-pnpm --filter @do-what/soul test
-
-# 类型检查
-pnpm --filter @do-what/soul exec tsc --noEmit
+pnpm --filter @do-what/app exec tsc --noEmit
 pnpm --filter @do-what/protocol exec tsc --noEmit
-
-# user ledger 文件权限验证
-ls -la ~/.do-what/state/evidence/user_decisions.jsonl
-# 预期：-rw------- (0600)
-
-# ContextLens budget 约束（输出不超过 600 tokens）
-pnpm --filter @do-what/soul test -- --testNamePattern "budget-constraint"
+pnpm --filter @do-what/app test -- --testNamePattern "mock-adapter"
+pnpm --filter @do-what/app test -- --testNamePattern "event-client"
 ```
 
 ---
 
-### 板块 3：Phase 2 Core 四层分离（T038 + T041 → T039 → T040）
+### 第2批：State Stores — hot-state / projection / pending / ack-overlay / ui-store（T008–T012）
 
-**任务卡片（按顺序）：**
-- `docs/archive/v0.1.x/tasks/T038-core-hot-state.md`
-- `docs/archive/v0.1.x/tasks/T041-memory-repo-demotion.md`（与 T038 可并行）
-- `docs/archive/v0.1.x/tasks/T039-projection-layer.md`（T038 完成后）
-- `docs/archive/v0.1.x/tasks/T040-ack-overlay-sync-async.md`（T039 完成后）
+**任务卡片（5 张）：**
+- `docs/archive/v0.1-UI/tasks/T008-hot-state-store.md`
+- `docs/archive/v0.1-UI/tasks/T009-projection-store.md`
+- `docs/archive/v0.1-UI/tasks/T010-pending-command-store.md`
+- `docs/archive/v0.1-UI/tasks/T011-ack-overlay-and-reconciliation.md`
+- `docs/archive/v0.1-UI/tasks/T012-ui-store-and-settings-bridge.md`
 
 **执行顺序：**
 ```
-T038、T041（可并行）
-  ↓
-T039（T038 完成后）
-  ↓
-T040（T039 完成后）
+T008/T009/T012（并行）→ T010（T008 后）→ T011（T009+T010 后）
 ```
 
-**板块 3 验收命令：**
+**验收命令：**
 ```bash
-# core 包全量测试
+pnpm --filter @do-what/app test -- --testNamePattern "store"
+pnpm --filter @do-what/app test -- --testNamePattern "ack-overlay"
+pnpm --filter @do-what/app exec tsc --noEmit
+```
+
+---
+
+### 第3批：Workbench Shell + Create Run — shell骨架 / sidebar / empty-states / modal（T013–T017）
+
+**任务卡片（5 张）：**
+- `docs/archive/v0.1-UI/tasks/T013-workbench-shell-bootstrap.md`（必须最先完成，是所有后续 UI 的父容器）
+- `docs/archive/v0.1-UI/tasks/T014-workspace-sidebar.md`
+- `docs/archive/v0.1-UI/tasks/T015-workbench-empty-states.md`
+- `docs/archive/v0.1-UI/tasks/T016-template-registry-and-create-run-draft.md`
+- `docs/archive/v0.1-UI/tasks/T017-create-run-modal-and-command-flow.md`
+
+**执行顺序：**
+```
+T013 → T014/T015/T016（并行）→ T017（T014+T016 后）
+```
+
+**验收命令：**
+```bash
+pnpm --filter @do-what/app test -- --testNamePattern "workbench-shell"
+pnpm --filter @do-what/app test -- --testNamePattern "create-run"
+pnpm --filter @do-what/app exec tsc --noEmit
+```
+
+---
+
+### 第4批：Timeline + Approval — 时间线分页 / 渲染 / optimistic tail / 审批卡（T018–T021）
+
+> 第3批完成后可与第5批同时启动（各自独立 worktree）。
+
+**任务卡片（4 张）：**
+- `docs/archive/v0.1-UI/tasks/T018-timeline-data-model-and-pagination.md`
+- `docs/archive/v0.1-UI/tasks/T019-timeline-render-merged-and-threaded.md`
+- `docs/archive/v0.1-UI/tasks/T020-timeline-optimistic-message-tail.md`
+- `docs/archive/v0.1-UI/tasks/T021-approval-card-and-cli-overlay.md`
+
+**执行顺序：**
+```
+T018 → T019/T021（并行）→ T020（T018+T011 后）
+```
+
+**验收命令：**
+```bash
+pnpm --filter @do-what/app test -- --testNamePattern "timeline"
+pnpm --filter @do-what/app test -- --testNamePattern "approval"
+pnpm --filter @do-what/app exec tsc --noEmit
+```
+
+---
+
+### 第5批：Inspector + Governance + Soul + Settings（T022–T029）
+
+> 第3批完成后可与第4批同时启动（各自独立 worktree）。
+
+**任务卡片（8 张，4 个子模块，顺序执行）：**
+- `docs/archive/v0.1-UI/tasks/T022-inspector-files-plan-history.md`
+- `docs/archive/v0.1-UI/tasks/T023-inspector-collaboration-and-git.md`
+- `docs/archive/v0.1-UI/tasks/T024-governance-checkpoint-panels.md`
+- `docs/archive/v0.1-UI/tasks/T025-drift-resolution-panels.md`
+- `docs/archive/v0.1-UI/tasks/T026-soul-panel-and-memory-projections.md`
+- `docs/archive/v0.1-UI/tasks/T027-memory-governance-and-proposal-review.md`
+- `docs/archive/v0.1-UI/tasks/T028-settings-query-tabs.md`
+- `docs/archive/v0.1-UI/tasks/T029-settings-lease-interruption.md`
+
+**执行顺序：**
+```
+T022 → T023（Inspector）
+T024/T025（Governance，T022 后并行）
+T026 → T027（Soul）
+T028 → T029（Settings）
+```
+
+**验收命令：**
+```bash
+pnpm --filter @do-what/app test -- --testNamePattern "inspector"
+pnpm --filter @do-what/app test -- --testNamePattern "governance"
+pnpm --filter @do-what/app test -- --testNamePattern "soul-panel"
+pnpm --filter @do-what/app test -- --testNamePattern "settings"
+pnpm --filter @do-what/app exec tsc --noEmit
+```
+
+---
+
+### 第6批：Core API 对齐 + 集成验收 + 清理（T030–T034）
+
+> 必须等第4批 + 第5批全部通过后再启动。需要 Core daemon 实际运行（`pnpm --filter @do-what/core start`）。
+
+**任务卡片（5 张，严格串行）：**
+- `docs/archive/v0.1-UI/tasks/T030-core-api-snapshot-and-query-surface.md`
+- `docs/archive/v0.1-UI/tasks/T031-core-command-and-probe-routes.md`
+- `docs/archive/v0.1-UI/tasks/T032-core-sse-envelope-and-event-alignment.md`
+- `docs/archive/v0.1-UI/tasks/T033-real-core-integration-tests.md`
+- `docs/archive/v0.1-UI/tasks/T034-visual-parity-and-ui-design-source-cleanup.md`
+
+**执行顺序：** T030 → T031 → T032 → T033 → T034（严格串行）
+
+**验收命令：**
+```bash
+# 后端测试不退步
 pnpm --filter @do-what/core test
+pnpm --filter @do-what/soul test
+pnpm --filter @do-what/core exec tsc --noEmit
 
-# HotState bootstrap 性能（1000 事件 < 50ms）
-pnpm --filter @do-what/core test -- --testNamePattern "hot-state-bootstrap"
+# 前后端集成测试（mock → real Core）
+pnpm --filter @do-what/app test -- --testNamePattern "integration"
 
-# 同步路径性能（P99 < 10ms）
-pnpm --filter @do-what/core exec vitest bench src/__tests__/sync-path.bench.ts
+# UI/ 临时设计源清理确认（T034 完成后应已移除）
+ls UI/
 
-# memory_repo 只写 canon（Working 级跳过验证）
-pnpm --filter @do-what/soul test -- --testNamePattern "memory-tier"
-
-# 全量测试
-pnpm -w test
-```
-
----
-
-### 板块 4：Phase 3 编排与治理（T042 + T045 → T043 → T044）
-
-**任务卡片（按顺序）：**
-- `docs/archive/v0.1.x/tasks/T042-focus-surface-baseline-lock.md`
-- `docs/archive/v0.1.x/tasks/T045-orchestration-template-constraints.md`（与 T042 可并行）
-- `docs/archive/v0.1.x/tasks/T043-integration-gate.md`（T042 完成后）
-- `docs/archive/v0.1.x/tasks/T044-governance-lease.md`（T043 完成后）
-
-**执行顺序：**
-```
-T042、T045（可并行）
-  ↓
-T043（T042 完成后）
-  ↓
-T044（T043 完成后）
-```
-
-**板块 4 验收命令：**
-```bash
-# 四种合法拓扑验证
-pnpm --filter @do-what/core test -- --testNamePattern "topology-validator"
-
-# 三类漂移判定
-pnpm --filter @do-what/core test -- --testNamePattern "integration-gate"
-
-# 防活锁：第二次 Hard-Stale 降级串行
-pnpm --filter @do-what/core test -- --testNamePattern "reconcile-tracker"
-
-# GovernanceLease migration 验证
-sqlite3 ~/.do-what/state/state.db ".schema governance_leases"
-
-# 全量测试（最终验收）
+# 全量验收
 pnpm -w test
 pnpm -w exec tsc --noEmit
 ```
@@ -279,14 +306,22 @@ pnpm --filter @do-what/core start
 
 ```
 packages/
-  protocol/        ← 所有 zod schema + MCP schema + 状态机类型（先写这里）
-  core/            ← 常驻 daemon（HTTP/SSE/EventBus/SQLite/xstate）
-  app/             ← Electron + React UI（本阶段不实现）
+  protocol/        ← 所有 zod schema + MCP schema + 状态机类型（类型真相源）
+  core/            ← 常驻 daemon（HTTP/SSE/EventBus/SQLite/xstate）【已完成，勿动】
+  app/             ← Electron + React UI【当前开发主战场】
+    src/main/      ← Electron 主进程
+    src/preload/   ← contextBridge IPC
+    src/renderer/  ← React renderer 入口
+    src/app/       ← 路由/页面（workbench-page / settings-page）
+    src/stores/    ← Zustand stores（hot-state / projection / pending / ack / ui-shell）
+    src/services/  ← HTTP client / SSE client / session-guard
+    src/components/← 共享组件
+    src/styles/    ← design tokens + global CSS + CSS Modules
   engines/
-    claude/        ← Claude Code 适配器（Hook Runner + MCP Server）
-    codex/         ← Codex 适配器（App Server JSONL 通道）
-  soul/            ← 记忆系统（SQLite + Git + Compiler）
-  tools/           ← Tool Runner（file/git/shell/docker/wsl）
+    claude/        ← Claude Code 适配器【已完成，勿动】
+    codex/         ← Codex 适配器【已完成，勿动】
+  soul/            ← 记忆系统【已完成，勿动】
+  tools/           ← Tool Runner【已完成，勿动】
   toolchain/       ← 工具链断言与托管
 ```
 
@@ -320,10 +355,10 @@ Shell 执行 / 文件写入 / 网络请求必须通过 `tools.shell_exec` / `too
 
 - [ ] `pnpm --filter @do-what/<pkg> exec tsc --noEmit` 无错误
 - [ ] `pnpm --filter @do-what/<pkg> test` 全部通过
-- [ ] 运行 `docs/archive/v0.1.x/tasks/T###-*.md` 中 **DoD + 验收命令** 段的所有命令，输出符合预期
-- [ ] 没有修改本 Ticket **文件清单** 之外的文件
-- [ ] 更新 `docs/INTERFACE_INDEX.md`（若有新增/修改接口，见下方规则）
-- [ ] 更新 `docs/archive/v0.1.x/README.md` 中对应 Ticket 的状态（待开始 → 完成）
+- [ ] 运行 `docs/archive/v0.1-UI/tasks/T###-*.md` 中 **DoD + 验收命令** 段的所有命令，输出符合预期
+- [ ] 没有修改本 Ticket **文件清单** 之外的文件（历史后端代码禁止改动）
+- [ ] 若新增/修改 Core HTTP 端点或 protocol 类型，更新 `docs/INTERFACE_INDEX.md`
+- [ ] 更新 `docs/archive/v0.1-UI/task-breakdown.md` 中对应 Ticket 的状态（待实现 → 完成）
 
 ---
 
@@ -486,13 +521,15 @@ app.get('/state', async () => {
 
 | 需要了解什么 | 读哪里 |
 |-------------|--------|
-| v0.1.x Ticket 的完整要求 | `docs/archive/v0.1.x/tasks/T###-*.md`（T028–T045） |
-| v0.1 历史 Ticket | `docs/archive/v0.1/tasks/T###-*.md`（T001–T027，参考用） |
+| v0.1-UI 前后端契约 | `docs/archive/v0.1-UI/frontend_backend_contract_v0.1.md` |
+| v0.1-UI 状态分层模型 | `docs/archive/v0.1-UI/workbench_state_model_v0.1.md` |
+| v0.1-UI 任务总览 | `docs/archive/v0.1-UI/task-breakdown.md` |
+| v0.1-UI Ticket 的完整要求 | `docs/archive/v0.1-UI/tasks/T###-*.md`（T001A–T034） |
+| v0.1.x 历史 Ticket（参考用） | `docs/archive/v0.1.x/tasks/T###-*.md`（T028–T045） |
+| v0.1 历史 Ticket（参考用） | `docs/archive/v0.1/tasks/T###-*.md`（T001–T027） |
 | 所有接口/端点/表结构速查 | `docs/INTERFACE_INDEX.md` |
 | 事件类型 / zod schema 源码 | `packages/protocol/src/events/` |
 | MCP tool schema 源码 | `packages/protocol/src/mcp/` |
-| Policy 默认配置 | `packages/protocol/src/policy/defaults.ts` |
 | 状态机 context/event 类型 | `packages/protocol/src/machines/` |
 | Core HTTP 端点实现 | `packages/core/src/server/routes.ts` |
-| SQLite 表结构（Core） | `packages/core/src/db/migrations/v1.ts` |
-| SQLite 表结构（Soul） | `packages/soul/src/db/migrations/v1.ts` |
+| UI 视觉参考（临时，T034 后清理） | `UI/preview-active.html`、`UI/preview-empty.html`、`UI/preview-settings.html` |

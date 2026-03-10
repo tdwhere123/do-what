@@ -4,7 +4,7 @@
 **分组:** Foundation  
 **依赖:** T001A  
 **可并行:** 否  
-**状态:** 待开始  
+**状态:** 已完成  
 
 ---
 
@@ -20,13 +20,25 @@
 ```text
 packages/app/
 packages/app/package.json
-packages/app/src/
-packages/app/src/main/
-packages/app/src/preload/
-packages/app/src/renderer/
-packages/app/src/app/
-packages/app/src/styles/
-packages/app/src/stores/
+packages/app/forge.config.js
+packages/app/vite.main.config.ts
+packages/app/vite.preload.config.ts
+packages/app/vite.renderer.config.ts
+packages/app/src/main/main.ts
+packages/app/src/preload/preload.ts
+packages/app/src/renderer/index.html
+packages/app/src/renderer/index.tsx
+packages/app/src/app/app-root.tsx
+packages/app/src/app/App.tsx
+packages/app/src/app/routes/workbench-page.tsx
+packages/app/src/app/routes/settings-page.tsx
+packages/app/src/styles/tokens.css
+packages/app/src/styles/global.css
+packages/app/src/stores/ui-shell-store.ts
+packages/app/src/vendor/
+packages/app/src/app/app-root.test.tsx
+packages/app/src/preload/preload.test.ts
+packages/app/src/stores/ui-shell-store.test.ts
 ```
 
 ---
@@ -44,13 +56,23 @@ packages/app/src/stores/
 
 ## 验收标准
 
-- [ ] `packages/app` 可启动
-- [ ] Electron `main / preload / renderer` 边界建立
-- [ ] React 入口建立
-- [ ] `HashRouter` 路由骨架建立
-- [ ] Query client / Zustand store 挂载点建立
-- [ ] 全局 token 与 CSS Modules 基础样式挂载点建立
-- [ ] 后续 UI 任务可以在这个骨架上继续推进
+- [x] `packages/app` 可启动
+- [x] Electron `main / preload / renderer` 边界建立
+- [x] React 入口建立
+- [x] `HashRouter` 路由骨架建立
+- [x] Query client / Zustand store 挂载点建立
+- [x] 全局 token 与 CSS Modules 基础样式挂载点建立
+- [x] 后续 UI 任务可以在这个骨架上继续推进
+
+---
+
+## 验收记录
+
+- `pnpm --filter @do-what/app exec tsc --noEmit`
+- `pnpm --filter @do-what/app test`
+- `pnpm --filter @do-what/app build`
+- `pnpm --filter @do-what/app start`
+- 手动验收通过：默认 Workbench 正常渲染，`#/settings` 可切换，`window.doWhatRuntime` 可读，`typeof window.require === 'undefined'`
 
 ---
 
