@@ -1,0 +1,17 @@
+:root {
+  color-scheme: light;
+  font-family:
+    "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --surface-base: #f5f1e8;
+  --surface-muted: #ece6da;
+  --surface-panel: rgba(255, 251, 245, 0.88);
+  --border-muted: rgba(89, 69, 47, 0.18);
+  --border-strong: rgba(89, 69, 47, 0.36);
+  --text-primary: #241b14;
+  --text-secondary: #5b4e3f;
+  --text-muted: #8a7862;
+  --accent-amber: #be7a28;
+  --accent-amber-soft: rgba(190, 122, 40, 0.14);
+  --shadow-panel: 0 24px 80px rgba(55, 37, 19, 0.12);
+  --shadow-soft: 0 10px 30px rgba(55, 37, 19, 0.08);
+}
