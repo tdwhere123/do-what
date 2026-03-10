@@ -36,6 +36,10 @@ export default defineConfig({
         find: '@styles',
         replacement: path.resolve(__dirname, 'src/styles'),
       },
+      {
+        find: '@do-what/protocol',
+        replacement: path.resolve(__dirname, '../protocol/src/index.ts'),
+      },
     ],
   },
   build: {

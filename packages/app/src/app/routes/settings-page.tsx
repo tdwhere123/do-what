@@ -1,4 +1,6 @@
 import styles from '../app-shell.module.css';
+import { EMPTY_ASSET_URLS } from '../../assets';
+import { SettingsSunIcon, SoulWorkingIcon } from '../../components/icons';
 
 const FALLBACK_RUNTIME = {
   platform: 'unknown',
@@ -15,12 +17,32 @@ export function SettingsPage() {
   return (
     <section className={styles.page}>
       <div className={styles.hero}>
-        <p className={styles.eyebrow}>Hash route</p>
-        <h2 className={styles.heroTitle}>Settings</h2>
-        <p className={styles.heroBody}>
-          Settings 先以 `HashRouter` 正式页面落位，后续 T028/T029 会在这个壳层上接入
-          Query-first 读取、readonly/disabled 锁定态和 interrupted draft 保护。
-        </p>
+        <div className={styles.heroMeta}>
+          <span className={styles.badge}>Hash route</span>
+          <span className={styles.heroMetric}>
+            <SoulWorkingIcon size={16} />
+            lease-aware shell
+          </span>
+        </div>
+        <div className={styles.heroLayout}>
+          <div className={styles.heroCopy}>
+            <h2 className={styles.heroTitle}>Settings</h2>
+            <p className={styles.heroBody}>
+              Settings 先以 <code>HashRouter</code> 正式页面落位，后续 T028/T029 会在这个壳层上接入
+              Query-first 读取、readonly/disabled 锁定态和 interrupted draft 保护。
+            </p>
+            <div className={styles.heroActions}>
+              <span className={styles.heroChip}>
+                <SettingsSunIcon size={18} />
+                query-first settings
+              </span>
+            </div>
+          </div>
+
+          <div className={styles.heroArtwork}>
+            <img alt="Settings empty state illustration" src={EMPTY_ASSET_URLS.settings} />
+          </div>
+        </div>
       </div>
 
       <div className={styles.panelGrid}>

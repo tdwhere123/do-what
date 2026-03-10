@@ -4,6 +4,10 @@
   box-sizing: border-box;
 }
 
+html {
+  font-family: var(--font-ui);
+}
+
 html,
 body,
 #root {
@@ -12,8 +16,14 @@ body,
 
 body {
   margin: 0;
-  background: var(--surface-base);
+  background:
+    radial-gradient(circle at top, rgba(201, 155, 74, 0.08), transparent 32%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0)),
+    var(--bg);
   color: var(--text-primary);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 button,
@@ -25,4 +35,33 @@ select {
 
 a {
   color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+code,
+pre {
+  font-family: var(--font-mono);
+}
+
+::selection {
+  background: rgba(101, 78, 64, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

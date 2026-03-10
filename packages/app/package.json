@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@do-what/protocol": "workspace:*",
     "@tanstack/react-query": "^5.59.0",
     "electron-squirrel-startup": "^1.0.1",
     "react": "^19.0.0",

@@ -3,6 +3,7 @@ import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { SettingsPage } from './routes/settings-page';
 import { WorkbenchPage } from './routes/workbench-page';
 import { useUiShellStore } from '../stores/ui-shell-store';
+import { SettingsSunIcon, WorkbenchFlowerIcon } from '../components/icons';
 import styles from './app-shell.module.css';
 
 function ShellNavigation() {
@@ -15,6 +16,7 @@ function ShellNavigation() {
           isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink
         }
       >
+        <WorkbenchFlowerIcon className={styles.navIcon} size={18} />
         Workbench
       </NavLink>
       <NavLink
@@ -23,6 +25,7 @@ function ShellNavigation() {
           isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink
         }
       >
+        <SettingsSunIcon className={styles.navIcon} size={18} />
         Settings
       </NavLink>
     </nav>
@@ -42,7 +45,7 @@ export function App() {
   return (
     <div className={styles.shell}>
       <header className={styles.header}>
-        <div>
+        <div className={styles.headerCopy}>
           <p className={styles.eyebrow}>T001B Scaffold</p>
           <h1 className={styles.title}>do-what UI runtime skeleton</h1>
         </div>

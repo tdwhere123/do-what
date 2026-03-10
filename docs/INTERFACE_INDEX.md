@@ -193,6 +193,55 @@
 - 同步路径负责校验、分配 revision、进入事件总线并创建 pending ack。
 - 异步路径负责 SSE 广播、Projection 失效以及最终 ack 状态收敛。
 
+### ui-contract
+
+源文件：`packages/protocol/src/core/ui-contract.ts`
+
+#### 枚举
+
+| 类型 | 值 | 说明 |
+|---|---|---|
+| `CoreConnectionState` | `connecting \| connected \| disconnected \| reconnecting` | UI 与 Core 的连接状态 |
+| `CoreHealthStatus` | `unknown \| idle \| booting \| healthy \| running \| degraded \| offline \| rebooting` | 各子系统健康度，用于 `WorkbenchHealthSnapshot` |
+
+#### 顶层读模型
+
+| 类型 | 关键字段 | 说明 |
+|---|---|---|
+| `WorkbenchSnapshot` | `revision`, `coreSessionId`, `connectionState`, `health`, `pendingApprovals[]`, `recentEvents[]`, `runs[]`, `workspaces[]` | 前端 workbench 初始化与热态消费基线，允许 real adapter 以兼容映射补默认值 |
+| `TimelinePage` | `runId`, `revision`, `entries[]`, `limit`, `nextBeforeRevision`, `hasMore` | Timeline 分页读模型，保留 optimistic tail 追加空间 |
+| `InspectorSnapshot` | `runId`, `revision`, `overview`, `files[]`, `plans[]`, `history[]`, `governance` | Inspector 右侧面板查询基线 |
+| `SettingsSnapshot` | `revision`, `coreSessionId`, `lease`, `sections[]` | Settings Query-first 读模型与 lease 锁定态基线 |
+| `TemplateDescriptor` | `templateId`, `title`, `description`, `inputs[]` | Create Run 模板描述符基线 |
+
+#### 命令与 ack
+
+| 类型 | 关键字段 | 说明 |
+|---|---|---|
+| `CoreCommandRequest` | `clientCommandId`, `command`, `payload`, `runId?`, `workspaceId?` | 前端 command 写入口统一请求体 |
+| `CoreCommandAck` | `ok`, `ackId`, `revision?` | command 接收确认包 |
+| `CoreProbeResult` | `ackId`, `status`, `revision?`, `entityType?`, `entityId?`, `createdAt?`, `committedAt?`, `error?` | ack/probe 标准化查询结果 |
+| `CoreError` | `code`, `message`, `details?` | query/command 错误统一结构 |
+| `CoreSseEnvelope` | `revision`, `coreSessionId?`, `event`, `causedBy?` | SSE 规范化包裹；当前 Core 裸事件可由 app 侧兼容映射到此结构 |
+
+#### 关键子类型
+
+| 类型 | 判别 / 关键字段 | 说明 |
+|---|---|---|
+| `WorkbenchHealthSnapshot` | `core`, `claude`, `codex`, `soul`, `network`（均为 `CoreHealthStatus`）| workbench health 格, 各子系统一格一列 |
+| `WorkbenchRunSummary` | `runId`, `status`（`created \| queued \| started \| running \| waiting_approval \| completed \| failed \| cancelled \| interrupted \| governance_invalid`）, `title`, `workspaceId?`, `engine?` | runs 列表条目 |
+| `WorkbenchPendingApproval` | `approvalId`, `runId`, `toolName`, `createdAt`, `summary?` | pendingApprovals 列表条目 |
+| `TimelineEntry` | `id`, `runId`, `kind`（`message \| tool_call \| approval \| memory \| system \| plan \| diff \| checkpoint`）, `timestamp`, `title?`, `body?`, `status?`, `meta?`, `causedBy?` | Timeline 单条记录 |
+| `InspectorFileChange` | `path`, `status`（`added \| modified \| deleted \| renamed`）, `summary?` | InspectorSnapshot.files 条目 |
+| `InspectorPlanItem` | `id`, `status`（`pending \| active \| done \| failed`）, `summary` | InspectorSnapshot.plans 条目 |
+| `InspectorHistoryItem` | `id`, `type`（`run \| checkpoint \| memory \| governance \| git`）, `label`, `timestamp` | InspectorSnapshot.history 条目 |
+| `SettingsSection` | `sectionId`, `title`, `locked`, `fields[]`（每个 field 含 `fieldId`, `kind`, `value`, `locked`）| SettingsSnapshot.sections 条目 |
+
+补充说明：
+- 本批仅固化前端消费契约，不改变现有 Core `/state`、`/events`、`/acks/:ackId` 的实际输出。
+- 当前真实 Core `/events` 仍输出裸事件；`CoreSseEnvelope` 为 v0.1-UI 前端规范化目标结构。
+- 所有 schema 均使用 `.passthrough()`，对未知字段保持前向兼容。
+
 ### focus-surface
 
 | 类型 | 关键字段 | 说明 |
@@ -568,3 +617,4 @@ Codex 原始事件类型当前归一化规则：
 | 2026-03-09 | T043 | 补充 `DriftAssessment` / `MergeDecision`、`run_serialized` 事件与串行降级说明 |
 | 2026-03-09 | T044 | 补充 `GovernanceLease`、`NativeSurfaceReport`、`run_start_denied` 与 `governance_leases` 表 |
 | 2026-03-09 | T045 | 补充 `OrchestrationTemplate`、`TopologyValidator`、`run_topology_invalid` 与 `governance_invalid` 终态 |
+| 2026-03-10 | T002 | 补充 v0.1-UI `WorkbenchSnapshot`、`TimelinePage`、`InspectorSnapshot`、`SettingsSnapshot`、`TemplateDescriptor`、`CoreCommand*`、`CoreSseEnvelope` 前端共享契约 |

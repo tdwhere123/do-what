@@ -1,17 +1,90 @@
 :root {
   color-scheme: light;
-  font-family:
-    "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  --surface-base: #f5f1e8;
-  --surface-muted: #ece6da;
-  --surface-panel: rgba(255, 251, 245, 0.88);
-  --border-muted: rgba(89, 69, 47, 0.18);
-  --border-strong: rgba(89, 69, 47, 0.36);
-  --text-primary: #241b14;
-  --text-secondary: #5b4e3f;
-  --text-muted: #8a7862;
-  --accent-amber: #be7a28;
-  --accent-amber-soft: rgba(190, 122, 40, 0.14);
+
+  --font-display: 'Kalam', 'Segoe Print', 'Bradley Hand', cursive;
+  --font-ui:
+    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', 'Segoe UI',
+    system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+
+  --bg: #f3efea;
+  --bg-sidebar: #ebe6dc;
+  --surface: #faf8f5;
+  --surface-raised: #ffffff;
+  --surface-panel: rgba(255, 250, 244, 0.9);
+  --surface-muted: rgba(235, 230, 220, 0.82);
+
+  --border: rgba(45, 37, 32, 0.08);
+  --border-strong: rgba(45, 37, 32, 0.16);
+  --border-muted: var(--border);
+
+  --text-primary: #2d2520;
+  --text-secondary: #5c5549;
+  --text-muted: #9a9088;
+  --text-disabled: #c4bdb5;
+
+  --accent-primary: #654e40;
+  --accent-primary-light: #826859;
+  --accent-warm: #c48a7e;
+  --accent-warm-light: #dfab9f;
+  --accent-gold: #c99b4a;
+  --accent-subtle: rgba(101, 78, 64, 0.1);
+
+  --status-running: #3d7a5e;
+  --status-success: #2d6b4a;
+  --status-waiting: #8b6b35;
+  --status-error: #b54040;
+  --status-interrupted: #7a5e7a;
+  --status-idle: #9a9282;
+
+  --soul-working: rgba(28, 26, 20, 0.18);
+  --soul-consolidated: rgba(168, 94, 45, 0.45);
+  --soul-canon: #c99b4a;
+  --soul-trial: rgba(122, 138, 122, 0.35);
+
   --shadow-panel: 0 24px 80px rgba(55, 37, 19, 0.12);
   --shadow-soft: 0 10px 30px rgba(55, 37, 19, 0.08);
+  --shadow-hairline: 0 1px 0 rgba(255, 255, 255, 0.75) inset;
+
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-pill: 999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+
+  --motion-fast: 160ms;
+  --motion-base: 220ms;
+  --motion-slow: 340ms;
+  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --button-primary-bg: var(--accent-primary);
+  --button-primary-fg: #fffaf3;
+  --button-secondary-bg: rgba(255, 255, 255, 0.66);
+  --button-secondary-fg: var(--text-secondary);
+
+  --badge-running-bg: rgba(61, 122, 94, 0.14);
+  --badge-running-fg: var(--status-running);
+  --badge-waiting-bg: rgba(139, 107, 53, 0.14);
+  --badge-waiting-fg: var(--status-waiting);
+  --badge-success-bg: rgba(45, 107, 74, 0.14);
+  --badge-success-fg: var(--status-success);
+
+  --surface-base: var(--bg);
+  --accent-amber: var(--accent-gold);
+  --accent-amber-soft: rgba(201, 155, 74, 0.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+    --motion-slow: 0ms;
+  }
 }

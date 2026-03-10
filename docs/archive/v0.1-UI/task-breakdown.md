@@ -1,6 +1,6 @@
 # v0.1-UI 任务拆解方案
 
-> 状态：In implementation（T001A、T001B 已完成，下一步 T002）
+> 状态：In implementation（T001A–T007 已完成，下一步 T008）
 >
 > 真相源：
 > - `docs/archive/v0.1-UI/frontend_backend_contract_v0.1.md`
@@ -65,12 +65,12 @@
 
 - [T001A](./tasks/T001A-runtime-scaffold-decision.md) `runtime-scaffold-decision`（已完成）
 - [T001B](./tasks/T001B-packages-app-bootstrap.md) `packages-app-bootstrap`（已完成）
-- [T002](./tasks/T002-frontend-contract-baseline.md) `frontend-contract-baseline`
-- [T003](./tasks/T003-mock-fixtures-and-adapters.md) `mock-fixtures-and-adapters`
-- [T004](./tasks/T004-design-tokens-and-theme-base.md) `design-tokens-and-theme-base`
-- [T005](./tasks/T005-svg-icon-and-empty-assets.md) `svg-icon-and-empty-assets`
-- [T006](./tasks/T006-core-http-client.md) `core-http-client`
-- [T007](./tasks/T007-core-event-client-and-session-guard.md) `core-event-client-and-session-guard`
+- [T002](./tasks/T002-frontend-contract-baseline.md) `frontend-contract-baseline`（已完成）
+- [T003](./tasks/T003-mock-fixtures-and-adapters.md) `mock-fixtures-and-adapters`（已完成）
+- [T004](./tasks/T004-design-tokens-and-theme-base.md) `design-tokens-and-theme-base`（已完成）
+- [T005](./tasks/T005-svg-icon-and-empty-assets.md) `svg-icon-and-empty-assets`（已完成）
+- [T006](./tasks/T006-core-http-client.md) `core-http-client`（已完成）
+- [T007](./tasks/T007-core-event-client-and-session-guard.md) `core-event-client-and-session-guard`（已完成）
 
 ### State stores / selectors / query bridge
 
@@ -115,7 +115,7 @@
 
 ## C. 原子任务清单
 
-当前进度：`T001A`、`T001B` 已完成；后续从 `T002` 开始。
+当前进度：`T001A`–`T007` 已完成；后续从 `T008` 开始。
 
 | ID | 标题 | 分组 | 前置依赖 | 可并行 |
 |----|------|------|----------|--------|

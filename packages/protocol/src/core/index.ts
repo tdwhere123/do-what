@@ -6,3 +6,4 @@ export * from './governance.js';
 export * from './hot-state.js';
 export * from './projection.js';
 export * from './topology.js';
+export * from './ui-contract.js';
