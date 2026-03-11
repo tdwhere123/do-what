@@ -1,0 +1,132 @@
+.backdrop {
+  width: min(760px, 100%);
+}
+
+.modal {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  border-radius: 28px;
+  background: rgba(255, 251, 246, 0.96);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-panel);
+}
+
+.header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.title {
+  margin: 0;
+  font-size: 26px;
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+}
+
+.closeButton,
+.secondaryButton {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.label {
+  font-weight: 600;
+}
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--text-primary);
+}
+
+.templateInfo {
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--border);
+}
+
+.templateTitle {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.templateDescription {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.fields {
+  display: grid;
+  gap: 14px;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.checkboxRow small,
+.help {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.error {
+  margin: 0;
+  color: var(--status-error);
+}
+
+.footer {
+  display: flex;
+  justify-content: end;
+  gap: 10px;
+}
+
+.primaryButton {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
+}
+
+.primaryButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

@@ -1,0 +1,171 @@
+.sidebar {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 26px;
+  border: 1px solid var(--border-muted);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.96), rgba(242, 236, 227, 0.92)),
+    var(--bg-sidebar);
+  box-shadow: var(--shadow-panel);
+}
+
+.header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-size: 22px;
+}
+
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
+}
+
+.primaryButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.healthCluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.healthBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.workspaceList {
+  display: grid;
+  gap: 12px;
+}
+
+.workspaceCard {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.66);
+  border: 1px solid transparent;
+}
+
+.workspaceCardActive {
+  border-color: var(--border-strong);
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.workspaceMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workspaceLabel {
+  margin: 0;
+  font-weight: 700;
+}
+
+.workspaceCaption {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.runList {
+  display: grid;
+  gap: 8px;
+}
+
+.runButton {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.runButtonActive {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-hairline);
+}
+
+.runRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.runTitle {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.runMeta {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.approvalBadge {
+  min-width: 22px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: var(--badge-waiting-bg);
+  color: var(--badge-waiting-fg);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.statusDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--status-idle);
+}
+
+.statusDotRunning {
+  background: var(--status-running);
+}
+
+.statusDotAttention {
+  background: var(--status-waiting);
+}
+
+.statusDotOk {
+  background: var(--status-success);
+}

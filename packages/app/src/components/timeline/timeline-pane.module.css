@@ -1,0 +1,166 @@
+﻿.timeline {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+  border-radius: 28px;
+  border: 1px solid var(--border-muted);
+  background: var(--surface-panel);
+  box-shadow: var(--shadow-panel);
+}
+
+.header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.title {
+  margin: 0;
+  font-size: 24px;
+}
+
+.modeSwitch,
+.markerRow,
+.optimisticActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.modeButton,
+.loadOlder,
+.retryButton,
+.dismissButton {
+  padding: 8px 12px;
+  border-radius: var(--radius-pill);
+}
+
+.modeButton,
+.loadOlder,
+.retryButton {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text-secondary);
+}
+
+.modeButtonActive {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.dismissButton {
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.body,
+.entryList,
+.thread,
+.optimisticTail,
+.composer {
+  display: grid;
+  gap: 12px;
+}
+
+.markerBadge,
+.optimisticHeader {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(101, 78, 64, 0.08);
+  color: var(--accent-primary);
+  font-size: 12px;
+}
+
+.loading {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.threadHeader {
+  font-weight: 700;
+  color: var(--accent-primary);
+}
+
+.entry {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.entryOptimistic {
+  border-style: dashed;
+}
+
+.entryMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.entryBody {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.65;
+}
+
+.entryStatus {
+  justify-self: start;
+  padding: 5px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(201, 155, 74, 0.14);
+  color: var(--badge-waiting-fg);
+  font-size: 12px;
+}
+
+.emptyState {
+  padding: 20px;
+  border-radius: 18px;
+  border: 1px dashed var(--border-strong);
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.emptyState p {
+  margin: 6px 0 0;
+}
+
+.composerInput {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.78);
+  resize: vertical;
+}
+
+.sendButton {
+  justify-self: end;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
+}
+
+.sendButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

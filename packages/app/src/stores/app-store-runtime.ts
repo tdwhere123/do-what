@@ -1,3 +1,4 @@
+﻿import type { WorkbenchSnapshot } from '@do-what/protocol';
 import type { AppServices } from '../lib/runtime/app-services';
 import { startAckOverlayRuntime } from './ack-overlay';
 import { startHotStateRuntime } from './hot-state';
@@ -5,10 +6,16 @@ import { startPendingCommandRuntime } from './pending-command';
 import { startProjectionRuntime, useProjectionStore } from './projection';
 import { useUiStore } from './ui';
 
+export interface AppStoreRuntimeOptions {
+  readonly bootstrapSnapshot?: WorkbenchSnapshot;
+}
+
 export function startAppStoreRuntime(
   services: Pick<AppServices, 'coreApi' | 'eventBus'>,
+  options: AppStoreRuntimeOptions = {},
 ): () => void {
   const cleanupHotState = startHotStateRuntime({
+    bootstrapSnapshot: options.bootstrapSnapshot,
     coreApi: services.coreApi,
     eventBus: services.eventBus,
   });

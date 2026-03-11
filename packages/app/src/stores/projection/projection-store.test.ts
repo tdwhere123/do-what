@@ -3,6 +3,7 @@ import { normalizeCoreEvent } from '../../lib/events';
 import {
   ACTIVE_EVENT_FIXTURES,
   ACTIVE_INSPECTOR_FIXTURE,
+  ACTIVE_TIMELINE_ENTRIES,
   ACTIVE_TIMELINE_FIXTURE,
 } from '../../test/fixtures';
 import {
@@ -43,27 +44,9 @@ describe('projection store', () => {
         .applyNormalizedEvent(normalizeCoreEvent(envelope));
     }
 
-    useProjectionStore
-      .getState()
-      .applyNormalizedEvent(
-        normalizeCoreEvent({
-          coreSessionId: 'mock-core-active',
-          event: {
-            operation: 'propose',
-            proposalId: 'proposal-1',
-            cueDraft: {},
-            requiresCheckpoint: false,
-            revision: 27,
-            runId: 'run-active-1',
-            source: 'soul.memory',
-            timestamp: '2026-03-10T09:34:00.000Z',
-          },
-          revision: 27,
-        }),
-      );
-
     expect(useProjectionStore.getState().runTimelines['run-active-1']?.entries.length).toBe(3);
     expect(useProjectionStore.getState().soulPanels['run-active-1']?.entries.length).toBe(1);
+    expect(useProjectionStore.getState().soulPanels['run-active-1']?.proposals.length).toBe(1);
     expect(useProjectionStore.getState().runInspectors['run-active-1']?.revision).toBe(27);
   });
 
@@ -112,5 +95,32 @@ describe('projection store', () => {
 
     expect(useProjectionStore.getState().runTimelines['run-one']?.revision).toBe(99);
     expect(useProjectionStore.getState().runInspectors['run-two']?.revision).toBe(101);
+  });
+
+  it('merges older timeline pages into the loaded range without dropping the tail', async () => {
+    useProjectionStore.getState().replaceTimelinePage({
+      ...ACTIVE_TIMELINE_FIXTURE,
+      runId: 'run-active-1',
+    });
+
+    await useProjectionStore.getState().refetchTimeline(
+      {
+        getTimelinePage: vi.fn().mockResolvedValue({
+          entries: ACTIVE_TIMELINE_ENTRIES.slice(0, 2),
+          hasMore: false,
+          limit: 50,
+          nextBeforeRevision: null,
+          revision: 24,
+          runId: 'run-active-1',
+        }),
+      },
+      {
+        beforeRevision: 12,
+        runId: 'run-active-1',
+      },
+    );
+
+    expect(useProjectionStore.getState().runTimelines['run-active-1']?.entries.length).toBeGreaterThan(4);
+    expect(useProjectionStore.getState().runTimelines['run-active-1']?.hasMoreBefore).toBe(false);
   });
 });

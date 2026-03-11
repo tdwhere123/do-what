@@ -1,9 +1,11 @@
+﻿import type { WorkbenchSnapshot } from '@do-what/protocol';
 import { normalizeCoreError } from '../../lib/contracts';
 import type { NormalizedEventBus } from '../../lib/events';
 import type { CoreApiAdapter } from '../../lib/core-http-client';
 import { resetHotStateStore, useHotStateStore } from './hot-state-store';
 
 export interface HotStateRuntimeDependencies {
+  readonly bootstrapSnapshot?: WorkbenchSnapshot;
   readonly coreApi: Pick<CoreApiAdapter, 'getWorkbenchSnapshot'>;
   readonly eventBus: NormalizedEventBus;
 }
@@ -29,6 +31,10 @@ export function startHotStateRuntime(
       }
     }
   };
+
+  if (dependencies.bootstrapSnapshot) {
+    useHotStateStore.getState().applyWorkbenchSnapshot(dependencies.bootstrapSnapshot);
+  }
 
   const unsubscribe = dependencies.eventBus.subscribe((message) => {
     if (message.kind === 'connection') {
@@ -59,7 +65,9 @@ export function startHotStateRuntime(
     }
   });
 
-  void refreshSnapshot();
+  if (!dependencies.bootstrapSnapshot) {
+    void refreshSnapshot();
+  }
 
   return () => {
     disposed = true;

@@ -28,6 +28,31 @@ export const ACTIVE_EVENT_FIXTURES: readonly CoreSseEnvelope[] = [
     },
     revision: 26,
   }),
+  normalizeCoreSseEnvelope({
+    coreSessionId: 'mock-core-active',
+    event: {
+      claim: 'Approval reconciliation should probe before clearing overlays.',
+      dimension: 'governance',
+      manifestationState: 'proposal',
+      operation: 'propose',
+      proposalId: 'proposal-1',
+      cueDraft: {
+        claim: 'Approval reconciliation should probe before clearing overlays.',
+        dimension: 'governance',
+        manifestationState: 'proposal',
+        retentionState: 'working',
+        scope: 'project',
+      },
+      requiresCheckpoint: false,
+      retentionState: 'working',
+      revision: 27,
+      runId: 'run-active-1',
+      scope: 'project',
+      source: 'soul.memory',
+      timestamp: '2026-03-10T09:34:00.000Z',
+    },
+    revision: 27,
+  }),
 ];
 
 export const CORE_RESTART_EVENT_FIXTURE: CoreSseEnvelope = normalizeCoreSseEnvelope({
@@ -43,3 +68,5 @@ export const CORE_RESTART_EVENT_FIXTURE: CoreSseEnvelope = normalizeCoreSseEnvel
   },
   revision: 1,
 });
+
+

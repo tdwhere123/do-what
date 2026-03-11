@@ -1,10 +1,11 @@
-import type {
+﻿import type {
   CoreCommandAck,
   CoreCommandRequest,
   CoreProbeResult,
   InspectorSnapshot,
   SettingsSnapshot,
   TemplateDescriptor,
+  TimelineEntry,
   TimelinePage,
   WorkbenchSnapshot,
 } from '@do-what/protocol';
@@ -13,7 +14,7 @@ import type { CoreApiAdapter, TimelinePageQuery } from '../core-http-client/core
 import type { TemplateRegistryAdapter } from '../template-registry/template-registry-adapter';
 import {
   ACTIVE_INSPECTOR_FIXTURE,
-  ACTIVE_TIMELINE_FIXTURE,
+  ACTIVE_TIMELINE_ENTRIES,
   ACTIVE_WORKBENCH_FIXTURE,
   DEFAULT_SETTINGS_FIXTURE,
   DESYNCED_WORKBENCH_FIXTURE,
@@ -50,8 +51,32 @@ function getWorkbenchFixture(scenario: MockScenarioName): WorkbenchSnapshot {
   }
 }
 
-function getTimelineFixture(scenario: MockScenarioName): TimelinePage {
-  return scenario === 'empty' ? EMPTY_TIMELINE_FIXTURE : ACTIVE_TIMELINE_FIXTURE;
+function createTimelinePage(
+  runId: string,
+  entries: readonly TimelineEntry[],
+  hasMore: boolean,
+  nextBeforeRevision: number | null,
+): TimelinePage {
+  return {
+    entries: [...clone(entries)],
+    hasMore,
+    limit: 50,
+    nextBeforeRevision,
+    revision: 24,
+    runId,
+  };
+}
+
+function getTimelineFixture(query: TimelinePageQuery, scenario: MockScenarioName): TimelinePage {
+  if (scenario === 'empty') {
+    return EMPTY_TIMELINE_FIXTURE;
+  }
+
+  if (query.beforeRevision) {
+    return createTimelinePage(query.runId, ACTIVE_TIMELINE_ENTRIES.slice(0, 2), false, null);
+  }
+
+  return createTimelinePage(query.runId, ACTIVE_TIMELINE_ENTRIES.slice(-4), true, 12);
 }
 
 function getInspectorFixture(scenario: MockScenarioName): InspectorSnapshot {
@@ -87,13 +112,7 @@ export class MockCoreApiAdapter implements CoreApiAdapter {
   }
 
   async getTimelinePage(query: TimelinePageQuery): Promise<TimelinePage> {
-    const timeline = clone(getTimelineFixture(this.scenario));
-    return {
-      ...timeline,
-      limit: query.limit ?? timeline.limit,
-      nextBeforeRevision: query.beforeRevision ?? timeline.nextBeforeRevision,
-      runId: query.runId,
-    };
+    return getTimelineFixture(query, this.scenario);
   }
 
   async getInspectorSnapshot(runId: string): Promise<InspectorSnapshot> {

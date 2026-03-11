@@ -1,4 +1,4 @@
-import type { NormalizedEventBus } from '../../lib/events';
+﻿import type { NormalizedEventBus } from '../../lib/events';
 import { resetPendingCommandStore, usePendingCommandStore } from './pending-command-store';
 
 export interface PendingCommandRuntimeDependencies {
@@ -15,7 +15,24 @@ export function startPendingCommandRuntime(
       usePendingCommandStore
         .getState()
         .markConnectionLost(message.transition.nextCoreSessionId);
+      return;
     }
+
+    if (message.kind !== 'event') {
+      return;
+    }
+
+    const clientCommandId = message.event.causedBy?.clientCommandId;
+    if (!clientCommandId) {
+      return;
+    }
+
+    const entry = usePendingCommandStore.getState().entriesById[clientCommandId];
+    if (!entry) {
+      return;
+    }
+
+    usePendingCommandStore.getState().markSettled(clientCommandId);
   });
 
   return () => {

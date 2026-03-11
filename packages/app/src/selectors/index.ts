@@ -1,4 +1,4 @@
-import type { HotStateStore } from '../stores/hot-state';
+﻿import type { HotStateStore } from '../stores/hot-state';
 import type { ProjectionStore } from '../stores/projection';
 import type { SettingsBridgeStore } from '../stores/settings-bridge';
 import type { AckOverlayStore } from '../stores/ack-overlay';
@@ -12,6 +12,13 @@ export const selectSelectedWorkspaceId = (state: UiStore): string | null =>
   state.selectedWorkspaceId;
 export const selectTimelineViewMode = (state: UiStore): UiStore['timelineViewMode'] =>
   state.timelineViewMode;
+export const selectBootstrapStatus = (state: UiStore): UiStore['bootstrapStatus'] =>
+  state.bootstrapStatus;
+export const selectBootstrapError = (state: UiStore): string | null => state.bootstrapError;
+export const selectInspectorMode = (state: UiStore): UiStore['inspectorMode'] =>
+  state.inspectorMode;
+export const selectSettingsActiveTab = (state: UiStore): UiStore['settingsActiveTab'] =>
+  state.settingsActiveTab;
 
 export const selectGlobalInteractionLock = (
   state: HotStateStore,

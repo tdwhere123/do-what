@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   InspectorSnapshot,
   TimelineEntry,
   TimelinePage,
@@ -9,18 +9,36 @@ import type { NormalizedCoreEvent } from '../../lib/events';
 import type { CoreApiAdapter, TimelinePageQuery } from '../../lib/core-http-client';
 
 export type ProjectionStatus = 'error' | 'idle' | 'loading' | 'refreshing';
+export type TimelineMarkerKind = 'blocked' | 'handoff' | 'integration';
 
 export interface TimelineLoadedRange {
   readonly fromRevision: number | null;
   readonly toRevision: number | null;
 }
 
+export interface TimelineMarker {
+  readonly entryId: string;
+  readonly kind: TimelineMarkerKind;
+  readonly label: string;
+  readonly laneId: string;
+  readonly timestamp: string;
+}
+
+export interface TimelineThread {
+  readonly entries: readonly TimelineEntry[];
+  readonly laneId: string;
+  readonly laneLabel: string;
+}
+
 export interface RunTimelineProjection {
   readonly entries: readonly TimelineEntry[];
   readonly error: string | null;
   readonly hasMoreBefore: boolean;
+  readonly laneOrder: readonly string[];
   readonly loadedRange: TimelineLoadedRange;
+  readonly markers: readonly TimelineMarker[];
   readonly nextBeforeRevision: number | null;
+  readonly nodeThreads: readonly TimelineThread[];
   readonly revision: number;
   readonly runId: string;
   readonly status: ProjectionStatus;
@@ -36,17 +54,32 @@ export interface RunInspectorProjection {
 
 export interface SoulPanelEntry {
   readonly body?: string;
+  readonly claim?: string;
+  readonly conflictSummary?: string;
+  readonly dimension?: string;
   readonly id: string;
   readonly kind: 'memory' | 'system';
+  readonly manifestationState?: string;
+  readonly retentionState?: string;
   readonly revision: number;
+  readonly scope?: string;
   readonly timestamp: string;
   readonly title: string;
+}
+
+export interface SoulGraphPreviewNode {
+  readonly id: string;
+  readonly label: string;
+  readonly scope: string;
 }
 
 export interface SoulPanelProjection {
   readonly entries: readonly SoulPanelEntry[];
   readonly error: string | null;
+  readonly graphPreview: readonly SoulGraphPreviewNode[];
   readonly lastRevision: number;
+  readonly memories: readonly SoulPanelEntry[];
+  readonly proposals: readonly SoulPanelEntry[];
   readonly runId: string;
   readonly status: ProjectionStatus;
 }
@@ -81,17 +114,97 @@ export type ProjectionStore = ProjectionStoreState & ProjectionStoreActions;
 
 const DEFAULT_MAX_MOUNTED_RUNS = 3;
 
+function readString(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined;
+}
+
+function readMetaString(entry: TimelineEntry, key: string): string | undefined {
+  const value = entry.meta?.[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function deriveTimelineStructure(entries: readonly TimelineEntry[]): Pick<
+  RunTimelineProjection,
+  'laneOrder' | 'markers' | 'nodeThreads'
+> {
+  const laneLabels = new Map<string, string>();
+  const laneEntries = new Map<string, TimelineEntry[]>();
+  const laneOrder: string[] = [];
+  const markers: TimelineMarker[] = [];
+
+  for (const entry of entries) {
+    const laneId = readMetaString(entry, 'laneId') ?? 'main';
+    const laneLabel = readMetaString(entry, 'laneLabel') ?? laneId;
+
+    if (!laneEntries.has(laneId)) {
+      laneOrder.push(laneId);
+      laneEntries.set(laneId, []);
+      laneLabels.set(laneId, laneLabel);
+    }
+
+    laneEntries.get(laneId)?.push(entry);
+
+    const markerKind = readMetaString(entry, 'markerKind');
+    if (
+      markerKind === 'blocked' ||
+      markerKind === 'handoff' ||
+      markerKind === 'integration'
+    ) {
+      markers.push({
+        entryId: entry.id,
+        kind: markerKind,
+        label: entry.title ?? markerKind,
+        laneId,
+        timestamp: entry.timestamp,
+      });
+    }
+  }
+
+  return {
+    laneOrder,
+    markers,
+    nodeThreads: laneOrder.map((laneId) => ({
+      entries: laneEntries.get(laneId) ?? [],
+      laneId,
+      laneLabel: laneLabels.get(laneId) ?? laneId,
+    })),
+  };
+}
+
+function deriveSoulCollections(entries: readonly SoulPanelEntry[]): Pick<
+  SoulPanelProjection,
+  'graphPreview' | 'memories' | 'proposals'
+> {
+  const memories = entries.filter((entry) => entry.kind === 'memory');
+  const proposals = memories.filter(
+    (entry) => entry.manifestationState === 'proposal' || entry.title.includes('propose'),
+  );
+
+  return {
+    graphPreview: memories.slice(0, 4).map((entry) => ({
+      id: entry.id,
+      label: entry.claim ?? entry.title,
+      scope: entry.scope ?? 'project',
+    })),
+    memories,
+    proposals,
+  };
+}
+
 function createEmptyTimelineProjection(runId: string): RunTimelineProjection {
   const page = createEmptyTimelinePage(runId);
   return {
     entries: page.entries,
     error: null,
     hasMoreBefore: page.hasMore,
+    laneOrder: [],
     loadedRange: {
       fromRevision: page.nextBeforeRevision,
       toRevision: page.revision,
     },
+    markers: [],
     nextBeforeRevision: page.nextBeforeRevision,
+    nodeThreads: [],
     revision: page.revision,
     runId,
     status: 'idle',
@@ -113,7 +226,10 @@ function createEmptySoulPanel(runId: string): SoulPanelProjection {
   return {
     entries: [],
     error: null,
+    graphPreview: [],
     lastRevision: 0,
+    memories: [],
+    proposals: [],
     runId,
     status: 'idle',
   };
@@ -147,11 +263,6 @@ function pruneProjectionRecords<T>(
   );
 }
 
-function readString(payload: Record<string, unknown>, key: string): string | undefined {
-  const value = payload[key];
-  return typeof value === 'string' ? value : undefined;
-}
-
 function upsertTimelineEntry(
   entries: readonly TimelineEntry[],
   entry: TimelineEntry,
@@ -159,6 +270,23 @@ function upsertTimelineEntry(
   return [...entries.filter((existing) => existing.id !== entry.id), entry].sort((left, right) =>
     left.timestamp.localeCompare(right.timestamp),
   );
+}
+
+function mergeTimelineEntries(
+  currentEntries: readonly TimelineEntry[],
+  nextEntries: readonly TimelineEntry[],
+): readonly TimelineEntry[] {
+  const map = new Map<string, TimelineEntry>();
+
+  for (const entry of currentEntries) {
+    map.set(entry.id, entry);
+  }
+
+  for (const entry of nextEntries) {
+    map.set(entry.id, entry);
+  }
+
+  return [...map.values()].sort((left, right) => left.timestamp.localeCompare(right.timestamp));
 }
 
 function upsertSoulEntry(
@@ -195,19 +323,22 @@ function upsertFileChange(
 
 function mapEventToTimelineEntry(event: NormalizedCoreEvent): TimelineEntry {
   const payload = event.event as Record<string, unknown>;
-  const status = readString(payload, 'status');
-  const operation = readString(payload, 'operation');
-  const eventName = readString(payload, 'event');
-  const type = readString(payload, 'type');
-  const toolName = readString(payload, 'toolName');
+  const status = readString(payload.status);
+  const operation = readString(payload.operation);
+  const eventName = readString(payload.event);
+  const type = readString(payload.type);
+  const toolName = readString(payload.toolName);
 
   if (type === 'token_stream') {
     return {
-      body: readString(payload, 'text'),
+      body: readString(payload.text),
       causedBy: event.causedBy,
       id: `timeline-${event.revision}`,
       kind: 'message',
       meta: {
+        engine: event.event.source,
+        laneId: readString(payload.laneId) ?? 'lead',
+        laneLabel: readString(payload.laneLabel) ?? 'Lead',
         isComplete: payload.isComplete === true,
       },
       runId: event.runId,
@@ -223,7 +354,10 @@ function mapEventToTimelineEntry(event: NormalizedCoreEvent): TimelineEntry {
       id: `timeline-${event.revision}`,
       kind: 'approval',
       meta: {
-        approvalId: readString(payload, 'approvalId'),
+        approvalId: readString(payload.approvalId),
+        laneId: 'review',
+        laneLabel: 'Review',
+        markerKind: 'blocked',
         toolName,
       },
       runId: event.runId,
@@ -235,12 +369,14 @@ function mapEventToTimelineEntry(event: NormalizedCoreEvent): TimelineEntry {
 
   if (type === 'diff') {
     return {
-      body: readString(payload, 'patch'),
+      body: readString(payload.patch),
       causedBy: event.causedBy,
       id: `timeline-${event.revision}`,
       kind: 'diff',
       meta: {
-        path: readString(payload, 'path'),
+        laneId: 'integrator',
+        laneLabel: 'Integrator',
+        path: readString(payload.path),
       },
       runId: event.runId,
       timestamp: event.event.timestamp,
@@ -250,12 +386,19 @@ function mapEventToTimelineEntry(event: NormalizedCoreEvent): TimelineEntry {
 
   if (operation) {
     return {
-      body: readString(payload, 'query') ?? readString(payload, 'pointer'),
+      body: readString(payload.claim) ?? readString(payload.query) ?? readString(payload.pointer),
       causedBy: event.causedBy,
       id: `timeline-${event.revision}`,
       kind: 'memory',
       meta: {
+        claim: readString(payload.claim),
+        dimension: readString(payload.dimension),
+        laneId: 'soul',
+        laneLabel: 'Soul',
+        manifestationState: readString(payload.manifestationState),
         operation,
+        retentionState: readString(payload.retentionState),
+        scope: readString(payload.scope),
       },
       runId: event.runId,
       timestamp: event.event.timestamp,
@@ -264,12 +407,14 @@ function mapEventToTimelineEntry(event: NormalizedCoreEvent): TimelineEntry {
   }
 
   return {
-    body: readString(payload, 'reason'),
+    body: readString(payload.reason),
     causedBy: event.causedBy,
     id: `timeline-${event.revision}`,
     kind: 'system',
     meta: {
       eventName,
+      laneId: 'main',
+      laneLabel: 'Main',
       status,
     },
     runId: event.runId,
@@ -284,18 +429,18 @@ function applyEventToInspector(
   event: NormalizedCoreEvent,
 ): RunInspectorProjection {
   const payload = event.event as Record<string, unknown>;
-  const type = readString(payload, 'type');
+  const type = readString(payload.type);
 
   if (type === 'plan_node') {
     return {
       ...projection,
       revision: event.revision,
       snapshot: upsertPlanItem(projection.snapshot, {
-        id: readString(payload, 'nodeId') ?? `plan-${event.revision}`,
+        id: readString(payload.nodeId) ?? `plan-${event.revision}`,
         status:
-          (readString(payload, 'status') as InspectorSnapshot['plans'][number]['status']) ??
+          (readString(payload.status) as InspectorSnapshot['plans'][number]['status']) ??
           'pending',
-        summary: readString(payload, 'title') ?? 'Plan node',
+        summary: readString(payload.title) ?? 'Plan node',
       }),
     };
   }
@@ -305,7 +450,7 @@ function applyEventToInspector(
       ...projection,
       revision: event.revision,
       snapshot: upsertFileChange(projection.snapshot, {
-        path: readString(payload, 'path') ?? `diff-${event.revision}`,
+        path: readString(payload.path) ?? `diff-${event.revision}`,
         status: 'modified',
         summary: `Revision ${event.revision} diff`,
       }),
@@ -332,15 +477,21 @@ function applyEventToInspector(
 
 function mapEventToSoulEntry(event: NormalizedCoreEvent): SoulPanelEntry | null {
   const payload = event.event as Record<string, unknown>;
-  const operation = readString(payload, 'operation');
-  const eventName = readString(payload, 'event');
+  const operation = readString(payload.operation);
+  const eventName = readString(payload.event);
 
   if (operation) {
     return {
-      body: readString(payload, 'pointer') ?? readString(payload, 'query'),
+      body: readString(payload.pointer) ?? readString(payload.query),
+      claim: readString(payload.claim),
+      conflictSummary: readString(payload.conflictSummary),
+      dimension: readString(payload.dimension),
       id: `soul-${event.revision}`,
       kind: 'memory',
+      manifestationState: readString(payload.manifestationState),
+      retentionState: readString(payload.retentionState),
       revision: event.revision,
+      scope: readString(payload.scope),
       timestamp: event.event.timestamp,
       title: `Memory ${operation}`,
     };
@@ -348,7 +499,7 @@ function mapEventToSoulEntry(event: NormalizedCoreEvent): SoulPanelEntry | null 
 
   if (eventName === 'checkpoint_queue' || eventName === 'soul_mode') {
     return {
-      body: readString(payload, 'reason'),
+      body: readString(payload.reason),
       id: `soul-${event.revision}`,
       kind: 'system',
       revision: event.revision,
@@ -360,6 +511,55 @@ function mapEventToSoulEntry(event: NormalizedCoreEvent): SoulPanelEntry | null 
   return null;
 }
 
+function createTimelineProjectionFromPage(page: TimelinePage): RunTimelineProjection {
+  const timelineStructure = deriveTimelineStructure(page.entries);
+  return {
+    entries: page.entries,
+    error: null,
+    hasMoreBefore: page.hasMore,
+    laneOrder: timelineStructure.laneOrder,
+    loadedRange: {
+      fromRevision: page.nextBeforeRevision,
+      toRevision: page.revision,
+    },
+    markers: timelineStructure.markers,
+    nextBeforeRevision: page.nextBeforeRevision,
+    nodeThreads: timelineStructure.nodeThreads,
+    revision: page.revision,
+    runId: page.runId,
+    status: 'idle',
+  };
+}
+
+function mergeTimelinePage(
+  current: RunTimelineProjection,
+  page: TimelinePage,
+  query: TimelinePageQuery,
+): RunTimelineProjection {
+  if (!query.beforeRevision) {
+    return createTimelineProjectionFromPage(page);
+  }
+
+  const entries = mergeTimelineEntries(current.entries, page.entries);
+  const timelineStructure = deriveTimelineStructure(entries);
+  return {
+    ...current,
+    entries,
+    error: null,
+    hasMoreBefore: page.hasMore,
+    laneOrder: timelineStructure.laneOrder,
+    loadedRange: {
+      fromRevision: page.nextBeforeRevision,
+      toRevision: current.loadedRange.toRevision,
+    },
+    markers: timelineStructure.markers,
+    nextBeforeRevision: page.nextBeforeRevision,
+    nodeThreads: timelineStructure.nodeThreads,
+    revision: Math.max(current.revision, page.revision),
+    status: 'idle',
+  };
+}
+
 export const useProjectionStore = create<ProjectionStore>((set, get) => ({
   ...createInitialState(),
 
@@ -369,15 +569,21 @@ export const useProjectionStore = create<ProjectionStore>((set, get) => ({
       return;
     }
 
-    const nextTimeline = upsertTimelineEntry(
+    const nextTimelineEntries = upsertTimelineEntry(
       current.runTimelines[event.runId]?.entries ?? [],
       mapEventToTimelineEntry(event),
     );
+    const nextTimelineStructure = deriveTimelineStructure(nextTimelineEntries);
     const currentInspector =
       current.runInspectors[event.runId] ?? createEmptyInspectorProjection(event.runId);
     const currentSoulPanel =
       current.soulPanels[event.runId] ?? createEmptySoulPanel(event.runId);
     const nextSoulEntry = mapEventToSoulEntry(event);
+    const nextSoulEntries =
+      nextSoulEntry === null
+        ? currentSoulPanel.entries
+        : upsertSoulEntry(currentSoulPanel.entries, nextSoulEntry);
+    const nextSoulCollections = deriveSoulCollections(nextSoulEntries);
 
     set({
       runInspectors: {
@@ -388,31 +594,34 @@ export const useProjectionStore = create<ProjectionStore>((set, get) => ({
         ...current.runTimelines,
         [event.runId]: {
           ...(current.runTimelines[event.runId] ?? createEmptyTimelineProjection(event.runId)),
-          entries: nextTimeline,
+          entries: nextTimelineEntries,
           error: null,
+          laneOrder: nextTimelineStructure.laneOrder,
           loadedRange: {
             fromRevision:
               current.runTimelines[event.runId]?.loadedRange.fromRevision ?? event.revision,
             toRevision: event.revision,
           },
+          markers: nextTimelineStructure.markers,
           nextBeforeRevision: current.runTimelines[event.runId]?.nextBeforeRevision ?? null,
+          nodeThreads: nextTimelineStructure.nodeThreads,
           revision: event.revision,
           status: 'idle',
         },
       },
-      soulPanels:
-        nextSoulEntry === null
-          ? current.soulPanels
-          : {
-              ...current.soulPanels,
-              [event.runId]: {
-                ...currentSoulPanel,
-                entries: upsertSoulEntry(currentSoulPanel.entries, nextSoulEntry),
-                error: null,
-                lastRevision: event.revision,
-                status: 'idle',
-              },
-            },
+      soulPanels: {
+        ...current.soulPanels,
+        [event.runId]: {
+          ...currentSoulPanel,
+          entries: nextSoulEntries,
+          error: null,
+          graphPreview: nextSoulCollections.graphPreview,
+          lastRevision: event.revision,
+          memories: nextSoulCollections.memories,
+          proposals: nextSoulCollections.proposals,
+          status: 'idle',
+        },
+      },
     });
   },
 
@@ -480,7 +689,16 @@ export const useProjectionStore = create<ProjectionStore>((set, get) => ({
 
     try {
       const page = await coreApi.getTimelinePage(query);
-      get().replaceTimelinePage(page);
+      set((state) => ({
+        runTimelines: {
+          ...state.runTimelines,
+          [runId]: mergeTimelinePage(
+            state.runTimelines[runId] ?? createEmptyTimelineProjection(runId),
+            page,
+            query,
+          ),
+        },
+      }));
       return page;
     } catch (error) {
       set((state) => ({
@@ -518,19 +736,7 @@ export const useProjectionStore = create<ProjectionStore>((set, get) => ({
     set((state) => ({
       runTimelines: {
         ...state.runTimelines,
-        [page.runId]: {
-          entries: page.entries,
-          error: null,
-          hasMoreBefore: page.hasMore,
-          loadedRange: {
-            fromRevision: page.nextBeforeRevision,
-            toRevision: page.revision,
-          },
-          nextBeforeRevision: page.nextBeforeRevision,
-          revision: page.revision,
-          runId: page.runId,
-          status: 'idle',
-        },
+        [page.runId]: createTimelineProjectionFromPage(page),
       },
     }));
   },

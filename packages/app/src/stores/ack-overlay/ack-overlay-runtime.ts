@@ -1,4 +1,4 @@
-import type { CoreApiAdapter } from '../../lib/core-http-client';
+﻿import type { CoreApiAdapter } from '../../lib/core-http-client';
 import type { NormalizedEventBus } from '../../lib/events';
 import { probeOrRefetchAckOverlay } from '../../lib/reconciliation';
 import { useHotStateStore } from '../hot-state';
@@ -17,6 +17,19 @@ export function startAckOverlayRuntime(
 ): () => void {
   resetAckOverlayStore();
 
+  const maybeReconcile = (clientCommandId: string) => {
+    const overlay = useAckOverlayStore.getState().entriesById[clientCommandId];
+    if (
+      overlay?.status === 'acked' &&
+      overlay.ackRevision !== null &&
+      overlay.ackRevision !== undefined &&
+      useHotStateStore.getState().revision >= overlay.ackRevision
+    ) {
+      useAckOverlayStore.getState().beginReconciling(clientCommandId);
+      void probeOrRefetchAckOverlay(clientCommandId, dependencies.coreApi);
+    }
+  };
+
   const unsubscribeBus = dependencies.eventBus.subscribe((message) => {
     if (message.kind === 'session' && message.transition.type === 'changed') {
       useAckOverlayStore
@@ -31,20 +44,22 @@ export function startAckOverlayRuntime(
     }
 
     for (const clientCommandId of useAckOverlayStore.getState().order) {
-      const overlay = useAckOverlayStore.getState().entriesById[clientCommandId];
-      if (
-        overlay?.status === 'acked' &&
-        overlay.ackRevision !== null &&
-        overlay.ackRevision !== undefined &&
-        state.revision >= overlay.ackRevision
-      ) {
-        useAckOverlayStore.getState().beginReconciling(clientCommandId);
-        void probeOrRefetchAckOverlay(clientCommandId, dependencies.coreApi);
+      maybeReconcile(clientCommandId);
+    }
+  });
+
+  const unsubscribeOverlay = useAckOverlayStore.subscribe((state, previousState) => {
+    for (const clientCommandId of state.order) {
+      const current = state.entriesById[clientCommandId];
+      const previous = previousState.entriesById[clientCommandId];
+      if (current?.status === 'acked' && previous?.status !== 'acked') {
+        maybeReconcile(clientCommandId);
       }
     }
   });
 
   return () => {
+    unsubscribeOverlay();
     unsubscribeHotState();
     unsubscribeBus();
     resetAckOverlayStore();

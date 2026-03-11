@@ -1,4 +1,6 @@
-interface DoWhatRuntimeInfo {
+﻿interface DoWhatRuntimeInfo {
+  readonly coreSessionToken: string | null;
+  readonly coreSessionTokenPath: string;
   readonly platform: string;
   readonly versions: {
     readonly chrome: string;

@@ -1,0 +1,65 @@
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  padding: 36px 24px;
+  border-radius: 30px;
+  border: 1px solid var(--border-muted);
+  background: var(--surface-panel);
+  box-shadow: var(--shadow-panel);
+  text-align: center;
+}
+
+.art {
+  position: relative;
+  width: min(320px, 100%);
+}
+
+.texture {
+  position: absolute;
+  right: -12px;
+  bottom: -18px;
+  width: 120px;
+  opacity: 0.24;
+}
+
+.copy {
+  display: grid;
+  gap: 10px;
+  max-width: 50ch;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.title {
+  margin: 0;
+  font-size: 28px;
+}
+
+.description {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
+}
+
+.cta:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

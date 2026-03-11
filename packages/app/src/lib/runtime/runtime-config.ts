@@ -1,4 +1,4 @@
-import type { MockScenarioName } from '../mocks';
+﻿import type { MockScenarioName } from '../mocks';
 
 export type CoreTransportMode = 'http' | 'mock';
 
@@ -34,11 +34,13 @@ function readReconnectDelay(value: string | undefined): number {
 }
 
 export function getRuntimeCoreConfig(): RuntimeCoreConfig {
+  const runtimeToken = window.doWhatRuntime?.coreSessionToken ?? null;
+
   return {
     baseUrl: import.meta.env.VITE_CORE_BASE_URL ?? DEFAULT_BASE_URL,
     mockScenario: readMockScenario(import.meta.env.VITE_CORE_MOCK_SCENARIO),
     reconnectDelayMs: readReconnectDelay(import.meta.env.VITE_CORE_RECONNECT_DELAY_MS),
-    sessionToken: import.meta.env.VITE_CORE_SESSION_TOKEN ?? null,
+    sessionToken: import.meta.env.VITE_CORE_SESSION_TOKEN ?? runtimeToken,
     transportMode: readTransportMode(import.meta.env.VITE_CORE_TRANSPORT),
   };
 }

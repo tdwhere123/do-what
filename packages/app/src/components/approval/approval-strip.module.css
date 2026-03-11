@@ -1,0 +1,86 @@
+.strip {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(139, 107, 53, 0.24);
+  background: linear-gradient(180deg, rgba(255, 252, 245, 0.96), rgba(252, 244, 225, 0.9));
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--badge-waiting-fg);
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.cardList {
+  display: grid;
+  gap: 10px;
+}
+
+.card,
+.overlayCard {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(139, 107, 53, 0.14);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.overlayCard {
+  border-style: dashed;
+}
+
+.cardCopy {
+  display: grid;
+  gap: 6px;
+}
+
+.cardCopy p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.actionPrimary,
+.actionSecondary,
+.actionGhost {
+  padding: 9px 12px;
+  border-radius: var(--radius-pill);
+}
+
+.actionPrimary {
+  border: 0;
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
+}
+
+.actionSecondary {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.actionGhost {
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+}

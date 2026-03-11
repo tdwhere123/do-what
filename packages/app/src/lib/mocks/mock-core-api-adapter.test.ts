@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import { createMockCoreApiAdapter } from './mock-core-api-adapter';
 
 describe('mock-adapter', () => {
@@ -23,7 +23,7 @@ describe('mock-adapter', () => {
 
     expect(emptySnapshot.runs).toHaveLength(0);
     expect(lockedSettings.lease.status).toBe('active');
-    expect(lockedSettings.sections[0]?.locked).toBe(true);
+    expect(lockedSettings.lease.lockedFields).toContain('policy.autoApprove');
   });
 
   it('tracks command acks and exposes probe status through the same adapter boundary', async () => {
