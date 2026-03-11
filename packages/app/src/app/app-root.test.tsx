@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AppRoot } from './app-root';
-import { useUiShellStore } from '../stores/ui-shell-store';
+import { useUiStore } from '../stores/ui';
 
 function installRuntimeBridge(): void {
   Object.defineProperty(window, 'doWhatRuntime', {
@@ -22,7 +22,7 @@ function installRuntimeBridge(): void {
 describe('AppRoot scaffold', () => {
   beforeEach(() => {
     installRuntimeBridge();
-    useUiShellStore.setState({ currentRoute: 'workbench' });
+    useUiStore.setState({ currentRoute: 'workbench' });
     window.history.replaceState(null, '', '#/');
   });
 

@@ -2,8 +2,9 @@ import { useEffect } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { SettingsPage } from './routes/settings-page';
 import { WorkbenchPage } from './routes/workbench-page';
-import { useUiShellStore } from '../stores/ui-shell-store';
+import { selectCurrentRoute } from '../selectors';
 import { SettingsSunIcon, WorkbenchFlowerIcon } from '../components/icons';
+import { useUiStore } from '../stores/ui';
 import styles from './app-shell.module.css';
 
 function ShellNavigation() {
@@ -34,8 +35,8 @@ function ShellNavigation() {
 
 export function App() {
   const location = useLocation();
-  const currentRoute = useUiShellStore((state) => state.currentRoute);
-  const setCurrentRoute = useUiShellStore((state) => state.setCurrentRoute);
+  const currentRoute = useUiStore(selectCurrentRoute);
+  const setCurrentRoute = useUiStore((state) => state.setCurrentRoute);
 
   useEffect(() => {
     const nextRoute = location.pathname === '/settings' ? 'settings' : 'workbench';

@@ -1,6 +1,7 @@
 import type { CoreCommandRequest } from '@do-what/protocol';
 
 export interface CreateCommandInput {
+  readonly clientCommandId?: string;
   readonly command: string;
   readonly payload?: CoreCommandRequest['payload'];
   readonly runId?: string;
@@ -13,7 +14,7 @@ export function createClientCommandId(): string {
 
 export function createCoreCommandRequest(input: CreateCommandInput): CoreCommandRequest {
   return {
-    clientCommandId: createClientCommandId(),
+    clientCommandId: input.clientCommandId ?? createClientCommandId(),
     command: input.command,
     payload: input.payload ?? {},
     ...(input.runId ? { runId: input.runId } : {}),

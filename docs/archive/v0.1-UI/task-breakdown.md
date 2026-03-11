@@ -1,6 +1,6 @@
 # v0.1-UI 任务拆解方案
 
-> 状态：In implementation（T001A–T007 已完成，下一步 T008）
+> 状态：In implementation（T001A–T012 已完成，下一步 T013）
 >
 > 真相源：
 > - `docs/archive/v0.1-UI/frontend_backend_contract_v0.1.md`
@@ -74,11 +74,11 @@
 
 ### State stores / selectors / query bridge
 
-- [T008](./tasks/T008-hot-state-store.md) `hot-state-store`
-- [T009](./tasks/T009-projection-store.md) `projection-store`
-- [T010](./tasks/T010-pending-command-store.md) `pending-command-store`
-- [T011](./tasks/T011-ack-overlay-and-reconciliation.md) `ack-overlay-and-reconciliation`
-- [T012](./tasks/T012-ui-store-and-settings-bridge.md) `ui-store-and-settings-bridge`
+- [T008](./tasks/T008-hot-state-store.md) `hot-state-store`（已完成）
+- [T009](./tasks/T009-projection-store.md) `projection-store`（已完成）
+- [T010](./tasks/T010-pending-command-store.md) `pending-command-store`（已完成）
+- [T011](./tasks/T011-ack-overlay-and-reconciliation.md) `ack-overlay-and-reconciliation`（已完成）
+- [T012](./tasks/T012-ui-store-and-settings-bridge.md) `ui-store-and-settings-bridge`（已完成）
 
 ### Workbench / Timeline / Inspector / Approval / Memory / Settings 模块
 
@@ -115,7 +115,7 @@
 
 ## C. 原子任务清单
 
-当前进度：`T001A`–`T007` 已完成；后续从 `T008` 开始。
+当前进度：`T001A`–`T012` 已完成；后续从 `T013` 开始。
 
 | ID | 标题 | 分组 | 前置依赖 | 可并行 |
 |----|------|------|----------|--------|
