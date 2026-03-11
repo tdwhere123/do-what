@@ -186,7 +186,7 @@
 | 类型 | 关键字段 | 说明 |
 |---|---|---|
 | `AckStatus` | `'pending' \| 'committed' \| 'failed'` | ack 生命周期 |
-| `AckEntityType` | `'run' \| 'engine' \| 'approval' \| 'checkpoint' \| 'event'` | ack 对应实体类别 |
+| `AckEntityType` | `'run' \| 'engine' \| 'approval' \| 'checkpoint' \| 'event' \| 'memory' \| 'settings' \| 'drift' \| 'gate'` | ack 对应实体类别 |
 | `AckOverlay` | `ack_id`, `entity_type`, `entity_id`, `revision`, `status`, `created_at`, `committed_at?`, `error?` | 同步接收后、异步收敛前的叠加确认层 |
 
 补充说明：
@@ -218,11 +218,24 @@
 
 | 类型 | 关键字段 | 说明 |
 |---|---|---|
+| `CreateRunRequest` | `clientCommandId`, `workspaceId`, `templateId`, `templateInputs`, `templateVersion?`, `participants[]` | `POST /api/runs` 请求体 |
+| `RunMessageRequest` | `clientCommandId`, `body` | `POST /api/runs/:runId/messages` 请求体 |
+| `ApprovalDecisionRequest` | `clientCommandId`, `decision: 'allow_once' \| 'allow_session' \| 'reject'` | `POST /api/approvals/:approvalId/decide` 请求体 |
+| `SettingsPatchRequest` | `clientCommandId`, `fields` | `PATCH /api/settings` 请求体 |
+| `MemoryProposalReviewRequest` | `clientCommandId`, `mode: 'accept' \| 'hint_only' \| 'reject'`, `edits?` | `POST /api/memory/proposals/:proposalId/review` 请求体 |
+| `MemoryPinRequest` | `clientCommandId`, `projectOverride?` | `POST /api/memory/:memoryId/pin` 请求体 |
+| `MemoryEditRequest` | `clientCommandId`, `patch`, `projectOverride?` | `POST /api/memory/:memoryId/edit` 请求体 |
+| `MemorySupersedeRequest` | `clientCommandId`, `replacement`, `projectOverride?` | `POST /api/memory/:memoryId/supersede` 请求体 |
+| `DriftResolutionRequest` | `clientCommandId`, `mode: 'reconcile' \| 'rollback'` | `POST /api/nodes/:nodeId/resolve-drift` 请求体 |
+| `IntegrationGateDecisionRequest` | `clientCommandId`, `decision: 'approve' \| 'block'`, `gateId?` | `POST /api/runs/:runId/integration-gate/decide` 请求体 |
 | `CoreCommandRequest` | `clientCommandId`, `command`, `payload`, `runId?`, `workspaceId?` | 前端 command 写入口统一请求体 |
 | `CoreCommandAck` | `ok`, `ackId`, `revision?` | command 接收确认包 |
 | `CoreProbeResult` | `ackId`, `status`, `revision?`, `entityType?`, `entityId?`, `createdAt?`, `committedAt?`, `error?` | ack/probe 标准化查询结果 |
+| `ApprovalProbe` | `approvalId`, `runId`, `toolName`, `status`, `updatedAt`, `revision` | `GET /api/approvals/:approvalId` 返回体 |
+| `MemoryProbe` | `memoryId`, `claimSummary`, `scope`, `slotStatus`, `manifestationState`, `retentionState`, `updatedAt`, `revision` | `GET /api/memory/:memoryId` 返回体 |
 | `CoreError` | `code`, `message`, `details?` | query/command 错误统一结构 |
-| `CoreSseEnvelope` | `revision`, `coreSessionId?`, `event`, `causedBy?` | SSE 规范化包裹；当前 Core 裸事件可由 app 侧兼容映射到此结构 |
+| `CoreSseCause` | `ackId?`, `clientCommandId?` | SSE 与 optimistic command 对齐线索 |
+| `CoreSseEnvelope` | `revision`, `coreSessionId?`, `event`, `causedBy?` | Core `/events` 与 `/api/events/stream` 的实际 SSE 输出包裹 |
 
 #### 关键子类型
 
@@ -238,8 +251,8 @@
 | `SettingsSection` | `sectionId`, `title`, `locked`, `fields[]`（每个 field 含 `fieldId`, `kind`, `value`, `locked`）| SettingsSnapshot.sections 条目 |
 
 补充说明：
-- 本批仅固化前端消费契约，不改变现有 Core `/state`、`/events`、`/acks/:ackId` 的实际输出。
-- 当前真实 Core `/events` 仍输出裸事件；`CoreSseEnvelope` 为 v0.1-UI 前端规范化目标结构。
+- `T030`–`T032` 已在 Core 落地 `/api/*` query / command / probe surface；成功响应统一为 `{ ok: true, data }`。
+- legacy `/state`、`/events`、`/acks/:ackId` 仍保留兼容；其中 `/events` 已与 `/api/events/stream` 一样输出 `CoreSseEnvelope`。
 - 所有 schema 均使用 `.passthrough()`，对未知字段保持前向兼容。
 
 ### focus-surface
@@ -353,15 +366,42 @@
 | 方法 | 路径 | 说明 | 备注 |
 |---|---|---|---|
 | `GET` | `/health` | 健康检查 | 返回 `ok`, `uptime`, `version` |
-| `GET` | `/events` | SSE 事件流 | 每条消息为 `data: <BaseEvent JSON>` |
+| `GET` | `/events` | legacy SSE 事件流 | 每条消息为 `data: <CoreSseEnvelope JSON>` |
+| `GET` | `/api/events/stream` | 正式 SSE 事件流 | 每条消息为 `data: <CoreSseEnvelope JSON>` |
 | `GET` | `/state` | 当前 `hot_state` 读模型 | 返回 `revision`, `recentEvents`, `pendingApprovals` |
-| `GET` | `/acks/:ack_id` | 查询单个 ack overlay | 返回 `ack_id`, `entity_type`, `entity_id`, `revision`, `status`, `created_at`, `committed_at?`, `error?` |
+| `GET` | `/api/workbench/snapshot` | Workbench 查询面 | 返回 `WorkbenchSnapshot` |
+| `GET` | `/api/workflows/templates` | Create Run 模板查询 | 返回 `TemplateDescriptor[]` |
+| `GET` | `/api/runs/:runId/timeline` | Timeline 分页查询 | 支持 `beforeRevision`、`limit` 查询参数，返回 `TimelinePage` |
+| `GET` | `/api/runs/:runId/inspector` | Inspector 查询面 | 返回 `InspectorSnapshot` |
+| `GET` | `/api/settings` | Settings 查询面 | 返回 `SettingsSnapshot` |
+| `GET` | `/api/approvals/:approvalId` | Approval probe | 返回 `ApprovalProbe` |
+| `GET` | `/api/memory/:memoryId` | Memory probe | 返回 `MemoryProbe` |
+| `POST` | `/api/runs` | Create Run 命令入口 | 请求体为 `CreateRunRequest`，返回 `CoreCommandAck` |
+| `POST` | `/api/runs/:runId/messages` | 发送 message 命令入口 | 请求体为 `RunMessageRequest`，返回 `CoreCommandAck` |
+| `POST` | `/api/approvals/:approvalId/decide` | Approval 决策入口 | 请求体为 `ApprovalDecisionRequest`，返回 `CoreCommandAck` |
+| `POST` | `/api/memory/proposals/:proposalId/review` | Memory proposal 审核入口 | 请求体为 `MemoryProposalReviewRequest`，返回 `CoreCommandAck` |
+| `POST` | `/api/memory/:memoryId/pin` | Memory pin 命令入口 | 请求体为 `MemoryPinRequest`；当前返回 formal ack，异步收敛为 failed |
+| `POST` | `/api/memory/:memoryId/edit` | Memory edit 命令入口 | 请求体为 `MemoryEditRequest`；当前返回 formal ack，异步收敛为 failed |
+| `POST` | `/api/memory/:memoryId/supersede` | Memory supersede 命令入口 | 请求体为 `MemorySupersedeRequest`；当前返回 formal ack，异步收敛为 failed |
+| `POST` | `/api/nodes/:nodeId/resolve-drift` | Drift resolution 命令入口 | 请求体为 `DriftResolutionRequest`；当前返回 formal ack，异步收敛为 failed |
+| `POST` | `/api/runs/:runId/integration-gate/decide` | Integration gate 决策入口 | 请求体为 `IntegrationGateDecisionRequest`；当前返回 formal ack，异步收敛为 failed |
+| `PATCH` | `/api/settings` | Settings 更新入口 | 请求体为 `SettingsPatchRequest`，返回 `CoreCommandAck` |
+| `GET` | `/acks/:ackId` | legacy ack overlay 查询 | 返回 `ack_id`, `entity_type`, `entity_id`, `revision`, `status`, `created_at`, `committed_at?`, `error?` |
 | `POST` | `/internal/hook-event` | Claude hook 工具事件入口 | 仅 loopback + Bearer token；校验 `ToolExecutionEventSchema`，返回 `ok`, `revision`, `ackId` |
 | `POST` | `/mcp/call` | MCP 工具调用入口 | 仅 loopback + Bearer token；支持 `tool`/`name` 与 `args`/`arguments` |
 | `GET` | `/soul/proposals` | 查询待决 memory proposal | 支持 `project_id` 查询参数；经 `ProjectionManager` 读 `pending_soul_proposals` |
 | `GET` | `/soul/healing/stats` | 查询 pointer healing 统计 | 经 `ProjectionManager` 读 `healing_stats_view` |
 | `POST` | `/_dev/start-run` | 开发环境启动 run | 仅 `isDevelopment` 时注册，且仅 loopback |
 | `POST` | `/_dev/publish` | 开发环境直接发布事件 | 仅 `isDevelopment` 时注册；服务端补 `revision: 0` 后用 `AnyEventSchema` 校验，返回 `ok`, `ackId` |
+
+`/api/*` 当前成功响应统一为：
+
+```json
+{
+  "ok": true,
+  "data": { "...": "typed payload" }
+}
+```
 
 `/state` 当前返回结构：
 
@@ -530,8 +570,16 @@ git_commit:abc1234 repo_path:packages/core/src/server/routes.ts symbol:registerR
 源文件：`packages/core/src/server/sse.ts`
 
 - `GET /events`
+- `GET /api/events/stream`
 - 返回 `text/event-stream`
-- 每条消息格式：`data: ${JSON.stringify(event)}\n\n`
+- 每条消息格式：`data: ${JSON.stringify(envelope)}\n\n`
+- `envelope` 当前结构为 `CoreSseEnvelope`，包含：
+  - `revision`
+  - `coreSessionId`
+  - `event`
+  - `causedBy?`
+- `coreSessionId` 在单个 Core 进程生命周期内稳定，重启后变化。
+- `causedBy` 优先取事件负载中的显式字段；缺失时回退到 ack tracker 的 revision -> cause 映射。
 
 ### 2. Claude Hook -> Core
 
@@ -618,3 +666,4 @@ Codex 原始事件类型当前归一化规则：
 | 2026-03-09 | T044 | 补充 `GovernanceLease`、`NativeSurfaceReport`、`run_start_denied` 与 `governance_leases` 表 |
 | 2026-03-09 | T045 | 补充 `OrchestrationTemplate`、`TopologyValidator`、`run_topology_invalid` 与 `governance_invalid` 终态 |
 | 2026-03-10 | T002 | 补充 v0.1-UI `WorkbenchSnapshot`、`TimelinePage`、`InspectorSnapshot`、`SettingsSnapshot`、`TemplateDescriptor`、`CoreCommand*`、`CoreSseEnvelope` 前端共享契约 |
+| 2026-03-11 | T030 / T031 / T032 | 补充 `/api/*` query / command / probe surface、`AckEntityType` 扩展，以及 `CoreSseEnvelope` 的 `coreSessionId` / `causedBy` 实际输出说明 |

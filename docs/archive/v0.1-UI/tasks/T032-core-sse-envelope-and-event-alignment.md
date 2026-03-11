@@ -4,7 +4,7 @@
 **分组:** Core API  
 **依赖:** T030，T031  
 **可并行:** 否  
-**状态:** 待开始  
+**状态:** 已完成
 
 ---
 
@@ -35,10 +35,10 @@ packages/protocol/src/events/
 
 ## 验收标准
 
-- [ ] SSE 事件可提供 `revision`、`coreSessionId`、`event` 包装
-- [ ] 前端可优先用精确命中而不是 revision 猜测清 pending/overlay
-- [ ] Core 生命周期切换能被前端稳定识别
-- [ ] active projection 截断所需字段足够明确
+- [x] SSE 事件可提供 `revision`、`coreSessionId`、`event` 包装
+- [x] 前端可优先用精确命中而不是 revision 猜测清 pending/overlay
+- [x] Core 生命周期切换能被前端稳定识别
+- [x] active projection 截断所需字段足够明确
 
 ---
 

@@ -26,6 +26,9 @@ importers:
 
   packages/app:
     dependencies:
+      '@do-what/protocol':
+        specifier: workspace:*
+        version: link:../protocol
       '@tanstack/react-query':
         specifier: ^5.59.0
         version: 5.90.21(react@19.2.4)

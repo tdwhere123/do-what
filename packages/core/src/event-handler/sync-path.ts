@@ -1,4 +1,4 @@
-import type { BaseEvent } from '@do-what/protocol';
+import type { BaseEvent, CoreSseCause } from '@do-what/protocol';
 import type { AckTracker } from '../state/ack-tracker.js';
 import type { EventBus } from '../eventbus/event-bus.js';
 
@@ -55,9 +55,11 @@ export function runSyncPath(
   eventBus: EventBus,
   ackTracker: AckTracker,
   event: Omit<BaseEvent, 'revision'> | BaseEvent,
+  causedBy?: Omit<CoreSseCause, 'ackId'>,
 ) {
   const published = eventBus.publish(event);
   const ack = ackTracker.createPending({
+    causedBy,
     entity_id: deriveEntityId(published),
     entity_type: deriveEntityType(published),
     revision: published.revision,

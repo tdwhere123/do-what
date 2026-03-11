@@ -1,4 +1,4 @@
-import type { RunLifecycleEvent } from '@do-what/protocol';
+import type { CoreSseCause, RunLifecycleEvent } from '@do-what/protocol';
 import { assign, createActor, setup, type ActorRefFrom } from 'xstate';
 import { AGENT_STUCK_THRESHOLD } from '../config.js';
 import type { DbWriteRequest } from '../db/worker-client.js';
@@ -59,7 +59,7 @@ interface RunMachineContext {
 }
 
 export type RunMachineEvent =
-  | { type: 'START' }
+  | { causedBy?: CoreSseCause; type: 'START' }
   | {
       type: 'TOOL_REQUEST';
       approvalId: string;
@@ -70,6 +70,7 @@ export type RunMachineEvent =
       type: 'TOOL_RESOLVED';
       approvalId: string;
       approved: boolean;
+      causedBy?: CoreSseCause;
       reason?: string;
     }
   | {
@@ -81,7 +82,11 @@ export type RunMachineEvent =
   | { type: 'COMPLETE' }
   | { type: 'FAIL'; error: string }
   | { type: 'CANCEL'; cancelledBy: string }
-  | { type: 'INTERRUPT'; reason: 'agent_stuck' | 'core_restart' | 'network_error' };
+  | {
+      causedBy?: CoreSseCause;
+      type: 'INTERRUPT';
+      reason: 'agent_stuck' | 'core_restart' | 'network_error';
+    };
 
 export const RUN_TERMINAL_STATES: readonly RunTerminalStatus[] = [
   'completed',
@@ -203,6 +208,13 @@ function publishRunLifecycle(
   context.eventBus?.publish(event);
 }
 
+function readEventCause(event: RunMachineEvent): CoreSseCause | undefined {
+  if (!('causedBy' in event)) {
+    return undefined;
+  }
+  return event.causedBy;
+}
+
 function buildBaseLifecycleEvent(context: RunMachineContext) {
   return {
     runId: context.runId,
@@ -280,10 +292,11 @@ export const runMachine = setup({
         status: 'completed',
       });
     },
-    publishCreated: ({ context }) => {
+    publishCreated: ({ context, event }) => {
       publishRunLifecycle(context, {
         ...buildBaseLifecycleEvent(context),
         agentId: context.agentId,
+        causedBy: event.type === 'START' ? event.causedBy : undefined,
         engineType: context.engineType,
         status: 'created',
         workspaceId: context.workspaceId,
@@ -316,6 +329,7 @@ export const runMachine = setup({
       }
       publishRunLifecycle(context, {
         ...buildBaseLifecycleEvent(context),
+        causedBy: readEventCause(event),
         reason,
         status: 'interrupted',
       });

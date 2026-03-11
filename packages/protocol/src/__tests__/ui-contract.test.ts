@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ApprovalProbeSchema,
+  CreateRunRequestSchema,
   CoreCommandAckSchema,
   CoreProbeResultSchema,
   CoreSseEnvelopeSchema,
+  MemoryProbeSchema,
+  SettingsPatchRequestSchema,
   SettingsSnapshotSchema,
   TemplateDescriptorSchema,
   TimelinePageSchema,
@@ -72,6 +76,54 @@ describe('ui contract schemas', () => {
         title: 'Default',
       }).templateId,
     ).toBe('default');
+  });
+
+  it('accepts formal request and probe payloads used by the UI API surface', () => {
+    expect(
+      CreateRunRequestSchema.parse({
+        clientCommandId: 'cmd-1',
+        participants: ['claude', 'codex'],
+        templateId: 'default',
+        templateInputs: {
+          prompt: 'Investigate failing test',
+        },
+        templateVersion: 1,
+        workspaceId: 'ws-1',
+      }).workspaceId,
+    ).toBe('ws-1');
+
+    expect(
+      SettingsPatchRequestSchema.parse({
+        clientCommandId: 'cmd-2',
+        fields: {
+          'appearance.theme': 'dark',
+        },
+      }).fields['appearance.theme'],
+    ).toBe('dark');
+
+    expect(
+      ApprovalProbeSchema.parse({
+        approvalId: 'approval-1',
+        revision: 7,
+        runId: 'run-1',
+        status: 'pending',
+        toolName: 'tools.shell_exec',
+        updatedAt: '2026-03-10T00:00:00.000Z',
+      }).approvalId,
+    ).toBe('approval-1');
+
+    expect(
+      MemoryProbeSchema.parse({
+        claimSummary: 'Auth architecture memory',
+        manifestationState: 'visible',
+        memoryId: 'cue-1',
+        retentionState: 'working',
+        revision: 7,
+        scope: 'project',
+        slotStatus: 'bound',
+        updatedAt: '2026-03-10T00:00:00.000Z',
+      }).memoryId,
+    ).toBe('cue-1');
   });
 
   it('accepts command ack, probe, and SSE envelope payloads', () => {

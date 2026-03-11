@@ -29,7 +29,7 @@ v0.1-UI 阶段进度（`packages/app`）：
 | Foundation | T001A–T007 | scaffold / contract / mock / token / client | T001A 已完成，余待实现 |
 | State Stores | T008–T012 | hot-state / projection / pending / ack / ui-store | 待开始 |
 | Workbench / UI | T013–T029 | Workbench Shell / Timeline / Approval / Inspector / Soul / Settings | 待开始 |
-| Core API 对齐 | T030–T032 | snapshot / command / SSE envelope | 待开始 |
+| Core API 对齐 | T030–T032 | snapshot / command / SSE envelope | 已完成 |
 | 验收 / 清理 | T033–T034 | 集成测试 / 视觉对照 | 待开始 |
 
 **UI 实现必须先读：**

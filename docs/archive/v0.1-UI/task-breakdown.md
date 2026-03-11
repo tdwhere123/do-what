@@ -1,6 +1,6 @@
 # v0.1-UI 任务拆解方案
 
-> 状态：In implementation（T001A–T029 已完成，下一步 T030）
+> 状态：In implementation（T001A–T032 已完成，下一步 T033）
 >
 > 真相源：
 > - `docs/archive/v0.1-UI/frontend_backend_contract_v0.1.md`
@@ -102,9 +102,9 @@
 
 ### Core API / SSE / reconciliation / pagination / optimistic rendering
 
-- [T030](./tasks/T030-core-api-snapshot-and-query-surface.md) `core-api-snapshot-and-query-surface`
-- [T031](./tasks/T031-core-command-and-probe-routes.md) `core-command-and-probe-routes`
-- [T032](./tasks/T032-core-sse-envelope-and-event-alignment.md) `core-sse-envelope-and-event-alignment`
+- [T030](./tasks/T030-core-api-snapshot-and-query-surface.md) `core-api-snapshot-and-query-surface`（已完成）
+- [T031](./tasks/T031-core-command-and-probe-routes.md) `core-command-and-probe-routes`（已完成）
+- [T032](./tasks/T032-core-sse-envelope-and-event-alignment.md) `core-sse-envelope-and-event-alignment`（已完成）
 
 ### 测试与验收 / 清理
 
@@ -115,7 +115,7 @@
 
 ## C. 原子任务清单
 
-当前进度：`T001A`–`T029` 已完成；后续从 `T030` 开始。
+当前进度：`T001A`–`T032` 已完成；后续从 `T033` 开始。
 
 | ID | 标题 | 分组 | 前置依赖 | 可并行 |
 |----|------|------|----------|--------|

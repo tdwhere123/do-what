@@ -248,6 +248,84 @@ export const TemplateDescriptorSchema = z
   })
   .passthrough();
 
+export const CreateRunRequestSchema = z
+  .object({
+    clientCommandId: z.string(),
+    participants: z.array(z.string()).default([]),
+    templateId: z.string(),
+    templateInputs: z.record(JsonValueSchema).default({}),
+    templateVersion: z.union([z.string(), z.number().int().nonnegative()]).optional(),
+    workspaceId: z.string(),
+  })
+  .passthrough();
+
+export const RunMessageRequestSchema = z
+  .object({
+    body: z.string().min(1),
+    clientCommandId: z.string(),
+  })
+  .passthrough();
+
+export const ApprovalDecisionRequestSchema = z
+  .object({
+    clientCommandId: z.string(),
+    decision: z.enum(['allow_once', 'allow_session', 'reject']),
+  })
+  .passthrough();
+
+export const SettingsPatchRequestSchema = z
+  .object({
+    clientCommandId: z.string(),
+    fields: z.record(JsonValueSchema),
+  })
+  .passthrough();
+
+export const MemoryProposalReviewRequestSchema = z
+  .object({
+    clientCommandId: z.string(),
+    edits: z.record(JsonValueSchema).optional(),
+    mode: z.enum(['accept', 'hint_only', 'reject']),
+  })
+  .passthrough();
+
+export const MemoryPinRequestSchema = z
+  .object({
+    clientCommandId: z.string(),
+    projectOverride: z.boolean().optional(),
+  })
+  .passthrough();
+
+export const MemoryEditRequestSchema = z
+  .object({
+    clientCommandId: z.string(),
+    patch: z.record(JsonValueSchema).default({}),
+    projectOverride: z.boolean().optional(),
+  })
+  .passthrough();
+
+export const MemorySupersedeRequestSchema = z
+  .object({
+    clientCommandId: z.string(),
+    projectOverride: z.boolean().optional(),
+    replacement: z.record(JsonValueSchema).default({}),
+  })
+  .passthrough();
+
+export const DriftResolutionRequestSchema = z
+  .object({
+    clientCommandId: z.string(),
+    mode: z.enum(['reconcile', 'rollback']),
+  })
+  .passthrough();
+
+export const IntegrationGateDecisionRequestSchema = z
+  .object({
+    clientCommandId: z.string(),
+    decision: z.enum(['approve', 'block']),
+    gateId: z.string().optional(),
+  })
+  .passthrough();
+
 export const CoreCommandRequestSchema = z
   .object({
     clientCommandId: z.string(),
@@ -280,6 +358,32 @@ export const CoreProbeResultSchema = z
   })
   .passthrough();
 
+export const ApprovalProbeSchema = z
+  .object({
+    approvalId: z.string(),
+    revision: z.number().int().nonnegative(),
+    runId: z.string(),
+    status: z.enum(['pending', 'approved', 'denied', 'timeout']),
+    summary: z.string().optional(),
+    toolName: z.string(),
+    updatedAt: z.string().datetime(),
+  })
+  .passthrough();
+
+export const MemoryProbeSchema = z
+  .object({
+    claimSummary: z.string(),
+    dimension: z.string().nullable().optional(),
+    manifestationState: z.string(),
+    memoryId: z.string(),
+    retentionState: z.string(),
+    revision: z.number().int().nonnegative(),
+    scope: z.string(),
+    slotStatus: z.enum(['bound', 'superseded', 'unbound']),
+    updatedAt: z.string().datetime(),
+  })
+  .passthrough();
+
 export const CoreErrorSchema = z
   .object({
     code: z.string(),
@@ -305,13 +409,27 @@ export const CoreSseEnvelopeSchema = z
   .passthrough();
 
 export type CoreConnectionState = z.infer<typeof CoreConnectionStateSchema>;
+export type ApprovalDecisionRequest = z.infer<typeof ApprovalDecisionRequestSchema>;
+export type ApprovalProbe = z.infer<typeof ApprovalProbeSchema>;
 export type CoreCommandAck = z.infer<typeof CoreCommandAckSchema>;
 export type CoreCommandRequest = z.infer<typeof CoreCommandRequestSchema>;
 export type CoreError = z.infer<typeof CoreErrorSchema>;
 export type CoreProbeResult = z.infer<typeof CoreProbeResultSchema>;
 export type CoreSseCause = z.infer<typeof CoreSseCauseSchema>;
 export type CoreSseEnvelope = z.infer<typeof CoreSseEnvelopeSchema>;
+export type CreateRunRequest = z.infer<typeof CreateRunRequestSchema>;
+export type DriftResolutionRequest = z.infer<typeof DriftResolutionRequestSchema>;
+export type IntegrationGateDecisionRequest = z.infer<
+  typeof IntegrationGateDecisionRequestSchema
+>;
 export type InspectorSnapshot = z.infer<typeof InspectorSnapshotSchema>;
+export type MemoryEditRequest = z.infer<typeof MemoryEditRequestSchema>;
+export type MemoryPinRequest = z.infer<typeof MemoryPinRequestSchema>;
+export type MemoryProbe = z.infer<typeof MemoryProbeSchema>;
+export type MemoryProposalReviewRequest = z.infer<typeof MemoryProposalReviewRequestSchema>;
+export type MemorySupersedeRequest = z.infer<typeof MemorySupersedeRequestSchema>;
+export type RunMessageRequest = z.infer<typeof RunMessageRequestSchema>;
+export type SettingsPatchRequest = z.infer<typeof SettingsPatchRequestSchema>;
 export type SettingsSnapshot = z.infer<typeof SettingsSnapshotSchema>;
 export type TemplateDescriptor = z.infer<typeof TemplateDescriptorSchema>;
 export type TimelineEntry = z.infer<typeof TimelineEntrySchema>;

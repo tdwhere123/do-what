@@ -1,31 +1,39 @@
 import { randomUUID } from 'node:crypto';
-import type { AckEntityType, AckOverlay } from '@do-what/protocol';
+import type { AckEntityType, AckOverlay, CoreSseCause } from '@do-what/protocol';
 
 export interface AckTrackerOptions {
   cleanupDelayMs?: number;
+  maxRevisionCauses?: number;
   now?: () => string;
   pendingTimeoutMs?: number;
 }
 
 export interface CreateAckInput {
+  causedBy?: Omit<CoreSseCause, 'ackId'>;
   entity_id: string;
   entity_type: AckEntityType;
   revision: number;
 }
 
 const DEFAULT_CLEANUP_DELAY_MS = 60_000;
+const DEFAULT_MAX_REVISION_CAUSES = 2_048;
 const DEFAULT_PENDING_TIMEOUT_MS = 30_000;
 
 export class AckTracker {
   private readonly acks = new Map<string, AckOverlay>();
+  private readonly ackCauses = new Map<string, CoreSseCause>();
   private readonly cleanupDelayMs: number;
   private readonly cleanupTimers = new Map<string, NodeJS.Timeout>();
+  private readonly maxRevisionCauses: number;
   private readonly now: () => string;
   private readonly pendingTimeoutMs: number;
   private readonly pendingTimers = new Map<string, NodeJS.Timeout>();
+  private readonly revisionCauseOrder: number[] = [];
+  private readonly revisionCauses = new Map<number, CoreSseCause>();
 
   constructor(options: AckTrackerOptions = {}) {
     this.cleanupDelayMs = options.cleanupDelayMs ?? DEFAULT_CLEANUP_DELAY_MS;
+    this.maxRevisionCauses = options.maxRevisionCauses ?? DEFAULT_MAX_REVISION_CAUSES;
     this.now = options.now ?? (() => new Date().toISOString());
     this.pendingTimeoutMs = options.pendingTimeoutMs ?? DEFAULT_PENDING_TIMEOUT_MS;
   }
@@ -39,6 +47,9 @@ export class AckTracker {
     }
     this.cleanupTimers.clear();
     this.pendingTimers.clear();
+    this.ackCauses.clear();
+    this.revisionCauseOrder.length = 0;
+    this.revisionCauses.clear();
     this.acks.clear();
   }
 
@@ -52,13 +63,44 @@ export class AckTracker {
       status: 'pending',
     };
     this.acks.set(ack.ack_id, ack);
+    if (input.causedBy) {
+      const cause: CoreSseCause = {
+        ackId: ack.ack_id,
+        clientCommandId:
+          typeof input.causedBy.clientCommandId === 'string'
+            ? input.causedBy.clientCommandId
+            : undefined,
+      };
+      this.ackCauses.set(ack.ack_id, cause);
+      this.storeRevisionCause(input.revision, cause);
+    }
     this.armPendingTimeout(ack.ack_id);
     return ack;
+  }
+
+  getCauseForRevision(revision: number): CoreSseCause | null {
+    const cause = this.revisionCauses.get(revision);
+    return cause ? { ...cause } : null;
   }
 
   get(ackId: string): AckOverlay | null {
     const ack = this.acks.get(ackId);
     return ack ? { ...ack } : null;
+  }
+
+  setRevision(ackId: string, revision: number): AckOverlay | null {
+    const ack = this.acks.get(ackId);
+    if (!ack) {
+      return null;
+    }
+
+    const nextAck: AckOverlay = {
+      ...ack,
+      revision,
+    };
+    this.acks.set(ackId, nextAck);
+    this.storeRevisionCause(revision, this.ackCauses.get(ackId));
+    return { ...nextAck };
   }
 
   markCommitted(ackId: string): AckOverlay | null {
@@ -99,6 +141,7 @@ export class AckTracker {
   private armCleanup(ackId: string): void {
     this.clearCleanupTimer(ackId);
     const timer = setTimeout(() => {
+      this.ackCauses.delete(ackId);
       this.acks.delete(ackId);
       this.cleanupTimers.delete(ackId);
       this.pendingTimers.delete(ackId);
@@ -129,6 +172,27 @@ export class AckTracker {
     if (timer) {
       clearTimeout(timer);
       this.pendingTimers.delete(ackId);
+    }
+  }
+
+  private storeRevisionCause(
+    revision: number,
+    cause: CoreSseCause | undefined,
+  ): void {
+    if (!cause || revision <= 0) {
+      return;
+    }
+
+    if (!this.revisionCauses.has(revision)) {
+      this.revisionCauseOrder.push(revision);
+    }
+    this.revisionCauses.set(revision, { ...cause });
+
+    while (this.revisionCauseOrder.length > this.maxRevisionCauses) {
+      const evictedRevision = this.revisionCauseOrder.shift();
+      if (typeof evictedRevision === 'number') {
+        this.revisionCauses.delete(evictedRevision);
+      }
     }
   }
 }

@@ -1,4 +1,4 @@
-import type { BaseEvent } from '@do-what/protocol';
+import type { BaseEvent, CoreSseCause } from '@do-what/protocol';
 import type { EventBus } from '../eventbus/event-bus.js';
 import type { AckTracker } from '../state/ack-tracker.js';
 import { runSyncPath } from './sync-path.js';
@@ -17,8 +17,11 @@ export class EventDispatcher {
     this.eventBus = options.eventBus;
   }
 
-  dispatch(event: Omit<BaseEvent, 'revision'> | BaseEvent) {
-    const result = runSyncPath(this.eventBus, this.ackTracker, event);
+  dispatch(
+    event: Omit<BaseEvent, 'revision'> | BaseEvent,
+    causedBy?: Omit<CoreSseCause, 'ackId'>,
+  ) {
+    const result = runSyncPath(this.eventBus, this.ackTracker, event, causedBy);
     queueMicrotask(() => {
       this.ackTracker.markCommitted(result.ack.ack_id);
     });

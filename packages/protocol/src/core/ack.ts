@@ -3,7 +3,11 @@ export type AckEntityType =
   | 'engine'
   | 'approval'
   | 'checkpoint'
-  | 'event';
+  | 'event'
+  | 'memory'
+  | 'settings'
+  | 'drift'
+  | 'gate';
 
 export type AckStatus = 'pending' | 'committed' | 'failed';
 

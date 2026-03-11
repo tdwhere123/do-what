@@ -4,7 +4,7 @@
 **分组:** Core API  
 **依赖:** T030  
 **可并行:** 否  
-**状态:** 待开始  
+**状态:** 已完成
 
 ---
 
@@ -35,10 +35,10 @@ packages/core/src/state/
 
 ## 验收标准
 
-- [ ] 对象型命令均有正式路由
-- [ ] memory 与 approval 至少具备对象级 probe
-- [ ] 前端无需靠猜测对象所属 run 才能 refetch
-- [ ] 命令面与 query 面职责分离清晰
+- [x] 对象型命令均有正式路由
+- [x] memory 与 approval 至少具备对象级 probe
+- [x] 前端无需靠猜测对象所属 run 才能 refetch
+- [x] 命令面与 query 面职责分离清晰
 
 ---
 

@@ -25,7 +25,10 @@ import { BaselineTracker, FastGate, Integrator } from '../integrator/index.js';
 import { WorktreeLifecycle } from '../run/index.js';
 import { authMiddleware, generateAndSaveToken } from './auth.js';
 import { registerRoutes } from './routes.js';
+import { SettingsStore } from './settings-store.js';
 import { SseManager } from './sse.js';
+import { UiCommandService } from './ui-command-service.js';
+import { UiQueryService } from './ui-query-service.js';
 
 const DEFAULT_DEV_RUN_DURATION_MS = 3_000;
 
@@ -67,6 +70,7 @@ export interface StartHttpServerOptions {
 
 export interface HttpServerHandle {
   app: FastifyInstance;
+  coreSessionId: string;
   eventBus: EventBus;
   host: string;
   port: number;
@@ -92,6 +96,7 @@ export async function startHttpServer(
   const runDir = options.runDir ?? path.dirname(tokenPath);
   const stateDir = options.stateDir ?? STATE_DIR;
   const stateDbPath = path.join(stateDir, 'state.db');
+  const soulDbPath = path.join(stateDir, 'soul.db');
   const memoryRepoBasePath =
     options.memoryRepoBasePath ?? path.join(path.dirname(stateDir), 'memory');
   const worktreeBasePath =
@@ -106,6 +111,7 @@ export async function startHttpServer(
   });
 
   const token = generateAndSaveToken(tokenPath);
+  const coreSessionId = `core_sess_${Date.now()}_${randomUUID().slice(0, 8)}`;
   const workerClient = new WorkerClient(stateDbPath);
   const hotStateManager = new HotStateManager({
     dbPath: stateDbPath,
@@ -135,7 +141,11 @@ export async function startHttpServer(
   });
   policyEngine.load();
 
-  const sseManager = new SseManager();
+  const ackTracker = new AckTracker();
+  const sseManager = new SseManager({
+    coreSessionId,
+    resolveCause: (revision) => ackTracker.getCauseForRevision(revision),
+  });
   const eventBus = new EventBus({
     workerClient,
   });
@@ -240,7 +250,7 @@ export async function startHttpServer(
   }
   const soulToolDispatcher = createSoulToolDispatcher({
     configPath: options.soulConfigPath,
-    dbPath: path.join(stateDir, 'soul.db'),
+    dbPath: soulDbPath,
     eventSubscriber: eventBus,
     loadCompletedRun: async (runId) => {
       const db = createReadConnection(stateDbPath);
@@ -303,12 +313,33 @@ export async function startHttpServer(
     projectionManager,
     sseManager,
   });
-  const ackTracker = new AckTracker();
   const eventDispatcher = new EventDispatcher({
     ackTracker,
     eventBus,
   });
   const hotStateStore = new StateStore(stateDbPath, hotStateManager);
+  const settingsStore = new SettingsStore(workspaceRoot);
+  const uiQueryService = new UiQueryService({
+    coreSessionId,
+    hotStateManager,
+    settingsStore,
+    soulDbPath,
+    stateDbPath,
+    workspaceRoot,
+  });
+  const uiCommandService = new UiCommandService({
+    ackTracker,
+    approvalMachine,
+    eventBus,
+    hotStateManager,
+    mcpToolDispatcher: soulToolDispatcher,
+    queryService: uiQueryService,
+    runRegistry,
+    settingsStore,
+    stateDbPath,
+    workerClient,
+    workspaceRoot,
+  });
   const app = Fastify({ logger: options.logger ?? true });
   const host = options.host ?? HOST;
   const requestedPort = options.port ?? PORT;
@@ -325,10 +356,13 @@ export async function startHttpServer(
 
   registerRoutes(app, {
     ackTracker,
+    commandService: uiCommandService,
+    coreSessionId,
     eventDispatcher,
     isDevelopment,
     mcpToolDispatcher: soulToolDispatcher,
     projectionManager,
+    queryService: uiQueryService,
     startDevRun: isDevelopment
       ? async (input) => {
           const runId = `run-${randomUUID()}`;
@@ -414,6 +448,7 @@ export async function startHttpServer(
 
   return {
     app,
+    coreSessionId,
     eventBus,
     host,
     port: resolveBoundPort(app),
