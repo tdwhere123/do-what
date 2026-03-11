@@ -28,14 +28,24 @@ do-what 是一个 AI 编码代理编排系统：
 
 **后端全部完成：v0.1（E0–E7）+ v0.1.x（Phase 0–3），core 104/104，soul 61/61。**
 **当前任务：`packages/app` Electron + React UI 工程，共 34 个 Ticket。**
+**按仓库现状核对（2026-03-11）：`docs/archive/v0.1-UI/task-breakdown.md` 已记录 `T001A–T012` 完成，下一步从 `T013` 开始。**
 
 | 分组 | Tickets | 主题 | 状态 |
 |------|---------|------|------|
-| Foundation | T001A–T007 | scaffold / contract / mock / token / HTTP client / SSE client | T001A 已完成，余待实现 |
-| State Stores | T008–T012 | hot-state / projection / pending / ack-overlay / ui-store | 待开始 |
-| Workbench / UI | T013–T029 | Workbench Shell / Timeline / Approval / Inspector / Soul / Settings | 待开始 |
+| Foundation | T001A–T007 | scaffold / contract / mock / token / HTTP client / SSE client | 已完成 |
+| State Stores | T008–T012 | hot-state / projection / pending / ack-overlay / ui-store | 已完成 |
+| Workbench / UI | T013–T029 | Workbench Shell / Timeline / Approval / Inspector / Soul / Settings | 进行中（下一步 T013） |
 | Core API 对齐 | T030–T032 | snapshot surface / command routes / SSE envelope | 待开始 |
 | 验收 / 清理 | T033–T034 | 集成测试 / 视觉对照 + 清理 UI/ | 待开始 |
+
+
+
+### 进度维护与上下文压缩规则
+
+1. **AGENTS 不允许落后于仓库真实进度**：每完成一个 UI Ticket，至少同步更新本节的“当前阶段”与“已完成上下文压缩”。
+2. **task-breakdown 是任务状态真相源**：每完成一个 Ticket，必须同步更新 `docs/archive/v0.1-UI/task-breakdown.md` 对应状态；若 `AGENTS.md` 与其冲突，以仓库实际代码 + `task-breakdown` 为准，并立即修正 `AGENTS.md`。
+3. **接口变更必须同步索引**：凡新增或修改 protocol schema、Core HTTP、SSE envelope、MCP schema、SQLite、状态机类型，提交前必须更新 `docs/INTERFACE_INDEX.md` 并追加变更记录。
+
 
 **实现任何 UI Ticket 前，必须先读：**
 - `docs/archive/v0.1-UI/frontend_backend_contract_v0.1.md`（接口/事件流/状态来源）
