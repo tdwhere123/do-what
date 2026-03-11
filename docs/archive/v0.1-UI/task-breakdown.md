@@ -1,6 +1,6 @@
 # v0.1-UI 任务拆解方案
 
-> 状态：In implementation（T001A–T012 已完成，下一步 T013）
+> 状态：In implementation（T001A–T029 已完成，下一步 T030）
 >
 > 真相源：
 > - `docs/archive/v0.1-UI/frontend_backend_contract_v0.1.md`
@@ -82,23 +82,23 @@
 
 ### Workbench / Timeline / Inspector / Approval / Memory / Settings 模块
 
-- [T013](./tasks/T013-workbench-shell-bootstrap.md) `workbench-shell-bootstrap`
-- [T014](./tasks/T014-workspace-sidebar.md) `workspace-sidebar`
-- [T015](./tasks/T015-workbench-empty-states.md) `workbench-empty-states`
-- [T016](./tasks/T016-template-registry-and-create-run-draft.md) `template-registry-and-create-run-draft`
-- [T017](./tasks/T017-create-run-modal-and-command-flow.md) `create-run-modal-and-command-flow`
-- [T018](./tasks/T018-timeline-data-model-and-pagination.md) `timeline-data-model-and-pagination`
-- [T019](./tasks/T019-timeline-render-merged-and-threaded.md) `timeline-render-merged-and-threaded`
-- [T020](./tasks/T020-timeline-optimistic-message-tail.md) `timeline-optimistic-message-tail`
-- [T021](./tasks/T021-approval-card-and-cli-overlay.md) `approval-card-and-cli-overlay`
-- [T022](./tasks/T022-inspector-files-plan-history.md) `inspector-files-plan-history`
-- [T023](./tasks/T023-inspector-collaboration-and-git.md) `inspector-collaboration-and-git`
-- [T024](./tasks/T024-governance-checkpoint-panels.md) `governance-checkpoint-panels`
-- [T025](./tasks/T025-drift-resolution-panels.md) `drift-resolution-panels`
-- [T026](./tasks/T026-soul-panel-and-memory-projections.md) `soul-panel-and-memory-projections`
-- [T027](./tasks/T027-memory-governance-and-proposal-review.md) `memory-governance-and-proposal-review`
-- [T028](./tasks/T028-settings-query-tabs.md) `settings-query-tabs`
-- [T029](./tasks/T029-settings-lease-interruption.md) `settings-lease-interruption`
+- [T013](./tasks/T013-workbench-shell-bootstrap.md) `workbench-shell-bootstrap`（已完成）
+- [T014](./tasks/T014-workspace-sidebar.md) `workspace-sidebar`（已完成）
+- [T015](./tasks/T015-workbench-empty-states.md) `workbench-empty-states`（已完成）
+- [T016](./tasks/T016-template-registry-and-create-run-draft.md) `template-registry-and-create-run-draft`（已完成）
+- [T017](./tasks/T017-create-run-modal-and-command-flow.md) `create-run-modal-and-command-flow`（已完成）
+- [T018](./tasks/T018-timeline-data-model-and-pagination.md) `timeline-data-model-and-pagination`（已完成）
+- [T019](./tasks/T019-timeline-render-merged-and-threaded.md) `timeline-render-merged-and-threaded`（已完成）
+- [T020](./tasks/T020-timeline-optimistic-message-tail.md) `timeline-optimistic-message-tail`（已完成）
+- [T021](./tasks/T021-approval-card-and-cli-overlay.md) `approval-card-and-cli-overlay`（已完成）
+- [T022](./tasks/T022-inspector-files-plan-history.md) `inspector-files-plan-history`（已完成）
+- [T023](./tasks/T023-inspector-collaboration-and-git.md) `inspector-collaboration-and-git`（已完成）
+- [T024](./tasks/T024-governance-checkpoint-panels.md) `governance-checkpoint-panels`（已完成）
+- [T025](./tasks/T025-drift-resolution-panels.md) `drift-resolution-panels`（已完成）
+- [T026](./tasks/T026-soul-panel-and-memory-projections.md) `soul-panel-and-memory-projections`（已完成）
+- [T027](./tasks/T027-memory-governance-and-proposal-review.md) `memory-governance-and-proposal-review`（已完成）
+- [T028](./tasks/T028-settings-query-tabs.md) `settings-query-tabs`（已完成）
+- [T029](./tasks/T029-settings-lease-interruption.md) `settings-lease-interruption`（已完成）
 
 ### Core API / SSE / reconciliation / pagination / optimistic rendering
 
@@ -115,7 +115,7 @@
 
 ## C. 原子任务清单
 
-当前进度：`T001A`–`T012` 已完成；后续从 `T013` 开始。
+当前进度：`T001A`–`T029` 已完成；后续从 `T030` 开始。
 
 | ID | 标题 | 分组 | 前置依赖 | 可并行 |
 |----|------|------|----------|--------|
