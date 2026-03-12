@@ -1,50 +1,66 @@
 .shell {
-  display: grid;
-  gap: 16px;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
 }
 
 .banner {
-  position: sticky;
-  top: 0;
-  z-index: 4;
+  padding: 8px 12px;
+  background: rgba(206, 74, 46, 0.06);
+  border-bottom: 1px solid var(--border);
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: minmax(248px, 284px) minmax(0, 1fr) minmax(280px, 340px);
-  gap: 18px;
-  align-items: start;
+.columns {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
 }
 
-.sidebar,
-.main,
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
 .aside {
+  width: 240px;
+  flex-shrink: 0;
   min-width: 0;
 }
 
 .modalLayer {
   position: fixed;
   inset: 0;
-  z-index: 10;
+  z-index: 20;
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(24, 18, 13, 0.26);
-  backdrop-filter: blur(8px);
+  background: rgba(30, 27, 22, 0.24);
+  backdrop-filter: blur(4px);
 }
 
-@media (max-width: 1200px) {
-  .grid {
-    grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
-  }
-
+@media (max-width: 1100px) {
   .aside {
-    grid-column: 1 / -1;
+    width: 280px;
   }
 }
 
 @media (max-width: 900px) {
-  .grid {
-    grid-template-columns: 1fr;
+  .columns {
+    flex-direction: column;
+  }
+
+  .sidebar,
+  .aside {
+    width: 100%;
   }
 }

@@ -14,7 +14,7 @@ export function WorkbenchShell(props: WorkbenchShellProps) {
     <section className={styles.shell}>
       {props.banner ? <div className={styles.banner}>{props.banner}</div> : null}
 
-      <div className={styles.grid}>
+      <div className={styles.columns}>
         <aside className={styles.sidebar}>{props.sidebar}</aside>
         <div className={styles.main}>{props.main}</div>
         <aside className={styles.aside}>{props.aside}</aside>

@@ -1,4 +1,4 @@
-﻿import type { MockScenarioName } from '../mocks';
+import type { MockScenarioName } from '../mocks';
 
 export type CoreTransportMode = 'http' | 'mock';
 
@@ -12,6 +12,18 @@ export interface RuntimeCoreConfig {
 
 const DEFAULT_BASE_URL = 'http://127.0.0.1:3847';
 const DEFAULT_RECONNECT_DELAY_MS = 1_000;
+
+function readUrlSearchParam(key: string): string | undefined {
+  if (typeof window === 'undefined') {
+    return undefined;
+  }
+
+  try {
+    return new URLSearchParams(window.location.search).get(key) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 function readTransportMode(value: string | undefined): CoreTransportMode {
   return value === 'http' ? 'http' : 'mock';
@@ -35,12 +47,15 @@ function readReconnectDelay(value: string | undefined): number {
 
 export function getRuntimeCoreConfig(): RuntimeCoreConfig {
   const runtimeToken = window.doWhatRuntime?.coreSessionToken ?? null;
+  const urlTransport = readUrlSearchParam('transport');
+  const urlMockScenario = readUrlSearchParam('mockScenario');
+  const urlBaseUrl = readUrlSearchParam('coreBaseUrl');
 
   return {
-    baseUrl: import.meta.env.VITE_CORE_BASE_URL ?? DEFAULT_BASE_URL,
-    mockScenario: readMockScenario(import.meta.env.VITE_CORE_MOCK_SCENARIO),
+    baseUrl: urlBaseUrl ?? import.meta.env.VITE_CORE_BASE_URL ?? DEFAULT_BASE_URL,
+    mockScenario: readMockScenario(urlMockScenario ?? import.meta.env.VITE_CORE_MOCK_SCENARIO),
     reconnectDelayMs: readReconnectDelay(import.meta.env.VITE_CORE_RECONNECT_DELAY_MS),
     sessionToken: import.meta.env.VITE_CORE_SESSION_TOKEN ?? runtimeToken,
-    transportMode: readTransportMode(import.meta.env.VITE_CORE_TRANSPORT),
+    transportMode: readTransportMode(urlTransport ?? import.meta.env.VITE_CORE_TRANSPORT),
   };
 }

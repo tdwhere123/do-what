@@ -1,4 +1,5 @@
 import type { TemplateDescriptor } from '@do-what/protocol';
+import { WorkbenchFlowerIcon } from '../icons';
 import styles from './create-run-modal.module.css';
 
 export interface CreateRunModalDraft {
@@ -41,10 +42,14 @@ export function CreateRunModal(props: CreateRunModalProps) {
     <div aria-modal="true" className={styles.backdrop} role="dialog">
       <div className={styles.modal}>
         <header className={styles.header}>
-          <div>
-            <p className={styles.eyebrow}>Create Run</p>
-            <h2 className={styles.title}>Launch a new workflow</h2>
-            <p className={styles.subtitle}>Workspace: {props.workspaceLabel}</p>
+          <div className={styles.titleGroup}>
+            <div className={styles.iconWrap}>
+              <WorkbenchFlowerIcon size={18} />
+            </div>
+            <div>
+              <div className={styles.heading}>Create Run</div>
+              <div className={styles.subtitle}>Workspace: {props.workspaceLabel}</div>
+            </div>
           </div>
           <button className={styles.closeButton} onClick={props.onClose} type="button">
             Close
@@ -72,11 +77,9 @@ export function CreateRunModal(props: CreateRunModalProps) {
           </select>
         </label>
 
-        <div className={styles.templateInfo}>
-          <h3 className={styles.templateTitle}>
-            {selectedTemplate?.title ?? 'No template selected'}
-          </h3>
-          <p className={styles.templateDescription}>
+        <div className={styles.infoCard}>
+          <div className={styles.infoTitle}>{selectedTemplate?.title ?? 'No template selected'}</div>
+          <p className={styles.infoText}>
             {selectedTemplate?.description ?? 'Template descriptors are loading.'}
           </p>
         </div>
@@ -130,9 +133,7 @@ export function CreateRunModal(props: CreateRunModalProps) {
                     rows={5}
                     value={readString(value)}
                   />
-                  {input.description ? (
-                    <small className={styles.help}>{input.description}</small>
-                  ) : null}
+                  {input.description ? <small className={styles.help}>{input.description}</small> : null}
                 </label>
               );
             }
@@ -194,7 +195,7 @@ export function CreateRunModal(props: CreateRunModalProps) {
             onClick={props.onSubmit}
             type="button"
           >
-            {props.isSubmitting ? 'Submitting...' : 'Create Run'}
+            {props.isSubmitting ? 'Submitting...' : 'Start Run'}
           </button>
         </footer>
       </div>

@@ -24,11 +24,11 @@ do-what 是一个 AI 编码代理编排系统：
 
 ---
 
-## 当前阶段（v0.1-UI — 进行中）
+## 当前阶段（v0.1-UI — 收尾中）
 
 **后端全部完成：v0.1（E0–E7）+ v0.1.x（Phase 0–3），core 104/104，soul 61/61。**
-**当前任务：`packages/app` Electron + React UI 工程，共 34 个 Ticket。**
-**按仓库现状核对（2026-03-12）：`docs/archive/v0.1-UI/task-breakdown.md` 已记录 `T001A–T033` 完成，下一步从 `T034` 开始。**
+**当前任务：`packages/app` Electron + React UI 工程已完成视觉对照与验收，只剩 `UI/` 临时设计源等待安全确认后删除。**
+**按仓库现状核对（2026-03-12）：`docs/archive/v0.1-UI/task-breakdown.md` 已记录 `T001A–T033` 完成，`T034` 进入最后删除步骤。**
 
 | 分组 | Tickets | 主题 | 状态 |
 |------|---------|------|------|
@@ -36,7 +36,7 @@ do-what 是一个 AI 编码代理编排系统：
 | State Stores | T008–T012 | hot-state / projection / pending / ack-overlay / ui-store | 已完成 |
 | Workbench / UI | T013–T029 | Workbench Shell / Timeline / Approval / Inspector / Soul / Settings | 已完成 |
 | Core API 对齐 | T030–T032 | snapshot surface / command routes / SSE envelope | 已完成 |
-| 验收 / 清理 | T033–T034 | 集成测试 / 视觉对照 + 清理 UI/ | T033 已完成，T034 待开始 |
+| 验收 / 清理 | T033–T034 | 集成测试 / 视觉对照 + 清理 UI/ | T033 已完成，T034 待删除 UI/ |
 
 
 
@@ -271,7 +271,7 @@ pnpm --filter @do-what/core exec tsc --noEmit
 # 前后端集成测试（mock → real Core）
 pnpm --filter @do-what/app test -- --testNamePattern "integration"
 
-# UI/ 临时设计源清理确认（T034 完成后应已移除）
+# UI/ 临时设计源清理确认（T034 最后一步，待安全确认后删除）
 ls UI/
 
 # 全量验收
@@ -542,4 +542,4 @@ app.get('/state', async () => {
 | MCP tool schema 源码 | `packages/protocol/src/mcp/` |
 | 状态机 context/event 类型 | `packages/protocol/src/machines/` |
 | Core HTTP 端点实现 | `packages/core/src/server/routes.ts` |
-| UI 视觉参考（临时，T034 后清理） | `UI/preview-active.html`、`UI/preview-empty.html`、`UI/preview-settings.html` |
+| UI 视觉对照基线（待清理） | `T034` 视觉对照已完成，仓库根 `UI/` 临时设计源待安全确认后删除 |

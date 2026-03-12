@@ -1,4 +1,3 @@
-import { DECORATIVE_ASSET_URLS, EMPTY_ASSET_URLS } from '../../assets';
 import { WorkbenchFlowerIcon } from '../icons';
 import styles from './workbench-empty-state.module.css';
 
@@ -12,26 +11,24 @@ interface WorkbenchEmptyStateProps {
 export function WorkbenchEmptyState(props: WorkbenchEmptyStateProps) {
   return (
     <section className={styles.empty}>
-      <div className={styles.art}>
-        <img alt="Workbench empty state" src={EMPTY_ASSET_URLS.workbench} />
-        <img aria-hidden="true" className={styles.texture} src={DECORATIVE_ASSET_URLS.waveLine} />
+      <div className={styles.iconWrap}>
+        <WorkbenchFlowerIcon className={styles.icon} size={56} />
       </div>
-
-      <div className={styles.copy}>
-        <p className={styles.eyebrow}>Idle workbench</p>
-        <h2 className={styles.title}>{props.title}</h2>
-        <p className={styles.description}>{props.description}</p>
+      <h2 className={styles.title}>{props.title}</h2>
+      <p className={styles.description}>{props.description}</p>
+      <div className={styles.actions}>
+        <button
+          className={styles.primaryButton}
+          disabled={props.isFrozen}
+          onClick={props.onCreateRun}
+          type="button"
+        >
+          Create Run
+        </button>
+        <button className={styles.ghostButton} disabled type="button">
+          Browse History
+        </button>
       </div>
-
-      <button
-        className={styles.cta}
-        disabled={props.isFrozen}
-        onClick={props.onCreateRun}
-        type="button"
-      >
-        <WorkbenchFlowerIcon size={18} />
-        Create a run
-      </button>
     </section>
   );
 }

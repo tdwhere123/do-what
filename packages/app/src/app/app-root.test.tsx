@@ -3,7 +3,13 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AppRoot } from './app-root';
-import { useUiStore } from '../stores/ui';
+import { resetAppServices } from '../lib/runtime/app-services';
+import { resetAckOverlayStore } from '../stores/ack-overlay';
+import { resetHotStateStore } from '../stores/hot-state';
+import { resetPendingCommandStore } from '../stores/pending-command';
+import { resetProjectionStore } from '../stores/projection';
+import { resetSettingsBridgeStore } from '../stores/settings-bridge';
+import { resetUiStore } from '../stores/ui';
 
 function installRuntimeBridge(): void {
   Object.defineProperty(window, 'doWhatRuntime', {
@@ -24,27 +30,38 @@ function installRuntimeBridge(): void {
 describe('AppRoot scaffold', () => {
   beforeEach(() => {
     installRuntimeBridge();
-    useUiStore.setState({ currentRoute: 'workbench' });
+    resetAppServices();
+    resetAckOverlayStore();
+    resetHotStateStore();
+    resetPendingCommandStore();
+    resetProjectionStore();
+    resetSettingsBridgeStore();
+    resetUiStore();
     window.history.replaceState(null, '', '#/');
   });
 
   afterEach(() => {
     cleanup();
+    resetAppServices();
+    resetAckOverlayStore();
+    resetHotStateStore();
+    resetPendingCommandStore();
+    resetProjectionStore();
+    resetSettingsBridgeStore();
+    resetUiStore();
     window.history.replaceState(null, '', '#/');
   });
 
-  it('renders the default workbench route with scaffold chrome', async () => {
+  it('renders the default workbench route with the parity shell', async () => {
     render(<AppRoot />);
 
-    expect(screen.getByRole('heading', { name: 'do-what UI runtime skeleton' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Workspaces' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Overview' })).toBeTruthy();
-    expect(screen.getByText('Active route: workbench')).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Workbench' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Settings' })).toBeTruthy();
-
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Workbench' })).toBeTruthy();
+      expect(screen.getByText('do-what')).toBeTruthy();
+      expect(screen.getByText('Workspaces')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'New Run' })).toBeTruthy();
+      expect(screen.getByText('Fix session guard race')).toBeTruthy();
+      expect(screen.getByText('Approval required before continuing')).toBeTruthy();
+      expect(screen.getByRole('link', { name: 'Settings' })).toBeTruthy();
     });
   });
 
@@ -58,8 +75,9 @@ describe('AppRoot scaffold', () => {
     fireEvent.click(screen.getByRole('button', { name: 'New Run' }));
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Launch a new workflow' })).toBeTruthy();
+      expect(screen.getByText('Create Run')).toBeTruthy();
       expect(screen.getByText(/Workspace:/)).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Start Run' })).toBeTruthy();
     });
   });
 
@@ -69,8 +87,9 @@ describe('AppRoot scaffold', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Settings' }));
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Settings' })).toBeTruthy();
-      expect(screen.getByText('Active route: settings')).toBeTruthy();
+      expect(window.location.hash).toBe('#/settings');
+      expect(screen.getByRole('button', { name: /Back/ })).toBeTruthy();
+      expect(screen.getByText('Settings')).toBeTruthy();
     });
 
     expect(screen.getByText('Electron')).toBeTruthy();
@@ -88,7 +107,7 @@ describe('AppRoot scaffold', () => {
 
     await waitFor(() => {
       expect(window.location.hash).toBe('#/');
-      expect(screen.getByRole('heading', { name: 'Workbench' })).toBeTruthy();
+      expect(screen.getByText('Workspaces')).toBeTruthy();
     });
   });
 });

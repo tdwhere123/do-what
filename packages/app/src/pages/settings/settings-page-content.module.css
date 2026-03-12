@@ -1,172 +1,276 @@
-﻿.page {
-  display: grid;
-  gap: 20px;
+.page {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  background: var(--surface);
 }
 
-.hero,
-.card,
-.noticeCard {
-  padding: 24px;
-  border-radius: 28px;
-  border: 1px solid var(--border-muted);
-  background: var(--surface-panel);
-  box-shadow: var(--shadow-panel);
-}
-
-.heroMeta,
-.heroActions,
-.cardHeader,
-.actionRow,
-.metaRow {
+.topbar {
+  height: 44px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  padding: 0 14px;
   gap: 12px;
-  flex-wrap: wrap;
 }
 
-.heroLayout,
-.grid {
-  display: grid;
-  gap: 18px;
-}
-
-.heroLayout {
-  grid-template-columns: minmax(0, 1.3fr) minmax(200px, 0.8fr);
+.backButton {
+  display: inline-flex;
   align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
 }
 
-.heroCopy,
-.fieldList,
-.metaList,
-.sidePanel,
-.mainPanel,
-.tabRail {
+.backChevron {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.tabBar {
+  display: flex;
+  gap: 4px;
+  padding: 10px 14px 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  overflow-x: auto;
+}
+
+.tabButton {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 0 2px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tabButtonActive {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+}
+
+.scrollArea {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px;
   display: grid;
-  gap: 12px;
+  gap: 14px;
+  align-content: start;
+  background: var(--bg);
+}
+
+.settingsCard {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  padding: 14px;
+}
+
+.settingsCardTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .badge,
-.heroChip,
-.statusBadge {
-  display: inline-flex;
+.valueLabel {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.settingsRow {
+  display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(101, 78, 64, 0.08);
-  color: var(--accent-primary);
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.settingsRow:first-of-type {
+  border-top: 0;
+}
+
+.settingsRowLabel {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.labelMain {
   font-size: 12px;
+  color: var(--text-primary);
 }
 
-.heroTitle,
-.cardTitle {
-  margin: 0;
-}
-
-.heroBody,
-.cardText,
-.fieldMeta,
+.labelSub,
+.rowSubtext,
 .errorText {
   margin: 0;
-  color: var(--text-secondary);
-  line-height: 1.6;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 .errorText {
   color: var(--status-error);
 }
 
-.eyebrow {
-  margin: 0;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--text-muted);
-}
-
-.grid {
-  grid-template-columns: 220px minmax(0, 1fr) minmax(260px, 320px);
-  align-items: start;
-}
-
-.tabButton,
-.tabButtonActive,
-.primaryButton,
-.secondaryButton,
-.ghostButton,
 .input,
 .select,
-.textarea,
-.overlayCard,
-.fieldCard {
-  border-radius: 18px;
+.textarea {
+  width: min(340px, 48%);
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-primary);
 }
 
-.tabButton,
-.fieldCard,
-.overlayCard {
-  padding: 14px;
-  border: 1px solid var(--border-muted);
-  background: rgba(255, 255, 255, 0.82);
-  text-align: left;
+.textarea {
+  resize: vertical;
 }
 
-.tabButtonActive,
+.toggleWrap {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+}
+
+.toggleWrap input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggle {
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(45, 36, 22, 0.12);
+  position: relative;
+}
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.toggleOn {
+  background: var(--status-running);
+}
+
+.toggleOn::after {
+  transform: translateX(14px);
+}
+
+.footerActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.primaryButton,
+.secondaryButton,
+.ghostButton {
+  font-size: 11px;
+  line-height: 1;
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+
 .primaryButton {
-  padding: 14px;
-  border: 0;
-  background: var(--button-primary-bg);
-  color: var(--button-primary-fg);
+  border: 1px solid var(--accent-primary);
+  background: var(--accent-primary);
+  color: #fff;
 }
 
 .secondaryButton {
-  padding: 10px 14px;
   border: 1px solid var(--border-strong);
-  background: rgba(255, 255, 255, 0.82);
+  background: transparent;
+  color: var(--text-primary);
 }
 
 .ghostButton {
-  padding: 10px 14px;
   border: 0;
   background: transparent;
   color: var(--text-secondary);
 }
 
-.input,
-.select,
-.textarea {
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid var(--border-muted);
-  background: rgba(255, 255, 255, 0.92);
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.ghostButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
-.textarea {
-  min-height: 120px;
-  resize: vertical;
-}
-
-.fieldCard {
-  display: grid;
-  gap: 8px;
-}
-
-.fieldLabel {
-  font-weight: 700;
+.overlayCard {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-top: 10px;
 }
 
 .preformatted {
   margin: 0;
-  padding: 14px;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.04);
   overflow: auto;
-  border-radius: 18px;
-  background: rgba(45, 37, 32, 0.05);
+  font-size: 11px;
 }
 
-@media (max-width: 1100px) {
-  .grid,
-  .heroLayout {
-    grid-template-columns: 1fr;
+@media (max-width: 800px) {
+  .settingsRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .input,
+  .select,
+  .textarea {
+    width: 100%;
+  }
+
+  .toggleWrap,
+  .valueLabel {
+    margin-left: 0;
   }
 }

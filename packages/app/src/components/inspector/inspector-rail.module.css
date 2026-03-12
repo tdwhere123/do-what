@@ -1,86 +1,178 @@
 .rail {
-  display: grid;
-  gap: 16px;
+  width: 240px;
+  height: 100%;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
 }
 
-.card,
-.inlineCard,
-.dialog {
-  display: grid;
-  gap: 12px;
-  padding: 20px;
-  border-radius: 24px;
-  border: 1px solid var(--border-muted);
-  background: rgba(255, 255, 255, 0.84);
-  box-shadow: var(--shadow-soft);
+.block {
+  border-bottom: 1px solid var(--border);
 }
 
-.inlineCard {
-  border-style: dashed;
-  padding: 14px;
+.block:last-child {
+  border-bottom: 0;
 }
 
-.eyebrow {
-  margin: 0;
-  font-size: 11px;
+.blockTitle {
+  padding: 9px 12px;
+  font-size: 10px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  background: var(--surface);
+}
+
+.blockBody {
+  padding: 0 12px 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.emptyBlock {
+  display: grid;
+  place-items: center;
+  min-height: 120px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.diffRow,
+.historyRow,
+.actionRow,
+.toggleRow,
+.gitRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.historyRow,
+.diffRow,
+.gitRow {
+  min-width: 0;
+  padding: 3px 0;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.historyRow strong,
+.diffFilename {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.diffFilename {
+  font-family: var(--font-mono);
+}
+
+.diffKind {
+  font-size: 10px;
   color: var(--text-muted);
 }
 
-.title {
-  margin: 0;
-  font-size: 18px;
+.gitFold {
+  width: 8px;
+  color: var(--text-muted);
+  font-size: 8px;
+  flex-shrink: 0;
 }
 
-.headerRow,
-.metaRow,
-.record,
-.actions,
-.toggleRow {
+.checkItem {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.metaList,
-.stackList {
-  display: grid;
-  gap: 10px;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(101, 78, 64, 0.1);
-  color: var(--accent-primary);
+  align-items: flex-start;
+  gap: 7px;
+  padding: 3px 0;
   font-size: 12px;
+  color: var(--text-primary);
+  line-height: 1.4;
 }
 
-.toggleButton,
-.toggleActive,
+.checkDot,
+.checkDotActive {
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  border: 1px solid var(--border-strong);
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.checkDotActive {
+  background: var(--status-success);
+  border-color: var(--status-success);
+}
+
+.toggleRow {
+  gap: 0;
+  margin-bottom: 2px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.toggleButton {
+  flex: 1;
+  border: 0;
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 4px 6px;
+}
+
+.toggleButtonActive {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+.inlineCard,
+.dialog {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.inlineCard strong {
+  font-size: 11px;
+}
+
+.mutedText {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .primaryButton,
 .secondaryButton,
 .ghostButton {
-  padding: 8px 12px;
-  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1;
+  padding: 5px 10px;
+  border-radius: 8px;
 }
 
-.toggleButton,
-.secondaryButton {
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.74);
-}
-
-.toggleActive,
 .primaryButton {
-  border: 0;
-  background: var(--button-primary-bg);
-  color: var(--button-primary-fg);
+  border: 1px solid var(--accent-primary);
+  background: var(--accent-primary);
+  color: #fff;
+}
+
+.secondaryButton {
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-primary);
 }
 
 .ghostButton {
@@ -89,30 +181,26 @@
   color: var(--text-secondary);
 }
 
-.mutedText {
-  margin: 0;
-  color: var(--text-secondary);
-  line-height: 1.55;
-}
-
 .preformatted {
   margin: 0;
-  padding: 14px;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.04);
   overflow: auto;
-  border-radius: 18px;
-  background: rgba(45, 37, 32, 0.05);
+  font-size: 11px;
 }
 
 .dialogBackdrop {
   position: fixed;
   inset: 0;
-  z-index: 20;
+  z-index: 24;
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(45, 37, 32, 0.18);
+  background: rgba(30, 27, 22, 0.24);
 }
 
 .dialog {
   width: min(420px, calc(100vw - 32px));
+  background: var(--surface-raised);
 }

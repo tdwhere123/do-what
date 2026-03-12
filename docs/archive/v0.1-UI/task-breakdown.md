@@ -1,6 +1,6 @@
 # v0.1-UI 任务拆解方案
 
-> 状态：In implementation（T001A–T033 已完成，下一步 T034）
+> 状态：In final cleanup（T001A–T033 已完成，T034 待删除 UI/）
 >
 > 真相源：
 > - `docs/archive/v0.1-UI/frontend_backend_contract_v0.1.md`
@@ -44,9 +44,9 @@
 - `packages/core`
   - 为 UI 暴露必要的 `/api/*` 查询面、命令面、probe 接口、SSE envelope
   - 保持 Core 单一真相源，不把 UI 状态反向写回 Core
-- `UI/`
-  - 仅为临时设计源
-  - 最终采用的 token、SVG、组件结构需迁移进 `packages/app`
+- 仓库根 `UI/` 临时设计源
+  - 视觉对照与运行时资产迁移已完成
+  - 待安全确认后执行物理删除
 
 ### 不在本轮范围内的内容
 
@@ -109,13 +109,13 @@
 ### 测试与验收 / 清理
 
 - [T033](./tasks/T033-real-core-integration-tests.md) `real-core-integration-tests`（已完成）
-- [T034](./tasks/T034-visual-parity-and-ui-design-source-cleanup.md) `visual-parity-and-ui-design-source-cleanup`
+- [T034](./tasks/T034-visual-parity-and-ui-design-source-cleanup.md) `visual-parity-and-ui-design-source-cleanup`（待删除 UI/）
 
 ---
 
 ## C. 原子任务清单
 
-当前进度：`T001A`–`T033` 已完成；后续从 `T034` 开始。
+当前进度：`T001A`–`T033` 已完成；`T034` 只剩删除 `UI/`。
 
 | ID | 标题 | 分组 | 前置依赖 | 可并行 |
 |----|------|------|----------|--------|

@@ -1,4 +1,5 @@
 @import './tokens.css';
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
 * {
   box-sizing: border-box;
@@ -11,15 +12,13 @@ html {
 html,
 body,
 #root {
-  min-height: 100%;
+  min-height: 100vh;
 }
 
 body {
   margin: 0;
-  background:
-    radial-gradient(circle at top, rgba(201, 155, 74, 0.08), transparent 32%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0)),
-    var(--bg);
+  padding: 24px;
+  background: #d6d0c6;
   color: var(--text-primary);
   font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
@@ -46,6 +45,10 @@ img {
   max-width: 100%;
 }
 
+#root {
+  min-height: calc(100vh - 48px);
+}
+
 code,
 pre {
   font-family: var(--font-mono);
@@ -63,5 +66,16 @@ pre {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 0;
+    background: var(--surface);
+  }
+
+  #root {
+    min-height: 100vh;
   }
 }

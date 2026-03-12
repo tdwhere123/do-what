@@ -1,65 +1,101 @@
 .empty {
-  display: grid;
-  justify-items: center;
-  gap: 18px;
-  padding: 36px 24px;
-  border-radius: 30px;
-  border: 1px solid var(--border-muted);
-  background: var(--surface-panel);
-  box-shadow: var(--shadow-panel);
-  text-align: center;
-}
-
-.art {
   position: relative;
-  width: min(320px, 100%);
+  flex: 1;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 40px;
+  text-align: center;
+  overflow: hidden;
 }
 
-.texture {
+.empty::before,
+.empty::after {
+  content: '';
   position: absolute;
-  right: -12px;
-  bottom: -18px;
   width: 120px;
-  opacity: 0.24;
+  height: 120px;
+  border: 2px solid rgba(30, 27, 22, 0.08);
+  border-radius: 34px;
+  pointer-events: none;
 }
 
-.copy {
+.empty::before {
+  top: -40px;
+  left: -36px;
+  border-right: 0;
+  border-bottom: 0;
+  transform: rotate(-10deg);
+}
+
+.empty::after {
+  right: -36px;
+  bottom: -42px;
+  border-left: 0;
+  border-top: 0;
+  transform: rotate(14deg);
+}
+
+.iconWrap {
+  width: 88px;
+  height: 88px;
+  border-radius: 999px;
   display: grid;
-  gap: 10px;
-  max-width: 50ch;
+  place-items: center;
+  background: rgba(206, 74, 46, 0.06);
+  color: rgba(90, 84, 76, 0.88);
 }
 
-.eyebrow {
-  margin: 0;
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+.icon {
+  opacity: 0.85;
 }
 
 .title {
   margin: 0;
-  font-size: 28px;
+  font-family: var(--font-display);
+  font-size: 36px;
+  line-height: 0.95;
 }
 
 .description {
+  max-width: 44ch;
   margin: 0;
   color: var(--text-secondary);
-  line-height: 1.65;
+  line-height: 1.55;
 }
 
-.cta {
-  display: inline-flex;
-  align-items: center;
+.actions {
+  display: flex;
   gap: 8px;
-  padding: 12px 18px;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: var(--button-primary-bg);
-  color: var(--button-primary-fg);
+  margin-top: 8px;
+  flex-wrap: wrap;
 }
 
-.cta:disabled {
+.primaryButton,
+.ghostButton {
+  font-size: 11px;
+  line-height: 1;
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+
+.primaryButton {
+  border: 1px solid var(--accent-primary);
+  background: var(--accent-primary);
+  color: #fff;
+}
+
+.primaryButton:disabled,
+.ghostButton:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.ghostButton {
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-secondary);
 }

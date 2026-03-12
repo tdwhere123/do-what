@@ -1,7 +1,6 @@
 import type { TemplateDescriptor } from '@do-what/protocol';
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ApprovalStrip } from '../../components/approval/approval-strip';
 import {
   CreateRunModal,
   type CreateRunModalDraft,
@@ -108,8 +107,8 @@ function StatusBanner(props: {
   if (props.bootstrapStatus === 'loading') {
     return (
       <div className={styles.banner}>
-        <strong>Bootstrapping Workbench</strong>
-        <p>Reading token, hydrating the latest snapshot, then opening the event stream.</p>
+        <strong>Bootstrapping workbench</strong>
+        <p>Reading snapshot and opening the event stream.</p>
       </div>
     );
   }
@@ -320,222 +319,215 @@ export function WorkbenchPageContent() {
   const modalOpen = activeModal === 'create-run';
 
   return (
-    <WorkbenchShell
-      aside={
-        <InspectorRail
-          inspector={inspectorProjection}
-          inspectorMode={inspectorMode}
-          interruptedDraft={interruptedDraft}
-          isFrozen={globalLocked}
-          onApproveGate={() =>
-            selectedRunId
-              ? void dispatchIntegrationGateDecision(
-                  { decision: 'approve', gateId: 'gate-main', runId: selectedRunId },
-                  services.coreApi,
-                )
-              : undefined
-          }
-          onBlockGate={() =>
-            selectedRunId
-              ? void dispatchIntegrationGateDecision(
-                  { decision: 'block', gateId: 'gate-main', runId: selectedRunId },
-                  services.coreApi,
-                )
-              : undefined
-          }
-          onDismissOverlay={(clientCommandId) => dismissAckOverlay(clientCommandId)}
-          onGovernMemory={(memoryId, mode, projectOverride) =>
-            selectedRunId
-              ? void dispatchMemoryGovernance(
-                  { memoryId, mode, projectOverride, runId: selectedRunId },
-                  services.coreApi,
-                )
-              : undefined
-          }
-          onInspectorModeChange={setInspectorMode}
-          onResolveDrift={() =>
-            selectedRunId
-              ? void dispatchDriftResolution(
-                  { actionId: 'soft-stale', mode: 'reconcile', runId: selectedRunId },
-                  services.coreApi,
-                )
-              : undefined
-          }
-          onReviewProposal={(proposalId, mode) =>
-            selectedRunId
-              ? void dispatchMemoryProposalReview(
-                  { mode, proposalId, runId: selectedRunId },
-                  services.coreApi,
-                )
-              : undefined
-          }
-          onRetryOverlay={(clientCommandId) =>
-            void retryAckOverlaySync(clientCommandId, services.coreApi)
-          }
-          overlays={ackOverlays.filter((entry) => entry.entityType !== 'approval')}
-          runTitle={selectedRun?.title ?? null}
-          soulPanel={soulProjection}
-          workspaceName={selectedWorkspace?.name ?? null}
-        />
-      }
-      banner={
-        <StatusBanner
-          bootstrapError={bootstrapError}
-          bootstrapStatus={bootstrapStatus}
-          isFrozen={globalLocked}
-          lastError={lastError?.message ?? null}
-        />
-      }
-      main={
-        <div className={styles.mainStack}>
-          <section className={styles.heroCard}>
-            <p className={styles.eyebrow}>Workbench</p>
-            <h1 className={styles.title}>Workbench</h1>
-            <p className={styles.subtitle}>
-              Hot-state sidebar, paged timeline, approval strip, inspector rail, and soul-aware governance now share one mounted shell.
-            </p>
-          </section>
+    <section className={styles.page}>
+      <header className={styles.topbar}>
+        <span className={styles.topbarLogo}>do-what</span>
+        <div className={styles.topbarSpacer} />
+      </header>
 
-          {selectedRun ? (
-            <>
-              <ApprovalStrip
-                approvals={selectedApprovals}
-                globalLocked={globalLocked}
-                onAllowOnce={(approvalId) =>
-                  void dispatchApprovalDecision(
-                    { approvalId, decision: 'allow_once', runId: selectedRun.runId },
+      <WorkbenchShell
+        aside={
+          <InspectorRail
+            inspector={inspectorProjection}
+            inspectorMode={inspectorMode}
+            interruptedDraft={interruptedDraft}
+            isFrozen={globalLocked}
+            onApproveGate={() =>
+              selectedRunId
+                ? void dispatchIntegrationGateDecision(
+                    { decision: 'approve', gateId: 'gate-main', runId: selectedRunId },
                     services.coreApi,
                   )
-                }
-                onAllowSession={(approvalId) =>
-                  void dispatchApprovalDecision(
-                    { approvalId, decision: 'allow_session', runId: selectedRun.runId },
+                : undefined
+            }
+            onBlockGate={() =>
+              selectedRunId
+                ? void dispatchIntegrationGateDecision(
+                    { decision: 'block', gateId: 'gate-main', runId: selectedRunId },
                     services.coreApi,
                   )
-                }
-                onDismissOverlay={(clientCommandId) => dismissAckOverlay(clientCommandId)}
-                onReject={(approvalId) =>
-                  void dispatchApprovalDecision(
-                    { approvalId, decision: 'reject', runId: selectedRun.runId },
+                : undefined
+            }
+            onDismissOverlay={(clientCommandId) => dismissAckOverlay(clientCommandId)}
+            onGovernMemory={(memoryId, mode, projectOverride) =>
+              selectedRunId
+                ? void dispatchMemoryGovernance(
+                    { memoryId, mode, projectOverride, runId: selectedRunId },
                     services.coreApi,
                   )
+                : undefined
+            }
+            onInspectorModeChange={setInspectorMode}
+            onResolveDrift={() =>
+              selectedRunId
+                ? void dispatchDriftResolution(
+                    { actionId: 'soft-stale', mode: 'reconcile', runId: selectedRunId },
+                    services.coreApi,
+                  )
+                : undefined
+            }
+            onReviewProposal={(proposalId, mode) =>
+              selectedRunId
+                ? void dispatchMemoryProposalReview(
+                    { mode, proposalId, runId: selectedRunId },
+                    services.coreApi,
+                  )
+                : undefined
+            }
+            onRetryOverlay={(clientCommandId) =>
+              void retryAckOverlaySync(clientCommandId, services.coreApi)
+            }
+            overlays={ackOverlays.filter((entry) => entry.entityType !== 'approval')}
+            runTitle={selectedRun?.title ?? null}
+            soulPanel={soulProjection}
+            workspaceName={selectedWorkspace?.name ?? null}
+          />
+        }
+        banner={
+          <StatusBanner
+            bootstrapError={bootstrapError}
+            bootstrapStatus={bootstrapStatus}
+            isFrozen={globalLocked}
+            lastError={lastError?.message ?? null}
+          />
+        }
+        main={
+          selectedRun ? (
+            <TimelinePane
+              approvals={selectedApprovals}
+              composerDraft={activeRunDraft}
+              globalLocked={globalLocked}
+              hasMoreBefore={timelineProjection?.hasMoreBefore ?? false}
+              isLoading={timelineProjection?.status === 'loading' || timelineProjection?.status === 'refreshing'}
+              markers={timelineProjection?.markers ?? []}
+              onAllowOnce={(approvalId) =>
+                void dispatchApprovalDecision(
+                  { approvalId, decision: 'allow_once', runId: selectedRun.runId },
+                  services.coreApi,
+                )
+              }
+              onAllowSession={(approvalId) =>
+                void dispatchApprovalDecision(
+                  { approvalId, decision: 'allow_session', runId: selectedRun.runId },
+                  services.coreApi,
+                )
+              }
+              onComposerChange={(draft) => {
+                if (selectedRunId) {
+                  setComposerDraft(selectedRunId, draft);
                 }
-                onRetryOverlay={(clientCommandId) =>
-                  void retryAckOverlaySync(clientCommandId, services.coreApi)
+              }}
+              onDismissOptimistic={(clientCommandId) => dismissPendingCommand(clientCommandId)}
+              onDismissOverlay={(clientCommandId) => dismissAckOverlay(clientCommandId)}
+              onLoadOlder={() => {
+                if (!selectedRunId || !timelineProjection?.nextBeforeRevision) {
+                  return;
                 }
-                overlays={ackOverlays}
-              />
 
-              <TimelinePane
-                composerDraft={activeRunDraft}
-                globalLocked={globalLocked}
-                hasMoreBefore={timelineProjection?.hasMoreBefore ?? false}
-                isLoading={timelineProjection?.status === 'loading' || timelineProjection?.status === 'refreshing'}
-                markers={timelineProjection?.markers ?? []}
-                onComposerChange={(draft) => {
-                  if (selectedRunId) {
-                    setComposerDraft(selectedRunId, draft);
-                  }
-                }}
-                onDismissOptimistic={(clientCommandId) => dismissPendingCommand(clientCommandId)}
-                onLoadOlder={() => {
-                  if (!selectedRunId || !timelineProjection?.nextBeforeRevision) {
-                    return;
-                  }
-
-                  void useProjectionStore.getState().refetchTimeline(services.coreApi, {
-                    beforeRevision: timelineProjection.nextBeforeRevision,
-                    limit: 50,
-                    runId: selectedRunId,
-                  });
-                }}
-                onRetryOptimistic={(clientCommandId) =>
-                  selectedRunId
-                    ? void retryPendingMessageSync(clientCommandId, selectedRunId, services.coreApi)
-                    : undefined
-                }
-                onSendMessage={() =>
-                  selectedRun
-                    ? void dispatchRunMessage(
-                        selectedRun.runId,
-                        selectedRun.workspaceId ?? selectedWorkspaceId,
-                        activeRunDraft,
-                        services.coreApi,
-                      ).then((result) => {
-                        if (result.ok) {
-                          clearComposerDraft(selectedRun.runId);
-                        }
-                      })
-                    : undefined
-                }
-                onSetViewMode={setTimelineViewMode}
-                optimisticMessages={optimisticMessages}
-                projectionEntries={timelineProjection?.entries ?? []}
-                selectedRunId={selectedRun?.runId ?? null}
-                threads={timelineProjection?.nodeThreads ?? []}
-                viewMode={timelineViewMode}
-              />
-            </>
+                void useProjectionStore.getState().refetchTimeline(services.coreApi, {
+                  beforeRevision: timelineProjection.nextBeforeRevision,
+                  limit: 50,
+                  runId: selectedRunId,
+                });
+              }}
+              onReject={(approvalId) =>
+                void dispatchApprovalDecision(
+                  { approvalId, decision: 'reject', runId: selectedRun.runId },
+                  services.coreApi,
+                )
+              }
+              onRetryOptimistic={(clientCommandId) =>
+                selectedRunId
+                  ? void retryPendingMessageSync(clientCommandId, selectedRunId, services.coreApi)
+                  : undefined
+              }
+              onRetryOverlay={(clientCommandId) =>
+                void retryAckOverlaySync(clientCommandId, services.coreApi)
+              }
+              onSendMessage={() =>
+                selectedRun
+                  ? void dispatchRunMessage(
+                      selectedRun.runId,
+                      selectedRun.workspaceId ?? selectedWorkspaceId,
+                      activeRunDraft,
+                      services.coreApi,
+                    ).then((result) => {
+                      if (result.ok) {
+                        clearComposerDraft(selectedRun.runId);
+                      }
+                    })
+                  : undefined
+              }
+              onSetViewMode={setTimelineViewMode}
+              optimisticMessages={optimisticMessages}
+              overlayEntries={ackOverlays}
+              projectionEntries={timelineProjection?.entries ?? []}
+              selectedRunId={selectedRun?.runId ?? null}
+              threads={timelineProjection?.nodeThreads ?? []}
+              viewMode={timelineViewMode}
+            />
           ) : (
             <WorkbenchEmptyState
               description={
                 workspaces.length
-                  ? 'Select a workspace and create the next run. The inspector rail stays mounted, so later projection refreshes do not shift layout.'
-                  : 'Workbench is waiting for workspace snapshot data. Create Run stays available as the primary entry point.'
+                  ? 'Pick a workspace and start the next run. The right rail stays mounted so later projections do not shift the shell.'
+                  : 'Workbench is waiting for workspace snapshot data. Create Run remains the primary entry point.'
               }
               isFrozen={globalLocked}
               onCreateRun={() => setActiveModal('create-run')}
-              title={workspaces.length ? 'No active run selected' : 'Workbench is waiting for snapshot data'}
+              title={workspaces.length ? 'No active run selected' : 'No runs yet'}
             />
-          )}
-        </div>
-      }
-      modal={
-        modalOpen ? (
-          <CreateRunModal
-            draft={activeCreateRunDraft}
-            error={createRunError}
-            isOpen
-            isSubmitting={isSubmittingRun || globalLocked}
-            onClose={() => setActiveModal(null)}
-            onDraftChange={(draft) => {
-              const nextWorkspaceId = selectedWorkspaceId ?? workspaceIds[0] ?? 'workspace-main';
-              setCreateRunDraft(nextWorkspaceId, fromCreateRunModalDraft(draft));
+          )
+        }
+        modal={
+          modalOpen ? (
+            <CreateRunModal
+              draft={activeCreateRunDraft}
+              error={createRunError}
+              isOpen
+              isSubmitting={isSubmittingRun || globalLocked}
+              onClose={() => setActiveModal(null)}
+              onDraftChange={(draft) => {
+                const nextWorkspaceId = selectedWorkspaceId ?? workspaceIds[0] ?? 'workspace-main';
+                setCreateRunDraft(nextWorkspaceId, fromCreateRunModalDraft(draft));
+              }}
+              onSubmit={async () => {
+                const nextWorkspaceId = selectedWorkspaceId ?? workspaceIds[0] ?? 'workspace-main';
+                const draft = fromCreateRunModalDraft(activeCreateRunDraft);
+                setIsSubmittingRun(true);
+                const result = await dispatchCreateRun(nextWorkspaceId, draft, services.coreApi);
+                setIsSubmittingRun(false);
+                if (result.ok) {
+                  clearCreateRunDraft(nextWorkspaceId);
+                  setActiveModal(null);
+                }
+              }}
+              templates={templates}
+              workspaceLabel={workspaceLabel}
+            />
+          ) : null
+        }
+        sidebar={
+          <WorkspaceSidebar
+            health={health}
+            isFrozen={globalLocked}
+            onCreateRun={() => setActiveModal('create-run')}
+            onSelectRun={(runId, workspaceId) => {
+              setSelectedWorkspaceId(workspaceId);
+              setSelectedRunId(runId);
             }}
-            onSubmit={async () => {
-              const nextWorkspaceId = selectedWorkspaceId ?? workspaceIds[0] ?? 'workspace-main';
-              const draft = fromCreateRunModalDraft(activeCreateRunDraft);
-              setIsSubmittingRun(true);
-              const result = await dispatchCreateRun(nextWorkspaceId, draft, services.coreApi);
-              setIsSubmittingRun(false);
-              if (result.ok) {
-                clearCreateRunDraft(nextWorkspaceId);
-                setActiveModal(null);
-              }
+            onSelectWorkspace={(workspaceId) => {
+              setSelectedWorkspaceId(workspaceId);
+              const runId = workspacesById[workspaceId]?.runIds[0] ?? null;
+              setSelectedRunId(runId);
             }}
-            templates={templates}
-            workspaceLabel={workspaceLabel}
+            selectedRunId={selectedRunId}
+            selectedWorkspaceId={selectedWorkspaceId}
+            runsById={sidebarRuns}
+            workspaces={workspaces}
           />
-        ) : null
-      }
-      sidebar={
-        <WorkspaceSidebar
-          health={health}
-          isFrozen={globalLocked}
-          onCreateRun={() => setActiveModal('create-run')}
-          onSelectRun={(runId, workspaceId) => {
-            setSelectedWorkspaceId(workspaceId);
-            setSelectedRunId(runId);
-          }}
-          selectedRunId={selectedRunId}
-          selectedWorkspaceId={selectedWorkspaceId}
-          runsById={sidebarRuns}
-          workspaces={workspaces}
-        />
-      }
-    />
+        }
+      />
+    </section>
   );
 }
-
-
-
