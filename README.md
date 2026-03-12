@@ -1,152 +1,136 @@
 # do-what
 
-> 本地单机 AI 开发工作台 · 单人 + AI 辅助 · Windows 为主
+`do-what` 是一个本地单机的 AI 编码代理编排仓库。当前代码库包含一个独立的 Core daemon、一个 Electron + React UI、协议与事件 schema、Soul 记忆子系统、Claude/Codex 适配器，以及 worktree / git 辅助工具。
 
-`do-what` 是一个可本地独立安装运行的智能开发工作台，旨在为单人开发者提供强大的 AI 结对编程与自动化执行能力。系统以 **Core daemon** 为绝对的控制平面，统一接入 Claude Code 和 Codex 等底层引擎，提供多 Agent 并行协作、Soul 长期记忆内核、强权限审计与可回放的完整执行历史。
+这份 README 只描述仓库当前已经落地的实现，不复述 archive 文档中的目标态。更详细的事实盘点见：
 
-我们的核心理念是：**AI 只是执行侧，UI 只是渲染侧，唯一真相源与稳定控制流必须收敛于 Core 端。**
+- [docs/project-inventory.md](./docs/project-inventory.md)
+- [docs/architecture-as-built.md](./docs/architecture-as-built.md)
+- [docs/implementation-status-v0.1.md](./docs/implementation-status-v0.1.md)
+- [docs/architecture-evidence-index.md](./docs/architecture-evidence-index.md)
 
----
+## 当前代码库实际做成了什么
 
-## 核心驱动与特性
+- `packages/core` 实现了 Core HTTP/SSE 服务、SQLite 事件日志、HotState 聚合、UI 查询面、审批队列、worktree 生命周期和集成治理相关逻辑。
+- `packages/app` 实现了 Electron + React 工作台，包含 workbench、timeline、inspector、settings、乐观消息 tail、ack overlay 和与 Core 对接的 HTTP/SSE 客户端。
+- `packages/protocol` 提供协议、事件、UI 合同、治理与 Soul 相关 Zod schema。
+- `packages/soul` 实现了独立的 `soul.db`、memory search、pointer open/healing、proposal/review、memory_repo Git 持久化等能力。
+- `packages/engines/claude` 与 `packages/engines/codex` 提供适配器和测试，但当前仓库里的 Core 进程没有看到直接拉起这两个适配器的接线。
 
-### 1. 统一的端到端管控平台
-提供统一的 UI 交互，将零散的命令行 CLI 工具收拢。这里不仅可以建立直观平缓的对话输入流，还能像可视化工作流一样清晰地监控后台并行的多个 Agent 任务进度、实时引擎状态与历史链路。
+## 需要先知道的限制
 
-### 2. 多 Agent 协作与工作流编排
-系统不再把协作过程写死为固定的角色对话剧本，而是将激活的 AI 引擎视作能够响应模板的**可编排执行节点**（如 Analyze, Plan, Build, Review, Integrate 等）。
-- **隔离并行执行**：各任务分支会在生命周期临时隔离的 Worktree 中下沉执行，规避互写的环境干扰。
-- **安全漂移汇聚**：通过精准绑定 Focus Surface 锁定代码基线范围，叠加 Integration Gate 判定，完美解决异步多分支代码同时向前推演造成的文件相互污染冲突。
+- UI 默认运行在 `mock` 传输模式，不是默认直连 Core。
+- Core 的 UI 命令面只部分闭环。`create run`、`send message`、`approval decision`、`settings update`、`memory proposal review` 有真实路径；`memory pin/edit/supersede`、`drift resolution`、`integration gate decision` 目前会返回失败或进入 desynced overlay。
+- `SettingsStore` 当前是 Core 进程内内存态，不是持久化配置中心。
+- 根仓库没有一键同时启动 Core 和 App 的脚本，需要分别启动。
+- `docs/archive/` 下是历史设计与任务记录，不应直接视为当前实现状态。
 
-### 3. Soul 长期记忆内核（核心特色）
-打破传统 AI “金鱼记忆”或简单暴力抛掷全文上下文的局限，`do-what` 引入了具备层、域、图及内生动力学的 **Soul 长期记忆内核**：
-- **四轴生命周期管理**：
-  - **分层 (Layer)**：划分为提供直觉引导及强力压缩的「模糊层」，与确保可靠回溯审计的「证据层」。
-  - **作用域 (Scope)**：区分单机项目局部上下文、跨项目通用技术域及跨空间全局核心域经验。
-  - **图拓扑 (Topology)**：维护有方向及连接边界的图路径结构。利用单源一跳精准召回机制，在确保高联想率的同时规避传统知识图谱的 N+1 爆炸计算成本。
-  - **动力学 (Dynamics)**：所有记忆碎片具备仿生学代谢特征，基于频繁触及自动触发显影、强化、衰减、降级与复活的周期调节。
-- **三维内容感知体系**：系统自动拆解每一条记忆属性里的“来源通道 (source)”、“形成路径 (formation_kind)”与“内容真实维度 (dimension：如开发约束、架构偏好、落地决策、实施风险等)”，在极少 token 磨损下实现最优加载优先级推导。
-- **证据双重耐久化隔离**：项目代码、开发文档的快照级变异会留存于可追查的项目源指针中；而人为的核心纠偏、主观偏好与重要决策会独立记录到不可篡改的用户追加账本（Ledger）中。保障在项目彻底重构等背景巨变下，AI 依然能留存“你是谁”的精神记忆。
-
-### 4. 强权限、安全拦截与全量审计
-将本地开发环境视作关键资产，采用绝对的隔离手段防范 AI 恶意暴走或逻辑污染：
-- **危险动作集中收口**：不论是系统文件写入、终端命令执行还是网络请求下发，全数统一收口到 Core 所管理的 Tools API，并由内置专属 Policy Engine 进行高频拦截仲裁。
-- **关键 Checkpoint 审阅屏障**：记忆沉淀与架构设计在写回主线之前，必定流经核心控制态触发 Checkpoint，要求人类工程师前置放行，严防 AI 产生伪造联想而毒化自有记忆。
-- **重演级日志捕获机制**：本地状态机严格遵循 EventLog 级别的事实流写入，保障每一个操作拥有详实的凭证快照，任何项目异常时刻均可完整时空回放定位。
-
----
-
-## 架构概览
+## 仓库结构
 
 ```text
-┌─────────────────────────────────────────────┐
-│                 UI (Electron + React)        │
-│          HTTP + SSE → 127.0.0.1:3847        │
-└──────────────────────┬──────────────────────┘
-                       │ Bearer Token
-┌──────────────────────▼──────────────────────┐
-│              Core daemon (Node.js)           │
-│  Event Bus · SQLite · xstate · Policy Engine │
-└──────┬──────────────┬───────────────┬────────┘
-       │              │               │
-┌──────▼─────┐ ┌──────▼─────┐ ┌──────▼──────┐
-│   Claude   │ │   Codex    │ │    Soul     │
-│  (Hooks +  │ │(App Server │ │  (SQLite +  │
-│ MCP Server)│ │   JSONL)   │ │ memory_repo)│
-└──────┬─────┘ └──────┬─────┘ └─────────────┘
-       │              │
-┌──────▼──────────────▼──────┐
-│     packages/tools         │
-│  file · git · shell        │
-│  docker · wsl              │
-└────────────────────────────┘
+packages/
+  app/                 Electron + React UI
+  core/                Fastify daemon, event log, hot state, query/command surface
+  protocol/            Zod schemas and shared contracts
+  soul/                Memory storage, retrieval, proposal/review, memory_repo
+  tools/               git/worktree helpers
+  toolchain/           目前基本为空包
+  engines/
+    claude/            Claude Hooks/MCP adapter package
+    codex/             Codex JSONL adapter package
+docs/
+  archive/             历史方案与任务文档
+  INTERFACE_INDEX.md   接口索引
+scripts/               协议/适配器校验脚本
 ```
 
-**四条承重墙：**
+## 快速开始
 
-1. **单一真相源** — 状态只在 Core 中维护流转，随时可恢复、可回放。
-2. **危险动作收口** — 文件操作 / 命令下发 / 网络外连 均收敛至 Tools API，交由 Policy Engine 进行安全仲裁。
-3. **证据可溯源** — 模型吐出的阶段记忆与主观结论必定能在系统中找到映射的原始证据原文；证据平常不常驻工作上下文，完全根据所需阶段按需精确展开。
-4. **Token 预算契约** — 对于任何 LLM 引擎的交互，其上下文大小强制套用极严格的预算预分配卡点；应对异常超发，由系统侧主动发起本地极速熔断并执行降级措施，谢绝偷塞与溢出死锁。
+### 1. 安装与构建
 
----
-
-## 技术选型栈
-
-| 逻辑分层 | 核心技术选型 |
-|----|------|
-| **Monorepo 组合与调配** | pnpm workspace + turborepo |
-| **基础统一语言** | TypeScript（全栈闭环，限定 Node.js >= 20 运行时） |
-| **Core daemon 控制端** | Node.js + Fastify + xstate v5 |
-| **关系型与文档存储** | better-sqlite3（高并发 WAL 模式，分配独立 worker_threads 完成全量落盘写操作） |
-| **Schema 严格准入体系** | zod（核心用于全部 API 通讯、组件状态机及事件传递类型边界检验防呆） |
-| **核心链路测试框架** | vitest |
-| **应用大前端界面呈现** | Electron + React |
-
----
-
-## 快速运行与构建
-
-**基本环境要求：**
-- Node.js >= 20
-- pnpm >= 9
-- Git 基础工具集
-- 本地环境中已安装并授权了 Claude Code CLI，或配置了标准 API Key 的 Codex CLI 环境。
-
-```bash
-# 1. 克隆代码仓库
-git clone <repo-url>
-cd do-what-new
-
-# 2. 从零全量还原安装依赖
+```powershell
 pnpm install
-
-# 3. 执行模块间的编译产出构建
 pnpm -w build
-
-# 4. 优先启动大核心服务 (Core Backend)
-pnpm --filter @do-what/core start
-
-# 提示验证:
-# 服务主端口默认驻留于 127.0.0.1:3847
-# 专属校验用的 session_token 会安全放置到 ~/.do-what/run/session_token 路径下用于全链路鉴权
-curl http://127.0.0.1:3847/health
 ```
 
----
+### 2. 启动 Core
 
-## 运行时文件与宿主环境保护区
+`@do-what/core` 的 `start` 脚本直接运行 `dist/server/index.js`，因此通常应先构建。
 
-为保障本地资产的高纯净性，`do-what` 在你的本地硬盘执行时，会按照统一且严格的目录结构标准划分布局，用以集中管控相关存量状态文件：
+```powershell
+pnpm --filter @do-what/core start
+```
+
+默认监听：
+
+- `http://127.0.0.1:3847`
+- Bearer token 文件：`~/.do-what/run/session_token`
+
+### 3. 启动 UI
+
+默认启动的是 Electron 工作台，但默认传输模式仍是 `mock`：
+
+```powershell
+pnpm --filter @do-what/app start
+```
+
+如果要让 UI 直连已经启动的 Core，可以在启动 App 前设置：
+
+```powershell
+$env:VITE_CORE_TRANSPORT = "http"
+pnpm --filter @do-what/app start
+```
+
+可选地覆盖 Core 地址：
+
+```powershell
+$env:VITE_CORE_TRANSPORT = "http"
+$env:VITE_CORE_BASE_URL = "http://127.0.0.1:3847"
+pnpm --filter @do-what/app start
+```
+
+UI 预加载脚本会尝试从 `~/.do-what/run/session_token` 读取 token，因此直连模式下通常应先启动 Core，再启动 App。
+
+## 架构摘要
 
 ```text
-~/.do-what/
-  run/
-    session_token          # 当前 Core 运行进程关键的 HTTP 鉴权访问凭证密钥（严格 chmod 600 处理）
-    hook-policy-cache.json # 动态策略缓存表（指引 Hook Runner 的外联校验准出）
-  state/
-    state.db               # Core 核心运行库（结构化存储 Run 进度 / Workspace 元数据 / Event Log 等底层执行历史及轨迹溯源）
-    soul.db                # Soul 长记忆专属独立运行库（维护多维 memory_cues / 关系 edges / 长期存留的核心证据索引）
-    evidence/
-      user_decisions.jsonl # 用户对 Soul 记忆的 accept/reject/modify/supersede ledger（JSONL，0600 权限）
-  memory/
-    <fingerprint>/
-      memory_repo/         # 以 Git 化形态作为版本锚存储底座，归档核心演进与典藏记忆快照的历史重演区
-  worktrees/
-    <runId>/               # 随着每一个后台运行流动态生成并提供给 Agent 分配隔离演练与独立验证的临时快照挂载区（具备阅后即焚或定级合并的安全收尾处理）
-  policy.json              # 定义给 Tools 工具下发的跨全局强拦截、规则审批与安全审计主配置
-  soul-config.json         # 定义 Soul 长记忆内核的各类关联计算与权重控制逻辑
+Electron UI
+  -> HTTP snapshot + command routes
+  -> SSE event stream
+
+Core daemon
+  -> state.db event_log / runs / workspaces / approvals / governance
+  -> HotStateManager / UiQueryService / UiCommandService
+  -> Soul dispatcher (same process, separate soul.db)
+  -> worktree lifecycle / integrator / policy engine
+
+Soul
+  -> soul.db
+  -> memory_repo Git storage under ~/.do-what/memory/<fingerprint>/memory_repo
 ```
 
----
+更详细的模块边界、数据流和术语映射见 [docs/architecture-as-built.md](./docs/architecture-as-built.md)。
 
-## 文档架构与详细约定索引
+## 常用命令
 
-若需深入了解当前本系统底层的宏观设计渊源及全链路演进过程，可深入检视查阅以下关键知识库资源：
+```powershell
+pnpm -w build
+pnpm -w test
+pnpm --filter @do-what/core test
+pnpm --filter @do-what/soul test
+pnpm --filter @do-what/app test
+pnpm --filter @do-what/app typecheck
+```
 
-- **顶层架构与迭代演进方案（归档向）**
-  - [`docs/archive/v0.1/do-what-proposal-v0.1.md`](./docs/archive/v0.1/do-what-proposal-v0.1.md) - 系统 V0.1 基础阶段构建基石的完整推演主方案
-- [`docs/archive/v0.1.x/do-what-v0.1.x.md`](./docs/archive/v0.1.x/do-what-v0.1.x.md) - **v0.1.x 已归档的阶段纲领**：收敛 Soul 长期记忆、状态边界收口与并发治理的实施基准
-- **底层开发接口、核心契约及规范（研发向）**
-  - [`docs/INTERFACE_INDEX.md`](./docs/INTERFACE_INDEX.md) - 全盘洞悉所有宏观事件循环生命周期、服务级别通信定义、核心模块交互接口与系统级调度的通讯模型拓扑视图
-  - [`CLAUDE.md`](./CLAUDE.md) / [`AGENTS.md`](./AGENTS.md) - 对于外部 LLM Driver 与接入 Worker，进行工程化对接与环境治理的核心引导性规范要求指令集
+补充说明：
+
+- 根仓库定义了 `build`、`test`、`lint` 三个 turbo 入口。
+- 当前仓库中没有看到统一的 ESLint / Prettier 配置文件，`lint` 是否可直接作为有效质量门取决于后续补齐情况；更稳妥的是优先使用各包自己的 `test` / `typecheck` / `build`。
+
+## 文档导航
+
+- [docs/project-inventory.md](./docs/project-inventory.md)：仓库结构、运行方式、关键目录与证据盘点
+- [docs/architecture-as-built.md](./docs/architecture-as-built.md)：当前实际架构、模块边界、数据流与术语映射
+- [docs/implementation-status-v0.1.md](./docs/implementation-status-v0.1.md)：按子系统整理的实现状态、缺口与限制
+- [docs/architecture-evidence-index.md](./docs/architecture-evidence-index.md)：关键架构结论与代码证据索引
+- [docs/INTERFACE_INDEX.md](./docs/INTERFACE_INDEX.md)：接口索引
