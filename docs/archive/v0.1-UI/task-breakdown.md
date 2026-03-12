@@ -1,6 +1,6 @@
 # v0.1-UI 任务拆解方案
 
-> 状态：In final cleanup（T001A–T033 已完成，T034 待删除 UI/）
+> 状态：全部完成（T001A–T034 已完成）
 >
 > 真相源：
 > - `docs/archive/v0.1-UI/frontend_backend_contract_v0.1.md`
@@ -109,13 +109,13 @@
 ### 测试与验收 / 清理
 
 - [T033](./tasks/T033-real-core-integration-tests.md) `real-core-integration-tests`（已完成）
-- [T034](./tasks/T034-visual-parity-and-ui-design-source-cleanup.md) `visual-parity-and-ui-design-source-cleanup`（待删除 UI/）
+- [T034](./tasks/T034-visual-parity-and-ui-design-source-cleanup.md) `visual-parity-and-ui-design-source-cleanup`（已完成）
 
 ---
 
 ## C. 原子任务清单
 
-当前进度：`T001A`–`T033` 已完成；`T034` 只剩删除 `UI/`。
+当前进度：`T001A`–`T034` 全部完成。
 
 | ID | 标题 | 分组 | 前置依赖 | 可并行 |
 |----|------|------|----------|--------|

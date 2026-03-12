@@ -67,7 +67,7 @@ function insertGovernanceLease(stateDir: string, input: {
 }): void {
   const db = openStateDb(stateDir);
   const issuedAt = '2026-03-11T10:00:00.000Z';
-  const expiresAt = '2026-03-12T10:00:00.000Z';
+  const expiresAt = '2099-01-01T00:00:00.000Z';
   try {
     db.prepare(
       `INSERT INTO governance_leases (
