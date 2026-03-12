@@ -1,20 +1,24 @@
 import {
+  ApprovalProbeSchema,
   AnyEventSchema,
   CoreCommandAckSchema,
   CoreErrorSchema,
   CoreProbeResultSchema,
   CoreSseEnvelopeSchema,
   InspectorSnapshotSchema,
+  MemoryProbeSchema,
   SettingsSnapshotSchema,
   TemplateDescriptorSchema,
   TimelinePageSchema,
   WorkbenchSnapshotSchema,
+  type ApprovalProbe,
   type AnyEvent,
   type CoreCommandAck,
   type CoreError,
   type CoreProbeResult,
   type CoreSseEnvelope,
   type InspectorSnapshot,
+  type MemoryProbe,
   type SettingsSnapshot,
   type TemplateDescriptor,
   type TimelinePage,
@@ -204,6 +208,14 @@ export function parseTemplateDescriptors(input: unknown): readonly TemplateDescr
 
 export function parseCoreCommandAck(input: unknown): CoreCommandAck {
   return CoreCommandAckSchema.parse(input);
+}
+
+export function parseApprovalProbe(input: unknown): ApprovalProbe {
+  return ApprovalProbeSchema.parse(input);
+}
+
+export function parseMemoryProbe(input: unknown): MemoryProbe {
+  return MemoryProbeSchema.parse(input);
 }
 
 export function normalizeCoreProbeResult(input: unknown): CoreProbeResult {

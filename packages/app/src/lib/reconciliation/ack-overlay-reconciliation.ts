@@ -1,13 +1,104 @@
+import type { CoreProbeResult } from '@do-what/protocol';
 import type { CoreApiAdapter } from '../core-http-client';
 import { useProjectionStore } from '../../stores/projection';
 import { useAckOverlayStore } from '../../stores/ack-overlay';
 import { usePendingCommandStore } from '../../stores/pending-command';
 
+function createCommittedProbe(
+  ackId: string,
+  revision: number,
+): CoreProbeResult {
+  return {
+    ackId,
+    ok: true,
+    revision,
+    status: 'committed',
+  };
+}
+
+async function probeApproval(
+  clientCommandId: string,
+  coreApi: Pick<CoreApiAdapter, 'getApprovalProbe'>,
+) {
+  const overlay = useAckOverlayStore.getState().entriesById[clientCommandId];
+  if (!overlay?.entityId || overlay.entityType !== 'approval') {
+    return null;
+  }
+
+  const probe = await coreApi.getApprovalProbe(overlay.entityId);
+  if (overlay.ackRevision === null || probe.revision >= overlay.ackRevision) {
+    return createCommittedProbe(overlay.ackId ?? clientCommandId, probe.revision);
+  }
+
+  return null;
+}
+
+async function probeMemory(
+  clientCommandId: string,
+  coreApi: Pick<CoreApiAdapter, 'getMemoryProbe'>,
+) {
+  const overlay = useAckOverlayStore.getState().entriesById[clientCommandId];
+  if (!overlay?.entityId || overlay.entityType !== 'memory') {
+    return null;
+  }
+
+  const probe = await coreApi.getMemoryProbe(overlay.entityId);
+  if (overlay.ackRevision === null || probe.revision >= overlay.ackRevision) {
+    return createCommittedProbe(overlay.ackId ?? clientCommandId, probe.revision);
+  }
+
+  return null;
+}
+
+async function refetchSettings(
+  clientCommandId: string,
+  coreApi: Pick<CoreApiAdapter, 'getSettingsSnapshot'>,
+) {
+  const overlay = useAckOverlayStore.getState().entriesById[clientCommandId];
+  if (!overlay || overlay.entityType !== 'settings') {
+    return null;
+  }
+
+  const snapshot = await coreApi.getSettingsSnapshot();
+  if (overlay.ackRevision === null || snapshot.revision >= overlay.ackRevision) {
+    return createCommittedProbe(overlay.ackId ?? clientCommandId, snapshot.revision);
+  }
+
+  return null;
+}
+
+async function refetchWorkbench(
+  clientCommandId: string,
+  coreApi: Pick<CoreApiAdapter, 'getWorkbenchSnapshot'>,
+) {
+  const overlay = useAckOverlayStore.getState().entriesById[clientCommandId];
+  if (!overlay || overlay.entityType !== 'run') {
+    return null;
+  }
+
+  const snapshot = await coreApi.getWorkbenchSnapshot();
+  const runVisible =
+    overlay.entityId === null
+      ? snapshot.revision >= (overlay.ackRevision ?? 0)
+      : snapshot.runs.some((run) => run.runId === overlay.entityId);
+  if (runVisible && (overlay.ackRevision === null || snapshot.revision >= overlay.ackRevision)) {
+    return createCommittedProbe(overlay.ackId ?? clientCommandId, snapshot.revision);
+  }
+
+  return null;
+}
+
 export async function probeOrRefetchAckOverlay(
   clientCommandId: string,
   coreApi: Pick<
     CoreApiAdapter,
-    'getInspectorSnapshot' | 'getTimelinePage' | 'probeCommand'
+    | 'getApprovalProbe'
+    | 'getInspectorSnapshot'
+    | 'getMemoryProbe'
+    | 'getSettingsSnapshot'
+    | 'getTimelinePage'
+    | 'getWorkbenchSnapshot'
+    | 'probeCommand'
   >,
 ) {
   try {
@@ -19,12 +110,25 @@ export async function probeOrRefetchAckOverlay(
     useAckOverlayStore.getState().beginReconciling(clientCommandId);
 
     if (overlay.ackId) {
-      const probe = await coreApi.probeCommand(overlay.ackId);
-      if (probe.ok && probe.status === 'committed') {
-        useAckOverlayStore.getState().markSettled(clientCommandId, probe);
-        usePendingCommandStore.getState().markSettled(clientCommandId);
-        return probe;
+      const commandProbe = await coreApi.probeCommand(overlay.ackId);
+      if (!commandProbe.ok || commandProbe.status === 'failed') {
+        const message = commandProbe.error ?? 'Core reported a failed command ack.';
+        useAckOverlayStore.getState().markDesynced(clientCommandId, message, 'COMMAND_ACK_FAILED');
+        usePendingCommandStore.getState().markFailed(clientCommandId, 'COMMAND_ACK_FAILED', message);
+        return null;
       }
+    }
+
+    const targetedProbe =
+      (await probeApproval(clientCommandId, coreApi))
+      ?? (await probeMemory(clientCommandId, coreApi))
+      ?? (await refetchSettings(clientCommandId, coreApi))
+      ?? (await refetchWorkbench(clientCommandId, coreApi));
+
+    if (targetedProbe) {
+      useAckOverlayStore.getState().markSettled(clientCommandId, targetedProbe);
+      usePendingCommandStore.getState().markSettled(clientCommandId);
+      return targetedProbe;
     }
 
     if (overlay.runId === null) {
@@ -54,14 +158,10 @@ export async function probeOrRefetchAckOverlay(
       overlay.ackRevision !== undefined &&
       maxRevision >= overlay.ackRevision
     ) {
-      useAckOverlayStore.getState().markSettled(clientCommandId);
+      const probe = createCommittedProbe(overlay.ackId ?? clientCommandId, maxRevision);
+      useAckOverlayStore.getState().markSettled(clientCommandId, probe);
       usePendingCommandStore.getState().markSettled(clientCommandId);
-      return {
-        ackId: overlay.ackId ?? clientCommandId,
-        ok: true,
-        revision: maxRevision,
-        status: 'committed' as const,
-      };
+      return probe;
     }
 
     useAckOverlayStore
@@ -88,7 +188,13 @@ export async function retryAckOverlaySync(
   clientCommandId: string,
   coreApi: Pick<
     CoreApiAdapter,
-    'getInspectorSnapshot' | 'getTimelinePage' | 'probeCommand'
+    | 'getApprovalProbe'
+    | 'getInspectorSnapshot'
+    | 'getMemoryProbe'
+    | 'getSettingsSnapshot'
+    | 'getTimelinePage'
+    | 'getWorkbenchSnapshot'
+    | 'probeCommand'
   >,
 ) {
   return probeOrRefetchAckOverlay(clientCommandId, coreApi);

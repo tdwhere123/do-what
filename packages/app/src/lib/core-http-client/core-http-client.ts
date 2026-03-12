@@ -92,6 +92,12 @@ export function createCoreHttpClient(options: CoreHttpClientOptions) {
 
   return {
     get: (path: string, init?: RequestInit) => request(path, { ...init, method: 'GET' }),
+    patch: (path: string, body: unknown, init?: RequestInit) =>
+      request(path, {
+        ...init,
+        body: body === undefined ? undefined : JSON.stringify(body),
+        method: 'PATCH',
+      }),
     post: (path: string, body: unknown, init?: RequestInit) =>
       request(path, {
         ...init,

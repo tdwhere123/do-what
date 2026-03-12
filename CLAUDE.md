@@ -30,7 +30,7 @@ v0.1-UI 阶段进度（`packages/app`）：
 | State Stores | T008–T012 | hot-state / projection / pending / ack / ui-store | 待开始 |
 | Workbench / UI | T013–T029 | Workbench Shell / Timeline / Approval / Inspector / Soul / Settings | 待开始 |
 | Core API 对齐 | T030–T032 | snapshot / command / SSE envelope | 已完成 |
-| 验收 / 清理 | T033–T034 | 集成测试 / 视觉对照 | 待开始 |
+| 验收 / 清理 | T033–T034 | 集成测试 / 视觉对照 | T033 已完成，T034 待开始 |
 
 **UI 实现必须先读：**
 - `docs/archive/v0.1-UI/frontend_backend_contract_v0.1.md`（接口、事件流、状态来源）

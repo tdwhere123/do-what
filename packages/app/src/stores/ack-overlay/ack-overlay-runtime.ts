@@ -1,4 +1,4 @@
-﻿import type { CoreApiAdapter } from '../../lib/core-http-client';
+import type { CoreApiAdapter } from '../../lib/core-http-client';
 import type { NormalizedEventBus } from '../../lib/events';
 import { probeOrRefetchAckOverlay } from '../../lib/reconciliation';
 import { useHotStateStore } from '../hot-state';
@@ -7,7 +7,13 @@ import { resetAckOverlayStore, useAckOverlayStore } from './ack-overlay-store';
 export interface AckOverlayRuntimeDependencies {
   readonly coreApi: Pick<
     CoreApiAdapter,
-    'getInspectorSnapshot' | 'getTimelinePage' | 'probeCommand'
+    | 'getApprovalProbe'
+    | 'getInspectorSnapshot'
+    | 'getMemoryProbe'
+    | 'getSettingsSnapshot'
+    | 'getTimelinePage'
+    | 'getWorkbenchSnapshot'
+    | 'probeCommand'
   >;
   readonly eventBus: NormalizedEventBus;
 }

@@ -63,6 +63,14 @@ export function createAppServices(config = getRuntimeCoreConfig()): AppServices 
   };
 }
 
+export function setAppServicesForTesting(services: AppServices | null): void {
+  cachedAppServices = services;
+}
+
+export function resetAppServices(): void {
+  cachedAppServices = null;
+}
+
 export function getAppServices(): AppServices {
   cachedAppServices ??= createAppServices();
   return cachedAppServices;

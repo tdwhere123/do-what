@@ -4,7 +4,7 @@
 **分组:** 验收  
 **依赖:** T017-T032  
 **可并行:** 否  
-**状态:** 待开始  
+**状态:** 已完成
 
 ---
 
@@ -35,10 +35,10 @@ packages/app/src/test/fixtures/
 
 ## 验收标准
 
-- [ ] 真实 Core 下可跑通主要端到端路径
-- [ ] message optimistic tail 与对象 overlay 都能正确收敛
-- [ ] 断线 / Core 重启 / lease 打断 / pagination 均有测试覆盖
-- [ ] mock 与 real Core 的切换不会导致 UI 结构重写
+- [x] 真实 Core 下可跑通主要端到端路径
+- [x] message optimistic tail 与对象 overlay 都能正确收敛
+- [x] 断线 / Core 重启 / lease 打断 / pagination 均有测试覆盖
+- [x] mock 与 real Core 的切换不会导致 UI 结构重写
 
 ---
 

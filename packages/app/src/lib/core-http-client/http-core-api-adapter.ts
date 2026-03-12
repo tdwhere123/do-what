@@ -1,102 +1,106 @@
 import type {
-  AnyEvent,
+  ApprovalDecisionRequest,
+  ApprovalProbe,
   CoreCommandAck,
   CoreCommandRequest,
   CoreProbeResult,
+  CreateRunRequest,
+  DriftResolutionRequest,
   InspectorSnapshot,
+  IntegrationGateDecisionRequest,
+  MemoryEditRequest,
+  MemoryPinRequest,
+  MemoryProbe,
+  MemoryProposalReviewRequest,
+  MemorySupersedeRequest,
+  RunMessageRequest,
+  SettingsPatchRequest,
   SettingsSnapshot,
   TemplateDescriptor,
-  TimelineEntry,
   TimelinePage,
   WorkbenchSnapshot,
 } from '@do-what/protocol';
 import {
-  createEmptyInspectorSnapshot,
-  createEmptySettingsSnapshot,
-  createEmptyTimelinePage,
   normalizeCoreProbeResult,
-  normalizeLegacyStateSnapshot,
+  parseApprovalProbe,
   parseCoreCommandAck,
+  parseInspectorSnapshot,
+  parseMemoryProbe,
+  parseSettingsSnapshot,
+  parseTemplateDescriptors,
+  parseTimelinePage,
+  parseWorkbenchSnapshot,
 } from '../contracts';
-import type { TemplateRegistryAdapter } from '../template-registry/template-registry-adapter';
 import type { RuntimeCoreConfig } from '../runtime/runtime-config';
 import { CoreHttpError, createCoreHttpClient } from './core-http-client';
 import type { CoreApiAdapter, TimelinePageQuery } from './core-api-adapter';
 
-function readString(value: unknown): string | undefined {
-  return typeof value === 'string' ? value : undefined;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
 
-function mapEventToTimelineEntry(event: AnyEvent): TimelineEntry {
-  if ('type' in event && event.type === 'token_stream') {
-    return {
-      body: readString(event.text),
-      id: `timeline-${event.revision}`,
-      kind: 'message',
-      meta: {
-        isComplete: event.isComplete,
-      },
-      runId: event.runId,
-      timestamp: event.timestamp,
-      title: 'Engine Output',
-    };
+function asRecord(value: unknown): Record<string, unknown> {
+  return isRecord(value) ? value : {};
+}
+
+function readOptionalString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function readRequiredString(value: unknown, fieldName: string): string {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
   }
 
-  if ('status' in event && event.status === 'waiting_approval') {
-    return {
-      body: `Approval required for ${event.toolName}`,
-      id: `timeline-${event.revision}`,
-      kind: 'approval',
-      meta: {
-        approvalId: event.approvalId,
-        toolName: event.toolName,
-      },
-      runId: event.runId,
-      status: 'pending',
-      timestamp: event.timestamp,
-      title: 'Approval',
-    };
+  throw new CoreHttpError(
+    {
+      code: 'invalid_command_payload',
+      details: { fieldName, value },
+      message: 'Command payload is missing the required string field: ' + fieldName,
+    },
+    400,
+  );
+}
+
+function readStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : [];
+}
+
+function buildTimelinePath(query: TimelinePageQuery): string {
+  const params = new URLSearchParams();
+  if (typeof query.beforeRevision === 'number') {
+    params.set('beforeRevision', String(query.beforeRevision));
+  }
+  if (typeof query.limit === 'number') {
+    params.set('limit', String(query.limit));
   }
 
-  if ('status' in event && 'toolName' in event) {
-    return {
-      body:
-        'output' in event
-          ? readString(event.output)
-          : 'error' in event
-            ? readString(event.error)
-            : undefined,
-      id: `timeline-${event.revision}`,
-      kind: 'tool_call',
-      meta: {
-        status: event.status,
-        toolName: readString(event.toolName) ?? 'unknown',
-      },
-      runId: event.runId,
-      status: readString(event.status),
-      timestamp: event.timestamp,
-      title: readString(event.toolName) ?? 'Tool',
-    };
-  }
+  const search = params.toString();
+  const basePath = '/api/runs/' + encodeURIComponent(query.runId) + '/timeline';
+  return search ? basePath + '?' + search : basePath;
+}
 
-  return {
-    body: JSON.stringify(event),
-    id: `timeline-${event.revision}`,
-    kind: 'system',
-    runId: event.runId,
-    timestamp: event.timestamp,
-    title: event.source,
-  };
+function extractCommandBody(command: CoreCommandRequest): Record<string, unknown> {
+  return asRecord(command.payload);
+}
+
+function omitKeys(
+  value: Record<string, unknown>,
+  keys: readonly string[],
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(value).filter(([key]) => !keys.includes(key)),
+  );
 }
 
 export class HttpCoreApiAdapter implements CoreApiAdapter {
   private readonly client: ReturnType<typeof createCoreHttpClient>;
-  private readonly config: RuntimeCoreConfig;
-  private readonly templateRegistry: TemplateRegistryAdapter;
 
   constructor(
     config: RuntimeCoreConfig,
-    templateRegistry: TemplateRegistryAdapter,
+    _templateRegistry: unknown,
     fetchImpl?: typeof fetch,
   ) {
     this.client = createCoreHttpClient({
@@ -104,104 +108,258 @@ export class HttpCoreApiAdapter implements CoreApiAdapter {
       fetchImpl,
       sessionToken: config.sessionToken,
     });
-    this.config = config;
-    this.templateRegistry = templateRegistry;
+  }
+
+  async getApprovalProbe(approvalId: string): Promise<ApprovalProbe> {
+    return parseApprovalProbe(
+      await this.client.get('/api/approvals/' + encodeURIComponent(approvalId)),
+    );
   }
 
   async getWorkbenchSnapshot(): Promise<WorkbenchSnapshot> {
-    const rawState = await this.client.get('/state');
-    return normalizeLegacyStateSnapshot(rawState, {
-      connectionState: 'connected',
-    });
+    return parseWorkbenchSnapshot(await this.client.get('/api/workbench/snapshot'));
   }
 
   async getTimelinePage(query: TimelinePageQuery): Promise<TimelinePage> {
-    const snapshot = await this.getWorkbenchSnapshot();
-    const entries = snapshot.recentEvents
-      .filter((event) => event.runId === query.runId)
-      .map(mapEventToTimelineEntry)
-      .slice(-(query.limit ?? 50));
-
-    return createEmptyTimelinePage(query.runId, {
-      entries,
-      limit: query.limit ?? 50,
-      nextBeforeRevision: query.beforeRevision ?? null,
-      revision: snapshot.revision,
-    });
+    return parseTimelinePage(await this.client.get(buildTimelinePath(query)));
   }
 
   async getInspectorSnapshot(runId: string): Promise<InspectorSnapshot> {
-    const snapshot = await this.getWorkbenchSnapshot();
-    const eventCount = snapshot.recentEvents.filter((event) => event.runId === runId).length;
+    return parseInspectorSnapshot(
+      await this.client.get('/api/runs/' + encodeURIComponent(runId) + '/inspector'),
+    );
+  }
 
-    return createEmptyInspectorSnapshot(runId, {
-      overview: {
-        baseUrl: this.config.baseUrl,
-        eventCount,
-      },
-      revision: snapshot.revision,
-    });
+  async getMemoryProbe(memoryId: string): Promise<MemoryProbe> {
+    return parseMemoryProbe(
+      await this.client.get('/api/memory/' + encodeURIComponent(memoryId)),
+    );
   }
 
   async getSettingsSnapshot(): Promise<SettingsSnapshot> {
-    let version = 'unknown';
-
-    try {
-      const health = (await this.client.get('/health')) as Record<string, unknown>;
-      version = typeof health.version === 'string' ? health.version : version;
-    } catch {
-      // Health is a convenience hint only; settings still render without it.
-    }
-
-    const snapshot = await this.getWorkbenchSnapshot();
-    return createEmptySettingsSnapshot({
-      coreSessionId: snapshot.coreSessionId,
-      revision: snapshot.revision,
-      sections: [
-        {
-          fields: [
-            {
-              fieldId: 'core.baseUrl',
-              kind: 'text',
-              label: 'Core Base URL',
-              locked: true,
-              value: this.config.baseUrl,
-            },
-            {
-              fieldId: 'core.version',
-              kind: 'text',
-              label: 'Core Version',
-              locked: true,
-              value: version,
-            },
-          ],
-          locked: true,
-          sectionId: 'core',
-          title: 'Core Connection',
-        },
-      ],
-    });
+    return parseSettingsSnapshot(await this.client.get('/api/settings'));
   }
 
   async listTemplates(): Promise<readonly TemplateDescriptor[]> {
-    return this.templateRegistry.listTemplates();
+    return parseTemplateDescriptors(await this.client.get('/api/workflows/templates'));
   }
 
   async postCommand(command: CoreCommandRequest): Promise<CoreCommandAck> {
-    if (command.command === 'event.publish') {
-      return parseCoreCommandAck(await this.client.post('/_dev/publish', command.payload));
+    switch (command.command) {
+      case 'approval.resolve':
+        return this.postApprovalDecision(command);
+      case 'governance.decide_integration_gate':
+        return this.postIntegrationGateDecision(command);
+      case 'governance.resolve_drift':
+        return this.postDriftResolution(command);
+      case 'memory.govern':
+        return this.postMemoryGovernance(command);
+      case 'memory.proposal.review':
+        return this.postMemoryProposalReview(command);
+      case 'run.create':
+        return this.postCreateRun(command);
+      case 'run.message':
+        return this.postRunMessage(command);
+      case 'settings.update':
+        return this.patchSettings(command);
+      default:
+        throw new CoreHttpError(
+          {
+            code: 'command_not_supported',
+            details: {
+              command: command.command,
+            },
+            message: 'Real Core adapter does not support command: ' + command.command,
+          },
+          501,
+        );
+    }
+  }
+
+  async probeCommand(ackId: string): Promise<CoreProbeResult> {
+    return normalizeCoreProbeResult(
+      await this.client.get('/acks/' + encodeURIComponent(ackId)),
+    );
+  }
+
+  private async postApprovalDecision(
+    command: CoreCommandRequest,
+  ): Promise<CoreCommandAck> {
+    const payload = extractCommandBody(command);
+    const approvalId = readRequiredString(payload.approvalId ?? payload.entityId, 'approvalId');
+    const body: ApprovalDecisionRequest = {
+      clientCommandId: command.clientCommandId,
+      decision: readRequiredString(payload.decision, 'decision') as ApprovalDecisionRequest['decision'],
+    };
+
+    return parseCoreCommandAck(
+      await this.client.post(
+        '/api/approvals/' + encodeURIComponent(approvalId) + '/decide',
+        body,
+      ),
+    );
+  }
+
+  private async postCreateRun(command: CoreCommandRequest): Promise<CoreCommandAck> {
+    const payload = extractCommandBody(command);
+    const body: CreateRunRequest = {
+      clientCommandId: command.clientCommandId,
+      participants: readStringArray(payload.participants),
+      templateId: readRequiredString(payload.templateId, 'templateId'),
+      templateInputs: asRecord(payload.templateInputs),
+      templateVersion:
+        typeof payload.templateVersion === 'string' ||
+        typeof payload.templateVersion === 'number'
+          ? payload.templateVersion
+          : undefined,
+      workspaceId: readRequiredString(command.workspaceId ?? payload.workspaceId, 'workspaceId'),
+    };
+
+    return parseCoreCommandAck(await this.client.post('/api/runs', body));
+  }
+
+  private async postDriftResolution(
+    command: CoreCommandRequest,
+  ): Promise<CoreCommandAck> {
+    const payload = extractCommandBody(command);
+    const nodeId = readRequiredString(
+      payload.nodeId ?? payload.actionId ?? payload.entityId,
+      'nodeId',
+    );
+    const body: DriftResolutionRequest = {
+      clientCommandId: command.clientCommandId,
+      mode: readRequiredString(payload.mode, 'mode') as DriftResolutionRequest['mode'],
+    };
+
+    return parseCoreCommandAck(
+      await this.client.post(
+        '/api/nodes/' + encodeURIComponent(nodeId) + '/resolve-drift',
+        body,
+      ),
+    );
+  }
+
+  private async postIntegrationGateDecision(
+    command: CoreCommandRequest,
+  ): Promise<CoreCommandAck> {
+    const payload = extractCommandBody(command);
+    const runId = readRequiredString(command.runId ?? payload.runId, 'runId');
+    const body: IntegrationGateDecisionRequest = {
+      clientCommandId: command.clientCommandId,
+      decision: readRequiredString(payload.decision, 'decision') as IntegrationGateDecisionRequest['decision'],
+      gateId: readOptionalString(payload.gateId),
+    };
+
+    return parseCoreCommandAck(
+      await this.client.post(
+        '/api/runs/' + encodeURIComponent(runId) + '/integration-gate/decide',
+        body,
+      ),
+    );
+  }
+
+  private async postMemoryGovernance(
+    command: CoreCommandRequest,
+  ): Promise<CoreCommandAck> {
+    const payload = extractCommandBody(command);
+    const memoryId = readRequiredString(payload.memoryId ?? payload.entityId, 'memoryId');
+    const mode = readRequiredString(payload.mode, 'mode');
+    const projectOverride = payload.projectOverride === true;
+    const dynamicPayload = omitKeys(payload, ['memoryId', 'mode', 'projectOverride']);
+
+    if (mode === 'pin') {
+      const body: MemoryPinRequest = {
+        clientCommandId: command.clientCommandId,
+        projectOverride,
+      };
+      return parseCoreCommandAck(
+        await this.client.post(
+          '/api/memory/' + encodeURIComponent(memoryId) + '/pin',
+          body,
+        ),
+      );
+    }
+
+    if (mode === 'edit') {
+      const body: MemoryEditRequest = {
+        clientCommandId: command.clientCommandId,
+        patch: isRecord(payload.patch) ? payload.patch : dynamicPayload,
+        projectOverride,
+      };
+      return parseCoreCommandAck(
+        await this.client.post(
+          '/api/memory/' + encodeURIComponent(memoryId) + '/edit',
+          body,
+        ),
+      );
+    }
+
+    if (mode === 'supersede') {
+      const body: MemorySupersedeRequest = {
+        clientCommandId: command.clientCommandId,
+        projectOverride,
+        replacement: isRecord(payload.replacement) ? payload.replacement : dynamicPayload,
+      };
+      return parseCoreCommandAck(
+        await this.client.post(
+          '/api/memory/' + encodeURIComponent(memoryId) + '/supersede',
+          body,
+        ),
+      );
     }
 
     throw new CoreHttpError(
       {
-        code: 'command_not_supported',
-        message: 'Real Core command routes are not available yet in T006.',
+        code: 'invalid_command_payload',
+        details: { mode },
+        message: 'Unsupported memory governance mode: ' + mode,
       },
-      501,
+      400,
     );
   }
 
-  async probeCommand(ackId: string): Promise<CoreProbeResult> {
-    return normalizeCoreProbeResult(await this.client.get(`/acks/${ackId}`));
+  private async postMemoryProposalReview(
+    command: CoreCommandRequest,
+  ): Promise<CoreCommandAck> {
+    const payload = extractCommandBody(command);
+    const proposalId = readRequiredString(payload.proposalId, 'proposalId');
+    const body: MemoryProposalReviewRequest = {
+      clientCommandId: command.clientCommandId,
+      edits: isRecord(payload.edits) ? payload.edits : undefined,
+      mode: readRequiredString(payload.mode, 'mode') as MemoryProposalReviewRequest['mode'],
+    };
+
+    return parseCoreCommandAck(
+      await this.client.post(
+        '/api/memory/proposals/' + encodeURIComponent(proposalId) + '/review',
+        body,
+      ),
+    );
+  }
+
+  private async postRunMessage(command: CoreCommandRequest): Promise<CoreCommandAck> {
+    const payload = extractCommandBody(command);
+    const runId = readRequiredString(command.runId ?? payload.runId, 'runId');
+    const body: RunMessageRequest = {
+      body: readRequiredString(payload.body, 'body'),
+      clientCommandId: command.clientCommandId,
+    };
+
+    return parseCoreCommandAck(
+      await this.client.post(
+        '/api/runs/' + encodeURIComponent(runId) + '/messages',
+        body,
+      ),
+    );
+  }
+
+  private async patchSettings(command: CoreCommandRequest): Promise<CoreCommandAck> {
+    const payload = extractCommandBody(command);
+    const body: SettingsPatchRequest = {
+      clientCommandId: command.clientCommandId,
+      fields: asRecord(payload.fields),
+    };
+
+    return parseCoreCommandAck(await this.client.patch('/api/settings', body));
   }
 }

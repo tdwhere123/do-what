@@ -28,7 +28,7 @@ do-what 是一个 AI 编码代理编排系统：
 
 **后端全部完成：v0.1（E0–E7）+ v0.1.x（Phase 0–3），core 104/104，soul 61/61。**
 **当前任务：`packages/app` Electron + React UI 工程，共 34 个 Ticket。**
-**按仓库现状核对（2026-03-11）：`docs/archive/v0.1-UI/task-breakdown.md` 已记录 `T001A–T032` 完成，下一步从 `T033` 开始。**
+**按仓库现状核对（2026-03-12）：`docs/archive/v0.1-UI/task-breakdown.md` 已记录 `T001A–T033` 完成，下一步从 `T034` 开始。**
 
 | 分组 | Tickets | 主题 | 状态 |
 |------|---------|------|------|
@@ -36,7 +36,7 @@ do-what 是一个 AI 编码代理编排系统：
 | State Stores | T008–T012 | hot-state / projection / pending / ack-overlay / ui-store | 已完成 |
 | Workbench / UI | T013–T029 | Workbench Shell / Timeline / Approval / Inspector / Soul / Settings | 已完成 |
 | Core API 对齐 | T030–T032 | snapshot surface / command routes / SSE envelope | 已完成 |
-| 验收 / 清理 | T033–T034 | 集成测试 / 视觉对照 + 清理 UI/ | 待开始 |
+| 验收 / 清理 | T033–T034 | 集成测试 / 视觉对照 + 清理 UI/ | T033 已完成，T034 待开始 |
 
 
 

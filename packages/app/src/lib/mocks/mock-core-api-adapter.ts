@@ -1,8 +1,10 @@
-﻿import type {
+import type {
+  ApprovalProbe,
   CoreCommandAck,
   CoreCommandRequest,
   CoreProbeResult,
   InspectorSnapshot,
+  MemoryProbe,
   SettingsSnapshot,
   TemplateDescriptor,
   TimelineEntry,
@@ -107,6 +109,18 @@ export class MockCoreApiAdapter implements CoreApiAdapter {
     this.templates = new MockTemplateRegistryAdapter();
   }
 
+  async getApprovalProbe(approvalId: string): Promise<ApprovalProbe> {
+    return {
+      approvalId,
+      revision: 24,
+      runId: 'run-active-1',
+      status: 'approved',
+      summary: 'Mock approval reconciled',
+      toolName: 'tools.shell_exec',
+      updatedAt: new Date('2026-03-10T00:00:00.000Z').toISOString(),
+    };
+  }
+
   async getWorkbenchSnapshot(): Promise<WorkbenchSnapshot> {
     return clone(getWorkbenchFixture(this.scenario));
   }
@@ -123,6 +137,20 @@ export class MockCoreApiAdapter implements CoreApiAdapter {
     };
   }
 
+  async getMemoryProbe(memoryId: string): Promise<MemoryProbe> {
+    return {
+      claimSummary: 'Mock memory probe',
+      dimension: 'coding_style',
+      manifestationState: 'materialized',
+      memoryId,
+      retentionState: 'canon',
+      revision: 24,
+      scope: 'project',
+      slotStatus: 'bound',
+      updatedAt: new Date('2026-03-10T00:00:00.000Z').toISOString(),
+    };
+  }
+
   async getSettingsSnapshot(): Promise<SettingsSnapshot> {
     return clone(getSettingsFixture(this.scenario));
   }
@@ -134,7 +162,7 @@ export class MockCoreApiAdapter implements CoreApiAdapter {
   async postCommand(command: CoreCommandRequest): Promise<CoreCommandAck> {
     const snapshot = getWorkbenchFixture(this.scenario);
     const revision = snapshot.revision + this.probeState.size + 1;
-    const ackId = `ack-${command.clientCommandId}`;
+    const ackId = 'ack-' + command.clientCommandId;
     this.probeState.set(ackId, {
       ackId,
       createdAt: new Date('2026-03-10T00:00:00.000Z').toISOString(),

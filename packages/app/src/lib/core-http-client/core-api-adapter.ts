@@ -1,8 +1,10 @@
 import type {
+  ApprovalProbe,
   CoreCommandAck,
   CoreCommandRequest,
   CoreProbeResult,
   InspectorSnapshot,
+  MemoryProbe,
   SettingsSnapshot,
   TemplateDescriptor,
   TimelinePage,
@@ -16,7 +18,9 @@ export interface TimelinePageQuery {
 }
 
 export interface CoreApiAdapter {
+  getApprovalProbe(approvalId: string): Promise<ApprovalProbe>;
   getInspectorSnapshot(runId: string): Promise<InspectorSnapshot>;
+  getMemoryProbe(memoryId: string): Promise<MemoryProbe>;
   getSettingsSnapshot(): Promise<SettingsSnapshot>;
   getTimelinePage(query: TimelinePageQuery): Promise<TimelinePage>;
   getWorkbenchSnapshot(): Promise<WorkbenchSnapshot>;

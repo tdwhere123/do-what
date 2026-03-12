@@ -34,7 +34,7 @@ export class HttpCoreEventSource implements CoreEventSource {
         activeAbortController = new AbortController();
 
         try {
-          const response = await this.fetchImpl(buildCoreUrl(this.config.baseUrl, '/events'), {
+          const response = await this.fetchImpl(buildCoreUrl(this.config.baseUrl, '/api/events/stream'), {
             headers: createCoreAuthHeaders(this.config.sessionToken),
             signal: activeAbortController.signal,
           });
