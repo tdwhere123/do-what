@@ -12,7 +12,14 @@
       "Bash(grep:*)",
       "Bash(ls:*)",
       "Bash(npx tsc:*)",
-      "Bash(cat packages/core/package.json | python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('scripts',{}\\), indent=2\\)\\)\")"
+      "Bash(cat packages/core/package.json | python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('scripts',{}\\), indent=2\\)\\)\")",
+      "Bash(find D:makefundo-whatdo-what-newUI -type f -exec ls -lh {})",
+      "Bash(2)",
+      "Bash(find \"D:\\\\makefun\\\\do-what\\\\do-what-new\\\\packages\\\\app\\\\src\\\\assets\" -type f -printf \"%p | %s bytes\\\\n\" | sort)",
+      "Bash(find \"D:\\\\makefun\\\\do-what\\\\do-what-new\\\\packages\\\\app\\\\src\\\\styles\" -type f -printf \"%p | %s bytes\\\\n\" | sort)",
+      "Bash(cd D:/makefun/do-what/do-what-new && for f in projection ack-overlay reconcile-tracker governance-lease integration-gate; do echo \"=== $f ===\" && node packages/core/dist/__tests__/$f.test.js 2>&1 | grep -E \"fail|Error|stale|actual\" | head -5; done)",
+      "Bash(cd D:/makefun/do-what/do-what-new && for f in hot-state-bootstrap native-surface-report topology-validator baseline-lock focus-surface; do echo \"=== $f ===\" && node packages/core/dist/__tests__/$f.test.js 2>&1 | grep -E \"^ℹ \\(fail|pass\\)\" | head -3; done)",
+      "Bash(cd D:/makefun/do-what/do-what-new && for f in migration approval-machine engine-machine policy-engine dag-builder fast-gate integrator event-bus database-worker sync-async-split ui-api; do echo -n \"$f: \" && node packages/core/dist/__tests__/$f.test.js 2>&1 | grep \"^ℹ fail\"; done)"
     ]
   }
 }
