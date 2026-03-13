@@ -51,6 +51,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+function readErrorCode(value: unknown, fallback = 'core_error'): string {
+  return typeof value === 'string' && value.length > 0 ? value : fallback;
+}
+
+function readErrorDetails(value: unknown): Record<string, unknown> | undefined {
+  return isRecord(value) ? value : undefined;
+}
+
 function asIsoDate(value: unknown, fallback: string): string {
   return typeof value === 'string' && !Number.isNaN(Date.parse(value)) ? value : fallback;
 }
@@ -245,20 +253,48 @@ export function normalizeCoreError(
   input: unknown,
   fallbackMessage = 'Unknown Core error',
 ): CoreError {
+  if (isRecord(input) && isRecord(input.coreError)) {
+    return CoreErrorSchema.parse({
+      code: readErrorCode(input.coreError.code, readErrorCode(input.code)),
+      details: readErrorDetails(input.coreError.details) ?? readErrorDetails(input.details),
+      message:
+        typeof input.coreError.message === 'string'
+          ? input.coreError.message
+          : typeof input.message === 'string'
+            ? input.message
+            : fallbackMessage,
+    });
+  }
+
   if (isRecord(input) && typeof input.error === 'string') {
     return CoreErrorSchema.parse({
-      code: typeof input.code === 'string' ? input.code : 'core_error',
-      details: isRecord(input.details) ? input.details : undefined,
+      code: readErrorCode(input.code),
+      details: readErrorDetails(input.details),
       message: input.error,
     });
   }
 
   if (isRecord(input) && isRecord(input.error)) {
     return CoreErrorSchema.parse({
-      code: typeof input.error.code === 'string' ? input.error.code : 'core_error',
-      details: isRecord(input.error.details) ? input.error.details : undefined,
+      code: readErrorCode(input.error.code),
+      details: readErrorDetails(input.error.details),
       message:
         typeof input.error.message === 'string' ? input.error.message : fallbackMessage,
+    });
+  }
+
+  if (isRecord(input) && typeof input.message === 'string') {
+    return CoreErrorSchema.parse({
+      code: readErrorCode(input.code),
+      details: readErrorDetails(input.details),
+      message: input.message,
+    });
+  }
+
+  if (input instanceof Error && input.message.length > 0) {
+    return CoreErrorSchema.parse({
+      code: 'core_error',
+      message: input.message,
     });
   }
 

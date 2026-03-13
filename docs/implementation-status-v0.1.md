@@ -29,12 +29,11 @@
 - Electron 壳、路由、sidebar、timeline、inspector、settings 都已存在。
 - create-run modal、message composer、approval UI、overlay UI 已存在。
 - UI 不是纯静态脚手架。
-- 但默认 transport 是 `mock`，不是默认直连 Core。
+- UI 默认 transport 已切为 `http`；Core 不可达时展示离线屏，显式 `?transport=mock` / `VITE_CORE_TRANSPORT=mock` 才进入 mock。
 
 **已知缺口 / 限制**
 
-- Inspector 中的治理与 memory 修改入口并不等于后端已完整支持。
-- UI 的真实 Core 闭环需要显式启用 HTTP 模式。
+- Inspector 中的 `memory pin/edit/supersede`、`drift resolution`、`integration gate decision` 当前保留可见入口，但在 UI 中已 disabled，等待 v0.2 接通真实写路径。
 
 **是否可视为 v0.1 完成**
 
@@ -194,7 +193,7 @@
 
 **已知缺口 / 限制**
 
-- `SettingsStore` 不在 SQLite 中持久化。
+- `SettingsStore` 是进程内内存快照，不持久化到 SQLite。重启后所有 settings 恢复默认值。UI 已在 Settings 页面顶部标注此限制，持久化支持计划在 v0.2。
 
 **是否可视为 v0.1 完成**
 
@@ -260,8 +259,9 @@
 
 **已知缺口 / 限制**
 
-- 当前 Core 启动流程未见直接拉起这些适配器。
-- 因此“创建 run 后默认启动真实引擎执行”不能当作现状。
+- Core 启动后不会自动拉起 Claude/Codex 适配器；适配器需要人工外部启动。
+- `create-run` 会创建 RunMachine，但在无引擎事件输入时只会停留在 waiting / idle，不会自动产生执行进展。
+- 当前 UI 已有 timeline / inspector 空态，C005 的人工验收仍需确认无 `console.error`。
 
 **是否可视为 v0.1 完成**
 
@@ -328,7 +328,7 @@
 **已知缺口 / 限制**
 
 - 无统一一键开发脚本。
-- 默认 UI transport 为 mock，直连真实 Core 需要显式环境配置。
+- UI 默认 transport 为 `http`，真实启动路径使用 `pnpm dev:core` + `pnpm dev:app`；mock 仅在显式配置时开启。
 - `toolchain` 包目前基本为空。
 - 本次盘点未发现统一 ESLint / Prettier 配置。
 
@@ -388,15 +388,15 @@
 **当前判断**
 
 - archive 文档很多，但它们主要是历史方案和任务卡。
-- 旧 README 更接近愿景描述，容易把规划写成现状。
+- README 已回填真实启动路径、已知限制与引擎接入边界。
 
 **已知缺口 / 限制**
 
-- 缺少集中描述当前代码落地状态的 as-built 文档。
+- archive 文档仍然很多，首次阅读时仍需区分历史设计与当前实现。
 
 **是否可视为 v0.1 完成**
 
-- 在本次文档回填前，不可视为完成。
+- 可以视为基础文档已对齐当前实现，但首次阅读仍需区分 archive 中的历史计划。
 
 ## 13. archive 中提过但当前未见完整运行时落点的能力
 
@@ -409,4 +409,4 @@
 | memory pin/edit/supersede 的完整 UI -> Core -> Soul 可写闭环 | `未实现` | 当前 Core 明确返回 unsupported failure ack |
 | drift resolution 的完整可写闭环 | `未实现` | 当前 Core 明确返回 unsupported failure ack |
 | integration gate decision 的完整可写闭环 | `未实现` | 当前 Core 明确返回 unsupported failure ack |
-| 持久化 settings 配置中心 | `未实现` | 当前 `SettingsStore` 为进程内内存快照 |
+| 持久化 settings 配置中心 | `未实现` | 当前 `SettingsStore` 为进程内内存快照，重启后恢复默认值 |

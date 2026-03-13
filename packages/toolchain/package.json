@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit"
   }
 }

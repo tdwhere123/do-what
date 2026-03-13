@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ApprovalProbeSchema,
   CreateRunRequestSchema,
+  CreateWorkspaceRequestSchema,
   CoreCommandAckSchema,
   CoreProbeResultSchema,
   CoreSseEnvelopeSchema,
@@ -91,6 +92,13 @@ describe('ui contract schemas', () => {
         workspaceId: 'ws-1',
       }).workspaceId,
     ).toBe('ws-1');
+
+    expect(
+      CreateWorkspaceRequestSchema.parse({
+        clientCommandId: 'cmd-workspace-1',
+        name: 'Primary Workspace',
+      }).name,
+    ).toBe('Primary Workspace');
 
     expect(
       SettingsPatchRequestSchema.parse({

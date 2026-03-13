@@ -310,6 +310,28 @@ async function waitForWorkbenchSnapshot(
   throw new Error('workbench snapshot predicate not satisfied');
 }
 
+async function waitForWorkspaceIdByName(
+  baseUrl: string,
+  token: string,
+  workspaceName: string,
+): Promise<string> {
+  const snapshot = await waitForWorkbenchSnapshot(baseUrl, token, (body) => {
+    const workspaces = body.workspaces;
+    return Array.isArray(workspaces)
+      && workspaces.some(
+        (workspace) =>
+          workspace
+          && typeof workspace === 'object'
+          && (workspace as Record<string, unknown>).name === workspaceName,
+      );
+  });
+  const workspace = (snapshot.workspaces as Array<Record<string, unknown>>).find(
+    (entry) => entry.name === workspaceName,
+  );
+  assert.ok(workspace);
+  return String(workspace.workspaceId);
+}
+
 async function waitForSseEnvelope(
   baseUrl: string,
   token: string,
@@ -587,10 +609,92 @@ describe('UI API routes', () => {
     assert.equal(memoryBody.data.claimSummary, 'Auth claim summary');
   });
 
+  it('requires creating a workspace before creating a run and exposes empty snapshots honestly', async () => {
+    const { baseUrl, token } = await startTestServer(true);
+
+    const initialSnapshotResponse = await fetch(`${baseUrl}/api/workbench/snapshot`, {
+      headers: authHeaders(token),
+    });
+    assert.equal(initialSnapshotResponse.status, 200);
+    const initialSnapshotBody = (await initialSnapshotResponse.json()) as ApiEnvelope<
+      Record<string, unknown>
+    >;
+    assert.equal(initialSnapshotBody.ok, true);
+    assert.deepEqual(initialSnapshotBody.data.workspaces, []);
+
+    const missingWorkspaceRunResponse = await fetch(`${baseUrl}/api/runs`, {
+      body: JSON.stringify({
+        clientCommandId: 'cmd-missing-workspace',
+        participants: ['claude'],
+        templateId: 'default',
+        templateInputs: {
+          prompt: 'Run without workspace',
+        },
+        workspaceId: 'ws-missing',
+      }),
+      headers: authHeaders(token, true),
+      method: 'POST',
+    });
+    assert.equal(missingWorkspaceRunResponse.status, 404);
+    const missingWorkspaceRunBody = (await missingWorkspaceRunResponse.json()) as Record<
+      string,
+      unknown
+    >;
+    assert.equal(
+      ((missingWorkspaceRunBody.error as Record<string, unknown>).code),
+      'workspace_not_found',
+    );
+
+    const workspaceResponse = await fetch(`${baseUrl}/api/workspaces`, {
+      body: JSON.stringify({
+        clientCommandId: 'cmd-create-workspace',
+        name: 'Primary Workspace',
+      }),
+      headers: authHeaders(token, true),
+      method: 'POST',
+    });
+    assert.equal(workspaceResponse.status, 202);
+
+    const workspaceId = await waitForWorkspaceIdByName(
+      baseUrl,
+      token,
+      'Primary Workspace',
+    );
+    assert.match(workspaceId, /^workspace-/);
+
+    const snapshot = await waitForWorkbenchSnapshot(baseUrl, token, (body) => {
+      const workspaces = body.workspaces;
+      return Array.isArray(workspaces)
+        && workspaces.some(
+          (workspace) =>
+            workspace
+            && typeof workspace === 'object'
+            && (workspace as Record<string, unknown>).workspaceId === workspaceId
+            && Array.isArray((workspace as Record<string, unknown>).runIds)
+            && ((workspace as Record<string, unknown>).runIds as unknown[]).length === 0,
+        );
+    });
+    const workspace = (snapshot.workspaces as Array<Record<string, unknown>>).find(
+      (entry) => entry.workspaceId === workspaceId,
+    );
+    assert.equal(workspace?.name, 'Primary Workspace');
+  });
+
   it('supports formal command routes and emits SSE envelopes with causedBy metadata', async () => {
-    const { baseUrl, server, stateDir, token } = await startTestServer(true);
+    const { baseUrl, server, token } = await startTestServer(true);
     const createCommandId = 'cmd-create-ui';
     let createAckId = '';
+    const workspaceName = 'Command Workspace';
+    const workspaceResponse = await fetch(`${baseUrl}/api/workspaces`, {
+      body: JSON.stringify({
+        clientCommandId: 'cmd-workspace-ui',
+        name: workspaceName,
+      }),
+      headers: authHeaders(token, true),
+      method: 'POST',
+    });
+    assert.equal(workspaceResponse.status, 202);
+    const workspaceId = await waitForWorkspaceIdByName(baseUrl, token, workspaceName);
 
     const createEnvelope = await waitForSseEnvelope(
       baseUrl,
@@ -610,7 +714,7 @@ describe('UI API routes', () => {
             templateInputs: {
               prompt: 'Create a UI API run',
             },
-            workspaceId: 'ws-command',
+            workspaceId,
           }),
           headers: authHeaders(token, true),
           method: 'POST',
@@ -638,11 +742,11 @@ describe('UI API routes', () => {
           (run) =>
             run
             && typeof run === 'object'
-            && (run as Record<string, unknown>).workspaceId === 'ws-command',
+            && (run as Record<string, unknown>).workspaceId === workspaceId,
         );
     });
     const commandRun = (snapshot.runs as Array<Record<string, unknown>>).find(
-      (run) => run.workspaceId === 'ws-command',
+      (run) => run.workspaceId === workspaceId,
     );
     assert.ok(commandRun);
     const runId = String(commandRun.runId);

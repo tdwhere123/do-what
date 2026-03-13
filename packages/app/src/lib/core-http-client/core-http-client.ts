@@ -1,11 +1,11 @@
-import type { CoreError } from '@do-what/protocol';
+﻿import type { CoreError } from '@do-what/protocol';
 import { normalizeCoreError } from '../contracts';
 import { createCoreAuthHeaders } from '../auth/core-auth';
 
 export interface CoreHttpClientOptions {
   readonly baseUrl: string;
   readonly fetchImpl?: typeof fetch;
-  readonly sessionToken?: string | null;
+  readonly sessionToken?: string | null | (() => string | null);
 }
 
 export class CoreHttpError extends Error {
@@ -59,12 +59,18 @@ export function buildCoreUrl(baseUrl: string, path: string): string {
 export function createCoreHttpClient(options: CoreHttpClientOptions) {
   const fetchImpl = options.fetchImpl ?? fetch;
 
+  function readSessionToken(): string | null | undefined {
+    return typeof options.sessionToken === 'function'
+      ? options.sessionToken()
+      : options.sessionToken;
+  }
+
   async function request(
     path: string,
     init: RequestInit = {},
   ): Promise<unknown> {
     const headers = new Headers(init.headers ?? {});
-    const authHeaders = createCoreAuthHeaders(options.sessionToken);
+    const authHeaders = createCoreAuthHeaders(readSessionToken());
     if (authHeaders) {
       new Headers(authHeaders).forEach((value, key) => headers.set(key, value));
     }

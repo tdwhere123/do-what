@@ -1,4 +1,4 @@
-// @vitest-environment node
+﻿// @vitest-environment node
 
 import { execFile } from 'node:child_process';
 import fs from 'node:fs';
@@ -390,6 +390,7 @@ function createHttpServices(
   return createAppServices({
     baseUrl,
     mockScenario: 'active',
+    readFreshSessionToken: null,
     reconnectDelayMs,
     sessionToken: token,
     transportMode: 'http',
@@ -815,3 +816,6 @@ describe('real-core integration', () => {
     15_000,
   );
 });
+
+
+

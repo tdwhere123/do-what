@@ -53,6 +53,11 @@ export interface HotStateSnapshot {
 }
 
 interface HotStateActions {
+  applyBootstrapDiagnostics: (input: {
+    connectionState: CoreConnectionState;
+    error: CoreError | null;
+    health: WorkbenchHealthSnapshot;
+  }) => void;
   applyConnectionState: (connectionState: CoreConnectionState) => void;
   applyCoreError: (error: CoreError) => void;
   applyNormalizedEvent: (event: NormalizedCoreEvent) => void;
@@ -334,6 +339,18 @@ function removeResolvedApproval(
 
 export const useHotStateStore = create<HotStateStore>((set, get) => ({
   ...createInitialState(),
+
+  applyBootstrapDiagnostics: (input) => {
+    set({
+      connectionState: input.connectionState,
+      globalInteractionLock: computeGlobalInteractionLock(
+        input.connectionState,
+        input.health,
+      ),
+      health: input.health,
+      lastError: input.error,
+    });
+  },
 
   applyConnectionState: (connectionState) => {
     const health = get().health;

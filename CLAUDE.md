@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目状态
 
-**当前阶段：v0.1-UI（Electron + React UI 工程，进行中）。**
+**当前阶段：v0.1（UI 全量完成，封版收口中）。**
 
 规划文档：
 - `docs/archive/v0.1/do-what-proposal-v0.1.md` — v0.1 完整方案（归档）
@@ -26,11 +26,11 @@ v0.1-UI 阶段进度（`packages/app`）：
 
 | 分组 | Tickets | 主题 | 状态 |
 |------|---------|------|------|
-| Foundation | T001A–T007 | scaffold / contract / mock / token / client | T001A 已完成，余待实现 |
-| State Stores | T008–T012 | hot-state / projection / pending / ack / ui-store | 待开始 |
-| Workbench / UI | T013–T029 | Workbench Shell / Timeline / Approval / Inspector / Soul / Settings | 待开始 |
+| Foundation | T001A–T007 | scaffold / contract / mock / token / client | 已完成 |
+| State Stores | T008–T012 | hot-state / projection / pending / ack / ui-store | 已完成 |
+| Workbench / UI | T013–T029 | Workbench Shell / Timeline / Approval / Inspector / Soul / Settings | 已完成 |
 | Core API 对齐 | T030–T032 | snapshot / command / SSE envelope | 已完成 |
-| 验收 / 清理 | T033–T034 | 集成测试 / 视觉对照 | T033–T034 均已完成 |
+| 验收 / 清理 | T033–T034 | 集成测试 / 视觉对照 | 已完成 |
 
 **UI 实现必须先读：**
 - `docs/archive/v0.1-UI/frontend_backend_contract_v0.1.md`（接口、事件流、状态来源）

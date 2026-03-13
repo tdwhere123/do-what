@@ -259,6 +259,13 @@ export const CreateRunRequestSchema = z
   })
   .passthrough();
 
+export const CreateWorkspaceRequestSchema = z
+  .object({
+    clientCommandId: z.string(),
+    name: z.string().trim().min(1).max(120),
+  })
+  .passthrough();
+
 export const RunMessageRequestSchema = z
   .object({
     body: z.string().min(1),
@@ -418,6 +425,7 @@ export type CoreProbeResult = z.infer<typeof CoreProbeResultSchema>;
 export type CoreSseCause = z.infer<typeof CoreSseCauseSchema>;
 export type CoreSseEnvelope = z.infer<typeof CoreSseEnvelopeSchema>;
 export type CreateRunRequest = z.infer<typeof CreateRunRequestSchema>;
+export type CreateWorkspaceRequest = z.infer<typeof CreateWorkspaceRequestSchema>;
 export type DriftResolutionRequest = z.infer<typeof DriftResolutionRequestSchema>;
 export type IntegrationGateDecisionRequest = z.infer<
   typeof IntegrationGateDecisionRequestSchema

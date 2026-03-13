@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>do-what · Active Run</title>
+<link rel="stylesheet" href="./styles.css">
+<style>
+body {
+  padding: 24px;
+  background: #D6D0C6;
+  min-height: 100vh;
+}
+.window-chrome {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10);
+}
+.window-chrome .app-frame { height: 740px; }
+</style>
+</head>
+<body>
+
+<div class="window-chrome">
+<div class="app-frame">
+
+  <header class="topbar">
+    <span class="topbar-logo">do-what</span>
+    <div class="topbar-spacer"></div>
+  </header>
+
+  <div class="main">
+
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="label-caps">工作区</span>
+        <button class="icon-btn" title="添加工作区" type="button">+</button>
+      </div>
+
+      <div class="ws-list">
+        <div class="ws-item">
+          <div class="ws-label">
+            <span class="ws-chevron">▼</span>
+            <span class="ws-name">/do-what-new</span>
+          </div>
+          <div class="run-list">
+            <div class="run-item active">
+              <span class="run-dot running"></span>
+              重构 UI token
+            </div>
+            <div class="run-item">
+              <span class="run-dot success"></span>
+              修复构建流水线
+            </div>
+            <div class="run-item">
+              <span class="run-dot idle"></span>
+              添加 MCP 配置界面
+            </div>
+            <button class="run-new-btn" type="button" data-open-new-run>
+              <img src="svg/organic/shape/wave/Elements-organic-shape-wave-curly.svg" alt="">
+              新建 Run
+            </button>
+          </div>
+        </div>
+
+        <div class="ws-item">
+          <div class="ws-label">
+            <span class="ws-chevron">▶</span>
+            <span class="ws-name">/project-alpha</span>
+          </div>
+        </div>
+
+        <div class="ws-item">
+          <div class="ws-label">
+            <span class="ws-chevron">▶</span>
+            <span class="ws-name">/notes-api</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="status-cluster">
+        <div class="status-row">
+          <div class="status-row-icon">
+            <img src="svg/organic/shape/flash/Elements-organic-shape-flash.svg" alt="">
+          </div>
+          <span class="status-row-label">Engine</span>
+          <span class="status-row-value running">运行中</span>
+        </div>
+        <div class="status-row">
+          <div class="status-row-icon">
+            <img src="svg/organic/shape/spiral/Elements-organic-shape-spiral.svg" alt="">
+          </div>
+          <span class="status-row-label">Core</span>
+          <span class="status-row-value ok">正常</span>
+        </div>
+        <div class="status-row">
+          <div class="status-row-icon">
+            <img src="svg/organic/shape/flower/Elements-organic-shape-flower-nature-cute.svg" alt="">
+          </div>
+          <span class="status-row-label">Soul</span>
+          <span class="status-row-value active">活跃</span>
+        </div>
+        <a class="status-settings-link" href="./preview-settings.html">
+          <span class="status-settings-icon">
+            <img src="svg/organic/shape/spiral/Elements-organic-shape-spiral.svg" alt="">
+          </span>
+          <span class="status-settings-label">设置</span>
+        </a>
+      </div>
+    </aside>
+
+    <div class="timeline">
+      <div class="timeline-body">
+        <div class="feed">
+
+          <div class="msg-block">
+            <div class="flow-soul">
+              <button class="soul-inline-trigger shared" type="button" title="Soul" onclick="toggleSoulPopover(this)">
+                <img src="svg/organic/shape/leaves/Elements-organic-shape-leaves-nature-twig.svg" alt="">
+              </button>
+              <div class="soul-popover">
+                <div class="soul-popover-group">
+                  <div class="soul-popover-group-title">共享</div>
+                  <div class="soul-memory-item">
+                    <div class="soul-memory-row">
+                      <div class="soul-memory-title">暖色层级基线</div>
+                      <span class="soul-memory-level excerpt">excerpt</span>
+                    </div>
+                    <div class="soul-memory-actions">
+                      <button class="soul-action-btn promote" type="button">本次提升</button>
+                      <button class="soul-action-btn ignore" type="button">忽略</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="soul-popover-group">
+                  <div class="soul-popover-group-title">Claude Code</div>
+                  <div class="soul-memory-item">
+                    <div class="soul-memory-row">
+                      <div class="soul-memory-title">语义 token 命名习惯</div>
+                      <span class="soul-memory-level">hint</span>
+                    </div>
+                    <div class="soul-memory-actions">
+                      <button class="soul-action-btn promote" type="button">本次提升</button>
+                      <button class="soul-action-btn ignore" type="button">忽略</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="msg-header">
+              <div class="msg-avatar user">
+                <img src="svg/organic/shape/face/Elements-organic-shape-face.svg" alt="">
+              </div>
+              <span class="msg-author">你</span>
+              <span class="msg-time">14:22</span>
+            </div>
+            <div class="msg-body">
+              重构 <code style="font-family:var(--font-mono);font-size:12px;background:rgba(0,0,0,0.06);padding:1px 4px;border-radius:3px;">styles/tokens.css</code>
+              中的 token 系统，将硬编码灰色值迁到语义命名，并和暖色调规范对齐。
+            </div>
+          </div>
+
+          <div class="msg-block">
+            <div class="flow-soul">
+              <button class="soul-inline-trigger claude" type="button" title="Soul" onclick="toggleSoulPopover(this)">
+                <img src="svg/organic/shape/leaves/Elements-organic-shape-leaves-nature-2.svg" alt="">
+              </button>
+              <div class="soul-popover">
+                <div class="soul-popover-group">
+                  <div class="soul-popover-group-title">共享</div>
+                  <div class="soul-memory-item">
+                    <div class="soul-memory-row">
+                      <div class="soul-memory-title">UI 配色主层次</div>
+                      <span class="soul-memory-level excerpt">excerpt</span>
+                    </div>
+                    <div class="soul-memory-actions">
+                      <button class="soul-action-btn promote" type="button">本次提升</button>
+                      <button class="soul-action-btn ignore" type="button">忽略</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="soul-popover-group">
+                  <div class="soul-popover-group-title">Claude Code</div>
+                  <div class="soul-memory-item">
+                    <div class="soul-memory-row">
+                      <div class="soul-memory-title">token 文件拆分顺序</div>
+                      <span class="soul-memory-level">hint</span>
+                    </div>
+                    <div class="soul-memory-actions">
+                      <button class="soul-action-btn promote" type="button">本次提升</button>
+                      <button class="soul-action-btn ignore" type="button">忽略</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="soul-popover-group">
+                  <div class="soul-popover-group-title">Codex</div>
+                  <div class="soul-memory-item">
+                    <div class="soul-memory-row">
+                      <div class="soul-memory-title">类型引用边界</div>
+                      <span class="soul-memory-level">hint</span>
+                    </div>
+                    <div class="soul-memory-actions">
+                      <button class="soul-action-btn promote" type="button">本次提升</button>
+                      <button class="soul-action-btn ignore" type="button">忽略</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="msg-header">
+              <div class="msg-avatar engine">
+                <img src="svg/organic/shape/smile/Elements-organic-shape-smile-eye.svg" alt="">
+              </div>
+              <span class="msg-author">claude code</span>
+              <span class="msg-engine-tag">claude-sonnet-4-6</span>
+              <span class="msg-time">14:22</span>
+            </div>
+            <div class="msg-body">
+              <p>先读取当前 token 文件，确认灰度值分布，再把直接写死的颜色收口到语义层。</p>
+              <div class="code-block"><span class="cmt">// tokens.css — before</span>
+<span class="kw">--gray-100</span><span class="punc">: </span><span class="str">#f3f4f6</span><span class="punc">;</span>
+<span class="kw">--gray-500</span><span class="punc">: </span><span class="str">#6b7280</span><span class="punc">;</span>
+<span class="kw">--indigo-600</span><span class="punc">: </span><span class="str">#4f46e5</span><span class="punc">;</span></div>
+            </div>
+          </div>
+
+          <div class="tool-card running">
+            <div class="tool-card-header">
+              <span class="tool-name">tools.file_read</span>
+              <span class="tool-status running">运行中</span>
+            </div>
+            <div class="tool-detail">packages/app/src/app/styles/tokens.css</div>
+          </div>
+
+          <div class="tool-card success">
+            <div class="flow-soul">
+              <button class="soul-inline-trigger codex" type="button" title="Soul" onclick="toggleSoulPopover(this)">
+                <img src="svg/organic/shape/flower/Elements-organic-shape-flower-nature-cute.svg" alt="">
+              </button>
+              <div class="soul-popover">
+                <div class="soul-popover-group">
+                  <div class="soul-popover-group-title">共享</div>
+                  <div class="soul-memory-item">
+                    <div class="soul-memory-row">
+                      <div class="soul-memory-title">暖白底层命名方案</div>
+                      <span class="soul-memory-level full">full</span>
+                    </div>
+                    <div class="soul-memory-actions">
+                      <button class="soul-action-btn promote" type="button">本次提升</button>
+                      <button class="soul-action-btn ignore" type="button">忽略</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="soul-popover-group">
+                  <div class="soul-popover-group-title">Claude Code</div>
+                  <div class="soul-memory-item">
+                    <div class="soul-memory-row">
+                      <div class="soul-memory-title">现有 token 别名映射</div>
+                      <span class="soul-memory-level excerpt">excerpt</span>
+                    </div>
+                    <div class="soul-memory-actions">
+                      <button class="soul-action-btn promote" type="button">本次提升</button>
+                      <button class="soul-action-btn ignore" type="button">忽略</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="soul-popover-group">
+                  <div class="soul-popover-group-title">Codex</div>
+                  <div class="soul-memory-item">
+                    <div class="soul-memory-row">
+                      <div class="soul-memory-title">类型检查前置约束</div>
+                      <span class="soul-memory-level">hint</span>
+                    </div>
+                    <div class="soul-memory-actions">
+                      <button class="soul-action-btn promote" type="button">本次提升</button>
+                      <button class="soul-action-btn ignore" type="button">忽略</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="tool-card-header">
+              <span class="tool-name">tools.file_write</span>
+              <span class="tool-status success">完成</span>
+            </div>
+            <div class="tool-detail">packages/app/src/app/styles/tokens.css · 47 行已修改</div>
+          </div>
+
+          <div class="msg-block">
+            <div class="msg-header">
+              <div class="msg-avatar engine">
+                <img src="svg/organic/shape/smile/Elements-organic-shape-smile-eye.svg" alt="">
+              </div>
+              <span class="msg-author">codex</span>
+              <span class="msg-engine-tag">gpt-5-codex</span>
+              <span class="msg-time">14:24</span>
+            </div>
+            <div class="msg-body">
+              我会接着核对引用点，确认 button 和入口样式没有继续引用旧灰度 token，再跑一轮类型检查。
+            </div>
+          </div>
+
+          <div class="result-card">
+            <div class="flow-soul">
+              <button class="soul-inline-trigger codex" type="button" title="Soul" onclick="toggleSoulPopover(this)">
+                <img src="svg/organic/shape/flower/Elements-organic-shape-flower-nature-cute.svg" alt="">
+              </button>
+              <div class="soul-popover">
+                <div class="soul-popover-group">
+                  <div class="soul-popover-group-title">共享</div>
+                  <div class="soul-memory-item">
+                    <div class="soul-memory-row">
+                      <div class="soul-memory-title">暖色 design system 基准</div>
+                      <span class="soul-memory-level full">full</span>
+                    </div>
+                    <div class="soul-memory-actions">
+                      <button class="soul-action-btn promote" type="button">本次提升</button>
+                      <button class="soul-action-btn ignore" type="button">忽略</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="soul-popover-group">
+                  <div class="soul-popover-group-title">Claude Code</div>
+                  <div class="soul-memory-item">
+                    <div class="soul-memory-row">
+                      <div class="soul-memory-title">替换优先级顺序</div>
+                      <span class="soul-memory-level">hint</span>
+                    </div>
+                    <div class="soul-memory-actions">
+                      <button class="soul-action-btn promote" type="button">本次提升</button>
+                      <button class="soul-action-btn ignore" type="button">忽略</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="soul-popover-group">
+                  <div class="soul-popover-group-title">Codex</div>
+                  <div class="soul-memory-item">
+                    <div class="soul-memory-row">
+                      <div class="soul-memory-title">按钮引用残留检查</div>
+                      <span class="soul-memory-level excerpt">excerpt</span>
+                    </div>
+                    <div class="soul-memory-actions">
+                      <button class="soul-action-btn promote" type="button">本次提升</button>
+                      <button class="soul-action-btn ignore" type="button">忽略</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="result-card-header">
+              <span class="result-label">结果</span>
+              <span class="result-title">token 收口已完成，剩余校验在继续</span>
+            </div>
+            <ul class="result-list">
+              <li>12 处硬编码灰色值已替换为语义 token。</li>
+              <li>accent 与背景层次已对齐暖白主界面规范。</li>
+              <li>下一步只补 button 引用和类型检查，不再扩展主题。</li>
+            </ul>
+          </div>
+
+          <div style="height:8px;"></div>
+        </div>
+      </div>
+
+      <div class="input-area">
+        <div class="approval-overlay" id="approvalOverlay">
+          <div class="approval-header">⚠ Claude Code 请求执行操作：shell_exec</div>
+          <div class="approval-options">
+            <div class="approval-option active">
+              <span class="approval-cursor">❯</span> 允许一次 (Run once)
+            </div>
+            <div class="approval-option">
+              <span class="approval-cursor" style="visibility:hidden">❯</span> 本次会话始终允许 (Allow in session)
+            </div>
+            <div class="approval-option">
+              <span class="approval-cursor" style="visibility:hidden">❯</span> 拒绝 (Reject)
+            </div>
+          </div>
+        </div>
+
+        <div class="input-box">
+          <textarea rows="1" name="run-message" placeholder="继续补充当前 Run 的要求…"></textarea>
+          <button class="send-btn" title="发送" type="button">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M1 6L11 6M6 1L11 6L6 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-panel">
+      <div class="collapsible-block" id="block-files">
+        <div class="collapsible-header" onclick="toggleBlock('block-files')">
+          <span class="collapsible-chevron">▼</span>
+          <span class="collapsible-title">已修改文件</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="diff-item">
+            <div class="diff-row">
+              <span class="diff-state mod">M</span>
+              <div class="diff-filename">styles/tokens.css</div>
+              <div class="diff-stats">
+                <span class="diff-add">+47</span>
+                <span class="diff-del">−12</span>
+              </div>
+            </div>
+          </div>
+          <div class="diff-item">
+            <div class="diff-row">
+              <span class="diff-state ren">R</span>
+              <div class="diff-filename">components/button.tsx → button-base.tsx</div>
+              <div class="diff-stats">
+                <span class="diff-add">+8</span>
+                <span class="diff-del">−8</span>
+              </div>
+            </div>
+          </div>
+          <div class="diff-item">
+            <div class="diff-row">
+              <span class="diff-state add">A</span>
+              <div class="diff-filename">app/theme/warm-surface.css</div>
+              <div class="diff-stats">
+                <span class="diff-add">+19</span>
+                <span class="diff-del">−0</span>
+              </div>
+            </div>
+          </div>
+          <div class="diff-item">
+            <div class="diff-row">
+              <span class="diff-state del">D</span>
+              <div class="diff-filename">styles/legacy-gray.css</div>
+              <div class="diff-stats">
+                <span class="diff-add">+0</span>
+                <span class="diff-del">−21</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="collapsible-block" id="block-plan">
+        <div class="collapsible-header" onclick="toggleBlock('block-plan')">
+          <span class="collapsible-chevron">▼</span>
+          <span class="collapsible-title">计划</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="check-item done">
+            <div class="check-box checked">✓</div>
+            读取 tokens.css
+          </div>
+          <div class="check-item done">
+            <div class="check-box checked">✓</div>
+            映射灰色到语义命名
+          </div>
+          <div class="check-item done">
+            <div class="check-box checked">✓</div>
+            写入更新后的 token
+          </div>
+          <div class="check-item">
+            <div class="check-box"></div>
+            校对 button 引用
+          </div>
+          <div class="check-item">
+            <div class="check-box"></div>
+            跑类型检查
+          </div>
+        </div>
+      </div>
+
+      <div class="collapsible-block" id="block-git">
+        <div class="collapsible-header" onclick="toggleBlock('block-git')">
+          <span class="collapsible-chevron">▼</span>
+          <span class="collapsible-title">Git · 协作</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="view-toggle">
+            <button class="view-toggle-btn active" type="button" onclick="switchView('git-view', 'collab-view', this)">Git 树</button>
+            <button class="view-toggle-btn" type="button" onclick="switchView('collab-view', 'git-view', this)">协作</button>
+          </div>
+
+          <div id="git-view">
+            <div class="git-info">
+              <div style="font-size:11px;color:var(--text-secondary);margin-bottom:3px;">
+                分支：<code style="font-family:var(--font-mono);">feat/token-refactor</code>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);">4 个文件变更，待暂存 4，待提交 1</div>
+              <div class="git-hash" style="margin-top:5px;">HEAD: a4f2c91 · "chore: add v0.5 tokens"</div>
+            </div>
+            <div class="git-tree">
+              <div class="git-tree-row">
+                <span class="git-tree-fold">▼</span>
+                <span class="git-tree-name">packages/app/src</span>
+                <span class="git-tree-meta">4 changed</span>
+              </div>
+              <div class="git-tree-row git-tree-indent-1">
+                <span class="git-tree-fold">▼</span>
+                <span class="git-tree-name">styles</span>
+                <span class="git-tree-meta">2 files</span>
+              </div>
+              <div class="git-tree-row git-tree-indent-2">
+                <span class="diff-state mod">M</span>
+                <span class="git-tree-name">tokens.css</span>
+                <span class="git-tree-meta">+47 / −12</span>
+              </div>
+              <div class="git-tree-row git-tree-indent-2">
+                <span class="diff-state del">D</span>
+                <span class="git-tree-name">legacy-gray.css</span>
+                <span class="git-tree-meta">−21</span>
+              </div>
+              <div class="git-tree-row git-tree-indent-1">
+                <span class="git-tree-fold">▼</span>
+                <span class="git-tree-name">components</span>
+                <span class="git-tree-meta">1 rename</span>
+              </div>
+              <div class="git-tree-row git-tree-indent-2">
+                <span class="diff-state ren">R</span>
+                <span class="git-tree-name">button.tsx → button-base.tsx</span>
+                <span class="git-tree-meta">+8 / −8</span>
+              </div>
+              <div class="git-tree-row git-tree-indent-1">
+                <span class="diff-state add">A</span>
+                <span class="git-tree-name">theme/warm-surface.css</span>
+                <span class="git-tree-meta">+19</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="collab-view" style="display:none;">
+            <div class="collab-graph">
+              <div class="collab-node">
+                <div class="collab-node-icon">CC</div>
+                <div class="collab-node-main">
+                  <div class="collab-node-head">
+                    <div class="collab-node-name">Claude Code</div>
+                    <div class="collab-node-status running">运行中</div>
+                  </div>
+                  <div class="collab-node-role">主执行</div>
+                  <div class="collab-node-recent">最近动作：完成 token 替换并交出待校验改动。</div>
+                </div>
+              </div>
+              <div class="collab-node">
+                <div class="collab-node-icon waiting">CX</div>
+                <div class="collab-node-main">
+                  <div class="collab-node-head">
+                    <div class="collab-node-name">Codex</div>
+                    <div class="collab-node-status waiting">待接手</div>
+                  </div>
+                  <div class="collab-node-role">校验 / 收口</div>
+                  <div class="collab-node-recent">最近动作：等待 button 引用核对后执行类型检查。</div>
+                </div>
+              </div>
+              <div class="collab-node">
+                <div class="collab-node-icon idle">IN</div>
+                <div class="collab-node-main">
+                  <div class="collab-node-head">
+                    <div class="collab-node-name">Integrator</div>
+                    <div class="collab-node-status idle">待命</div>
+                  </div>
+                  <div class="collab-node-role">合入</div>
+                  <div class="collab-node-recent">最近动作：等待审批结果和校验通过后收口。</div>
+                </div>
+              </div>
+            </div>
+            <div class="collab-node-relation">当前交接：Claude Code → Codex；下一步：Codex → Integrator</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</div>
+
+<div class="modal-backdrop" id="newRunModal" aria-hidden="true">
+  <div class="new-run-modal" role="dialog" aria-modal="true" aria-labelledby="newRunTitle">
+    <div class="new-run-modal-header">
+      <div class="new-run-modal-title">
+        <div class="new-run-modal-icon">
+          <img src="svg/organic/shape/wave/Elements-organic-shape-wave-curly.svg" alt="">
+        </div>
+        <div>
+          <div class="new-run-modal-heading" id="newRunTitle">新建 Run</div>
+          <div class="new-run-modal-sub">发起一次轻量协作，不展开成后台配置页。</div>
+        </div>
+      </div>
+      <button class="modal-close" type="button" title="关闭" onclick="closeNewRunModal()">
+        <img src="svg/organic/shape/star/Elements-organic-shape-star.svg" alt="">
+      </button>
+    </div>
+    <div class="new-run-modal-body">
+      <label class="modal-field">
+        <span class="modal-label">这次要做什么</span>
+        <textarea class="modal-textarea" name="new-run-goal" placeholder="例如：继续收口 UI 样式，补齐 Active 页右栏的 Git 摘要。"></textarea>
+      </label>
+
+      <div class="modal-field">
+        <span class="modal-label">协作模式</span>
+        <div class="modal-mode-row">
+          <button class="modal-choice active" type="button" onclick="selectModeChoice(this)">
+            <div class="modal-mode-name">单引擎执行</div>
+            <div class="modal-mode-note">一个节点直接完成</div>
+          </button>
+          <button class="modal-choice" type="button" onclick="selectModeChoice(this)">
+            <div class="modal-mode-name">主从协作</div>
+            <div class="modal-mode-note">主执行加辅助校验</div>
+          </button>
+          <button class="modal-choice" type="button" onclick="selectModeChoice(this)">
+            <div class="modal-mode-name">分工协作</div>
+            <div class="modal-mode-note">按阶段拆给不同节点</div>
+          </button>
+          <button class="modal-choice" type="button" onclick="selectModeChoice(this)">
+            <div class="modal-mode-name">自主编排</div>
+            <div class="modal-mode-note">仅在需要时开启</div>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-field">
+        <span class="modal-label">参与节点</span>
+        <div class="modal-node-row">
+          <button class="modal-choice modal-node-card active" type="button" onclick="toggleNodeChoice(this)">
+            <span class="modal-node-icon">
+              <img src="svg/organic/shape/smile/Elements-organic-shape-smile-eye.svg" alt="">
+            </span>
+            <span class="modal-node-copy">
+              <span class="modal-node-name">Claude Code</span>
+              <span class="modal-node-role">主执行</span>
+            </span>
+          </button>
+          <button class="modal-choice modal-node-card" type="button" onclick="toggleNodeChoice(this)">
+            <span class="modal-node-icon">
+              <img src="svg/organic/shape/flash/Elements-organic-shape-flash.svg" alt="">
+            </span>
+            <span class="modal-node-copy">
+              <span class="modal-node-name">Codex</span>
+              <span class="modal-node-role">校验 / 收口</span>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-field">
+        <button class="modal-more-toggle" type="button" id="moreOptionsToggle" onclick="toggleMoreOptions()">
+          <span class="chevron">▶</span>
+          更多选项
+        </button>
+        <div class="modal-more-panel" id="moreOptionsPanel">
+          <div class="modal-more-row">
+            <span class="modal-more-icon">
+              <img src="svg/organic/shape/spiral/Elements-organic-shape-spiral.svg" alt="">
+            </span>
+            <span class="modal-more-copy">
+              <span class="modal-more-title">审批策略</span>
+              <span class="modal-more-value">标准审批</span>
+            </span>
+          </div>
+          <div class="modal-more-row">
+            <span class="modal-more-icon">
+              <img src="svg/organic/shape/flower/Elements-organic-shape-flower-nature-cute.svg" alt="">
+            </span>
+            <span class="modal-more-copy">
+              <span class="modal-more-title">Soul 策略</span>
+              <span class="modal-more-value">仅注入当前 Run 相关显影</span>
+            </span>
+          </div>
+          <div class="modal-more-row">
+            <span class="modal-more-icon">
+              <img src="svg/organic/shape/wave/Elements-organic-shape-wave-curly.svg" alt="">
+            </span>
+            <span class="modal-more-copy">
+              <span class="modal-more-title">自主编排</span>
+              <span class="modal-more-value">默认关闭，需要时再启用</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="new-run-modal-footer">
+      <button class="btn btn-secondary" type="button" onclick="closeNewRunModal()">取消</button>
+      <button class="btn btn-primary" type="button">开始 Run</button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('keydown', e => {
+  const overlay = document.getElementById('approvalOverlay');
+  if (['y', 'Y', 'a', 'A', 'n', 'N'].includes(e.key)) {
+    overlay.classList.toggle('hidden');
+  }
+  if (e.key === 'Escape') {
+    closeNewRunModal();
+    closeSoulPopovers();
+  }
+});
+
+function toggleBlock(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+}
+
+function switchView(showId, hideId, btn) {
+  document.getElementById(showId).style.display = 'block';
+  document.getElementById(hideId).style.display = 'none';
+  document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function closeSoulPopovers() {
+  document.querySelectorAll('.flow-soul').forEach(el => el.classList.remove('open'));
+}
+
+function toggleSoulPopover(button) {
+  const wrap = button.closest('.flow-soul');
+  const shouldOpen = !wrap.classList.contains('open');
+  closeSoulPopovers();
+  if (shouldOpen) {
+    wrap.classList.add('open');
+  }
+}
+
+function openNewRunModal() {
+  const modal = document.getElementById('newRunModal');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeNewRunModal() {
+  const modal = document.getElementById('newRunModal');
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+}
+
+function toggleMoreOptions() {
+  const toggle = document.getElementById('moreOptionsToggle');
+  const panel = document.getElementById('moreOptionsPanel');
+  toggle.classList.toggle('open');
+  panel.classList.toggle('open');
+}
+
+function selectModeChoice(button) {
+  button.closest('.modal-mode-row').querySelectorAll('.modal-choice').forEach(el => el.classList.remove('active'));
+  button.classList.add('active');
+}
+
+function toggleNodeChoice(button) {
+  const row = button.closest('.modal-node-row');
+  const active = row.querySelectorAll('.modal-choice.active');
+  if (button.classList.contains('active') && active.length === 1) {
+    return;
+  }
+  button.classList.toggle('active');
+}
+
+document.querySelectorAll('[data-open-new-run]').forEach(button => {
+  button.addEventListener('click', openNewRunModal);
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.flow-soul')) {
+    closeSoulPopovers();
+  }
+  if (e.target.id === 'newRunModal') {
+    closeNewRunModal();
+  }
+});
+</script>
+</body>
+</html>

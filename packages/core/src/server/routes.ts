@@ -2,6 +2,7 @@ import {
   AnyEventSchema,
   ApprovalDecisionRequestSchema,
   CreateRunRequestSchema,
+  CreateWorkspaceRequestSchema,
   DriftResolutionRequestSchema,
   IntegrationGateDecisionRequestSchema,
   MemoryEditRequestSchema,
@@ -257,6 +258,15 @@ export function registerRoutes(
     try {
       const body = parseBody(CreateRunRequestSchema, request.body);
       await sendData(reply, await options.commandService.createRun(body), 202);
+    } catch (error) {
+      await sendError(reply, error);
+    }
+  });
+
+  app.post('/api/workspaces', async (request, reply) => {
+    try {
+      const body = parseBody(CreateWorkspaceRequestSchema, request.body);
+      await sendData(reply, await options.commandService.createWorkspace(body), 202);
     } catch (error) {
       await sendError(reply, error);
     }

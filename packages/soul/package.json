@@ -12,7 +12,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "pnpm --filter @do-what/protocol build && pnpm run build && node dist/run-tests.js"
+    "test": "pnpm --filter @do-what/protocol build && pnpm run build && node dist/run-tests.js",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@do-what/protocol": "workspace:*",

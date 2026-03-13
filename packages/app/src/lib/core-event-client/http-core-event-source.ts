@@ -1,4 +1,4 @@
-import { createCoreAuthHeaders } from '../auth/core-auth';
+﻿import { createCoreAuthHeaders } from '../auth/core-auth';
 import { normalizeCoreError, normalizeCoreSseEnvelope } from '../contracts';
 import { buildCoreUrl } from '../core-http-client/core-http-client';
 import type { RuntimeCoreConfig } from '../runtime/runtime-config';
@@ -35,7 +35,9 @@ export class HttpCoreEventSource implements CoreEventSource {
 
         try {
           const response = await this.fetchImpl(buildCoreUrl(this.config.baseUrl, '/api/events/stream'), {
-            headers: createCoreAuthHeaders(this.config.sessionToken),
+            headers: createCoreAuthHeaders(
+              this.config.readFreshSessionToken?.() ?? this.config.sessionToken,
+            ),
             signal: activeAbortController.signal,
           });
 

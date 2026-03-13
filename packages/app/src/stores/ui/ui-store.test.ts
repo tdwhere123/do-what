@@ -1,4 +1,4 @@
-﻿import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { createEmptyCreateRunDraft, resetUiStore, useUiStore } from './ui-store';
 
 describe('ui store', () => {
@@ -57,9 +57,17 @@ describe('ui store', () => {
 
   it('tracks bootstrap state independently from route state', () => {
     useUiStore.getState().setBootstrapState('loading');
-    useUiStore.getState().setBootstrapState('error', 'snapshot failed');
+    useUiStore.getState().setBootstrapState('error', {
+      bootstrapError: 'snapshot failed',
+      failureCode: 'http_500',
+      failureStage: 'snapshot',
+      failureStatus: 500,
+    });
 
     expect(useUiStore.getState().bootstrapStatus).toBe('error');
     expect(useUiStore.getState().bootstrapError).toBe('snapshot failed');
+    expect(useUiStore.getState().bootstrapFailureCode).toBe('http_500');
+    expect(useUiStore.getState().bootstrapFailureStage).toBe('snapshot');
+    expect(useUiStore.getState().bootstrapFailureStatus).toBe(500);
   });
 });

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+﻿import { describe, expect, it, vi } from 'vitest';
 import { createCoreHttpClient, CoreHttpError, unwrapCoreResponse } from './core-http-client';
 
 describe('core http client', () => {
@@ -34,7 +34,35 @@ describe('core http client', () => {
     });
   });
 
-  it('keeps current ok payloads intact and rejects normalized error envelopes', async () => {
+  it('re-reads getter-based session tokens for each request', async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) =>
+      new Response(JSON.stringify({ ok: true }), {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        status: 200,
+      }),
+    );
+    const sessionToken = vi.fn(() => 'token-1' as string | null);
+    sessionToken.mockReturnValueOnce('token-1').mockReturnValueOnce('token-2');
+    const client = createCoreHttpClient({
+      baseUrl: 'http://127.0.0.1:3847',
+      fetchImpl: fetchMock as typeof fetch,
+      sessionToken,
+    });
+
+    await client.get('/state');
+    await client.get('/state');
+
+    const firstHeaders = new Headers(fetchMock.mock.calls[0]?.[1]?.headers);
+    const secondHeaders = new Headers(fetchMock.mock.calls[1]?.[1]?.headers);
+
+    expect(firstHeaders.get('Authorization')).toBe('Bearer token-1');
+    expect(secondHeaders.get('Authorization')).toBe('Bearer token-2');
+    expect(sessionToken).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps current ok payloads intact and rejects normalized error envelopes', () => {
     expect(
       unwrapCoreResponse({
         ackId: 'ack-1',

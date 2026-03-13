@@ -9,7 +9,8 @@
   "scripts": {
     "build": "tsc",
     "start-mcp": "pnpm run build && node ./dist/mcp-server.js",
-    "test": "pnpm --filter @do-what/protocol build && pnpm --filter @do-what/core build && pnpm run build && node ./dist/__tests__/run-tests.js"
+    "test": "pnpm --filter @do-what/protocol build && pnpm --filter @do-what/core build && pnpm run build && node ./dist/__tests__/run-tests.js",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@do-what/core": "workspace:*",

@@ -5,6 +5,7 @@ export type CoreTransportMode = 'http' | 'mock';
 export interface RuntimeCoreConfig {
   readonly baseUrl: string;
   readonly mockScenario: MockScenarioName;
+  readonly readFreshSessionToken: (() => string | null) | null;
   readonly reconnectDelayMs: number;
   readonly sessionToken: string | null;
   readonly transportMode: CoreTransportMode;
@@ -26,7 +27,7 @@ function readUrlSearchParam(key: string): string | undefined {
 }
 
 function readTransportMode(value: string | undefined): CoreTransportMode {
-  return value === 'http' ? 'http' : 'mock';
+  return value === 'mock' ? 'mock' : 'http';
 }
 
 function readMockScenario(value: string | undefined): MockScenarioName {
@@ -45,17 +46,49 @@ function readReconnectDelay(value: string | undefined): number {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_RECONNECT_DELAY_MS;
 }
 
+function readWindowOrigin(): string | undefined {
+  if (typeof window === 'undefined') {
+    return undefined;
+  }
+
+  try {
+    return window.location.origin;
+  } catch {
+    return undefined;
+  }
+}
+
+function readBaseUrl(
+  transportMode: CoreTransportMode,
+  urlBaseUrl: string | undefined,
+): string {
+  if (urlBaseUrl) {
+    return urlBaseUrl;
+  }
+
+  if (transportMode === 'http' && import.meta.env.DEV) {
+    const origin = readWindowOrigin();
+    if (origin) {
+      return origin;
+    }
+  }
+
+  return import.meta.env.VITE_CORE_BASE_URL ?? DEFAULT_BASE_URL;
+}
+
 export function getRuntimeCoreConfig(): RuntimeCoreConfig {
   const runtimeToken = window.doWhatRuntime?.coreSessionToken ?? null;
   const urlTransport = readUrlSearchParam('transport');
   const urlMockScenario = readUrlSearchParam('mockScenario');
   const urlBaseUrl = readUrlSearchParam('coreBaseUrl');
+  const transportMode = readTransportMode(urlTransport ?? import.meta.env.VITE_CORE_TRANSPORT);
 
   return {
-    baseUrl: urlBaseUrl ?? import.meta.env.VITE_CORE_BASE_URL ?? DEFAULT_BASE_URL,
+    baseUrl: readBaseUrl(transportMode, urlBaseUrl),
     mockScenario: readMockScenario(urlMockScenario ?? import.meta.env.VITE_CORE_MOCK_SCENARIO),
+    readFreshSessionToken: window.doWhatRuntime?.readFreshSessionToken ?? null,
     reconnectDelayMs: readReconnectDelay(import.meta.env.VITE_CORE_RECONNECT_DELAY_MS),
     sessionToken: import.meta.env.VITE_CORE_SESSION_TOKEN ?? runtimeToken,
-    transportMode: readTransportMode(urlTransport ?? import.meta.env.VITE_CORE_TRANSPORT),
+    transportMode,
   };
 }

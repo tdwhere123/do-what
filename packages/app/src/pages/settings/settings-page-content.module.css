@@ -83,6 +83,16 @@
   background: var(--bg);
 }
 
+.settingsBanner {
+  border: 1px solid rgba(201, 155, 74, 0.38);
+  border-radius: 10px;
+  background: var(--accent-amber-soft);
+  color: var(--text-secondary);
+  padding: 12px 14px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .settingsCard {
   border: 1px solid var(--border);
   border-radius: 10px;

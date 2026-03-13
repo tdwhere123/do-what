@@ -7,6 +7,7 @@ import {
   type CoreCommandAck,
   type CoreSseCause,
   type CreateRunRequest,
+  type CreateWorkspaceRequest,
   type DriftResolutionRequest,
   type IntegrationGateDecisionRequest,
   type MemoryEditRequest,
@@ -34,6 +35,10 @@ interface ApprovalRow {
   tool_name: string;
 }
 
+interface WorkspaceLookupRow {
+  workspace_id: string;
+}
+
 interface CommandAckState {
   ackId: string;
   causedBy: CoreSseCause;
@@ -57,7 +62,7 @@ ON CONFLICT(run_id) DO UPDATE SET
   metadata = COALESCE(excluded.metadata, metadata)
 `;
 
-const WORKSPACE_UPSERT_SQL = `
+const WORKSPACE_INSERT_SQL = `
 INSERT INTO workspaces (
   workspace_id,
   name,
@@ -66,11 +71,6 @@ INSERT INTO workspaces (
   created_at,
   last_opened_at
 ) VALUES (?, ?, ?, ?, ?, ?)
-ON CONFLICT(workspace_id) DO UPDATE SET
-  name = excluded.name,
-  root_path = excluded.root_path,
-  engine_type = excluded.engine_type,
-  last_opened_at = excluded.last_opened_at
 `;
 
 export class CoreApiError extends Error {
@@ -183,6 +183,17 @@ export class UiCommandService {
       });
     }
 
+    if (!this.workspaceExists(input.workspaceId)) {
+      throw new CoreApiError({
+        code: 'workspace_not_found',
+        details: {
+          workspaceId: input.workspaceId,
+        },
+        message: `Unknown workspace: ${input.workspaceId}`,
+        status: 404,
+      });
+    }
+
     const runId = `run-${randomUUID()}`;
     const ack = this.createAck({
       clientCommandId: input.clientCommandId,
@@ -193,17 +204,6 @@ export class UiCommandService {
     const engineType = readEngineType(input.participants);
 
     try {
-      await this.workerClient.write({
-        params: [
-          input.workspaceId,
-          input.workspaceId,
-          this.workspaceRoot,
-          engineType,
-          now,
-          now,
-        ],
-        sql: WORKSPACE_UPSERT_SQL,
-      });
       await this.workerClient.write({
         params: [
           runId,
@@ -236,6 +236,37 @@ export class UiCommandService {
         type: 'START',
       });
 
+      return this.commitAck(ack.ackId);
+    } catch (error) {
+      return this.failAck(
+        ack.ackId,
+        error instanceof Error ? error.message : String(error),
+      );
+    }
+  }
+
+  async createWorkspace(input: CreateWorkspaceRequest): Promise<CoreCommandAck> {
+    const workspaceId = `workspace-${randomUUID()}`;
+    const ack = this.createAck({
+      clientCommandId: input.clientCommandId,
+      entityId: workspaceId,
+      entityType: 'workspace',
+    });
+    const now = new Date().toISOString();
+    const name = input.name.trim();
+
+    try {
+      await this.workerClient.write({
+        params: [
+          workspaceId,
+          name,
+          this.workspaceRoot,
+          null,
+          now,
+          now,
+        ],
+        sql: WORKSPACE_INSERT_SQL,
+      });
       return this.commitAck(ack.ackId);
     } catch (error) {
       return this.failAck(
@@ -488,7 +519,15 @@ export class UiCommandService {
   private createAck(input: {
     clientCommandId: string;
     entityId: string;
-    entityType: 'approval' | 'drift' | 'event' | 'gate' | 'memory' | 'run' | 'settings';
+    entityType:
+      | 'approval'
+      | 'drift'
+      | 'event'
+      | 'gate'
+      | 'memory'
+      | 'run'
+      | 'settings'
+      | 'workspace';
   }): CommandAckState {
     const ack = this.ackTracker.createPending({
       causedBy: {
@@ -570,6 +609,22 @@ export class UiCommandService {
            WHERE run_id = ?`,
         )
         .get(runId) as { run_id: string } | undefined;
+      return Boolean(row);
+    } finally {
+      db.close();
+    }
+  }
+
+  private workspaceExists(workspaceId: string): boolean {
+    const db = createReadConnection(this.stateDbPath);
+    try {
+      const row = db
+        .prepare(
+          `SELECT workspace_id
+           FROM workspaces
+           WHERE workspace_id = ?`,
+        )
+        .get(workspaceId) as WorkspaceLookupRow | undefined;
       return Boolean(row);
     } finally {
       db.close();

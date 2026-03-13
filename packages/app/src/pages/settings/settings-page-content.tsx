@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { SettingsSnapshot } from '@do-what/protocol';
 import { useNavigate } from 'react-router-dom';
@@ -198,6 +198,10 @@ export function SettingsPageContent() {
         </div>
 
         <div className={styles.scrollArea}>
+          <div className={styles.settingsBanner} role="note">
+            设置当前不会持久化，重启后将恢复默认值。持久化支持将在 v0.2 中引入。
+          </div>
+
           <LeaseInterruptionNotice />
 
           <section className={styles.settingsCard}>
@@ -392,3 +396,4 @@ export function SettingsPageContent() {
     </section>
   );
 }
+

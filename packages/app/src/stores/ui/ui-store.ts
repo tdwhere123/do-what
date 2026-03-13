@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 
 export type UiRouteId = 'settings' | 'workbench';
 export type UiPanelId =
@@ -9,7 +9,12 @@ export type UiPanelId =
   | 'soul'
   | 'timeline'
   | null;
-export type UiModalId = 'command-error' | 'create-run' | 'settings-lease' | null;
+export type UiModalId =
+  | 'command-error'
+  | 'create-run'
+  | 'create-workspace'
+  | 'settings-lease'
+  | null;
 export type TimelineViewMode = 'merged' | 'threaded';
 export type InspectorMode = 'collaboration' | 'git';
 export type SettingsTabId =
@@ -18,7 +23,15 @@ export type SettingsTabId =
   | 'environment'
   | 'policies'
   | 'soul';
-export type BootstrapStatus = 'error' | 'idle' | 'loading' | 'ready';
+export type BootstrapStatus = 'error' | 'idle' | 'loading' | 'offline' | 'ready';
+export type BootstrapFailureStage = 'auth' | 'connection' | 'snapshot' | 'unknown';
+
+export interface BootstrapStateDetails {
+  readonly bootstrapError?: string | null;
+  readonly failureCode?: string | null;
+  readonly failureStage?: BootstrapFailureStage | null;
+  readonly failureStatus?: number | null;
+}
 
 export interface CreateRunDraft {
   readonly participants: readonly string[];
@@ -31,6 +44,9 @@ export interface UiStoreState {
   readonly activeModal: UiModalId;
   readonly activePanel: UiPanelId;
   readonly bootstrapError: string | null;
+  readonly bootstrapFailureCode: string | null;
+  readonly bootstrapFailureStage: BootstrapFailureStage | null;
+  readonly bootstrapFailureStatus: number | null;
   readonly bootstrapStatus: BootstrapStatus;
   readonly composerDraftsByRun: Record<string, string>;
   readonly createRunDraftsByWorkspace: Record<string, CreateRunDraft>;
@@ -48,7 +64,10 @@ interface UiStoreActions {
   reset: () => void;
   setActiveModal: (activeModal: UiModalId) => void;
   setActivePanel: (activePanel: UiPanelId) => void;
-  setBootstrapState: (bootstrapStatus: BootstrapStatus, bootstrapError?: string | null) => void;
+  setBootstrapState: (
+    bootstrapStatus: BootstrapStatus,
+    details?: BootstrapStateDetails,
+  ) => void;
   setComposerDraft: (runId: string, draft: string) => void;
   setCreateRunDraft: (workspaceId: string, draft: CreateRunDraft) => void;
   setCurrentRoute: (currentRoute: UiRouteId) => void;
@@ -75,6 +94,9 @@ function createInitialState(): UiStoreState {
     activeModal: null,
     activePanel: 'timeline',
     bootstrapError: null,
+    bootstrapFailureCode: null,
+    bootstrapFailureStage: null,
+    bootstrapFailureStatus: null,
     bootstrapStatus: 'idle',
     composerDraftsByRun: {},
     createRunDraftsByWorkspace: {},
@@ -126,9 +148,12 @@ export const useUiStore = create<UiStore>((set) => ({
     });
   },
 
-  setBootstrapState: (bootstrapStatus, bootstrapError = null) => {
+  setBootstrapState: (bootstrapStatus, details) => {
     set({
-      bootstrapError,
+      bootstrapError: details?.bootstrapError ?? null,
+      bootstrapFailureCode: details?.failureCode ?? null,
+      bootstrapFailureStage: details?.failureStage ?? null,
+      bootstrapFailureStatus: details?.failureStatus ?? null,
       bootstrapStatus,
     });
   },
@@ -191,3 +216,4 @@ export const useUiStore = create<UiStore>((set) => ({
 export function resetUiStore(): void {
   useUiStore.getState().reset();
 }
+

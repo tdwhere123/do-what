@@ -9,7 +9,8 @@
   "scripts": {
     "build": "tsc",
     "test": "pnpm --filter @do-what/protocol build && pnpm --filter @do-what/soul build && pnpm --filter @do-what/tools build && pnpm run build && node dist/__tests__/migration.test.js && node dist/__tests__/approval-machine.test.js && node dist/__tests__/engine-machine.test.js && node dist/__tests__/policy-engine.test.js && node dist/__tests__/run-machine.test.js && node dist/__tests__/dag-builder.test.js && node dist/__tests__/fast-gate.test.js && node dist/__tests__/integrator.test.js && node dist/__tests__/server.test.js && node dist/__tests__/ui-api.test.js && node dist/__tests__/event-bus.test.js && node dist/__tests__/database-worker.test.js && node dist/__tests__/hot-state.test.js && node dist/__tests__/hot-state-bootstrap.test.js && node dist/__tests__/ack-overlay.test.js && node dist/__tests__/projection.test.js && node dist/__tests__/sync-async-split.test.js && node dist/__tests__/baseline-lock.test.js && node dist/__tests__/focus-surface.test.js && node dist/__tests__/integration-gate.test.js && node dist/__tests__/reconcile-tracker.test.js && node dist/__tests__/governance-lease.test.js && node dist/__tests__/native-surface-report.test.js && node dist/__tests__/topology-validator.test.js",
-    "start": "node ./dist/server/index.js"
+    "start": "node ./dist/server/index.js",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@do-what/protocol": "workspace:*",

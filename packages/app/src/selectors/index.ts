@@ -1,4 +1,4 @@
-﻿import type { HotStateStore } from '../stores/hot-state';
+import type { HotStateStore } from '../stores/hot-state';
 import type { ProjectionStore } from '../stores/projection';
 import type { SettingsBridgeStore } from '../stores/settings-bridge';
 import type { AckOverlayStore } from '../stores/ack-overlay';
@@ -15,6 +15,13 @@ export const selectTimelineViewMode = (state: UiStore): UiStore['timelineViewMod
 export const selectBootstrapStatus = (state: UiStore): UiStore['bootstrapStatus'] =>
   state.bootstrapStatus;
 export const selectBootstrapError = (state: UiStore): string | null => state.bootstrapError;
+export const selectBootstrapFailureCode = (state: UiStore): string | null =>
+  state.bootstrapFailureCode;
+export const selectBootstrapFailureStage = (
+  state: UiStore,
+): UiStore['bootstrapFailureStage'] => state.bootstrapFailureStage;
+export const selectBootstrapFailureStatus = (state: UiStore): number | null =>
+  state.bootstrapFailureStatus;
 export const selectInspectorMode = (state: UiStore): UiStore['inspectorMode'] =>
   state.inspectorMode;
 export const selectSettingsActiveTab = (state: UiStore): UiStore['settingsActiveTab'] =>

@@ -1,5 +1,6 @@
 export type AckEntityType =
   | 'run'
+  | 'workspace'
   | 'engine'
   | 'approval'
   | 'checkpoint'

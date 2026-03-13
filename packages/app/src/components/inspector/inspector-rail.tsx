@@ -25,6 +25,8 @@ interface PendingGlobalMemoryAction {
   readonly mode: 'edit' | 'supersede';
 }
 
+const UNSUPPORTED_V0_2_TITLE = '此功能将在 v0.2 中支持';
+
 interface InspectorRailProps {
   readonly inspector: RunInspectorProjection | null;
   readonly inspectorMode: InspectorMode;
@@ -237,13 +239,13 @@ export function InspectorRail(props: InspectorRailProps) {
               </div>
             ))}
             <div className={styles.actionRow}>
-              <button className={styles.primaryButton} disabled={props.isFrozen} onClick={props.onResolveDrift} type="button">
+              <button className={styles.primaryButton} disabled title={UNSUPPORTED_V0_2_TITLE} type="button">
                 Resolve Drift
               </button>
-              <button className={styles.secondaryButton} disabled={props.isFrozen} onClick={props.onApproveGate} type="button">
+              <button className={styles.secondaryButton} disabled title={UNSUPPORTED_V0_2_TITLE} type="button">
                 Approve Gate
               </button>
-              <button className={styles.ghostButton} disabled={props.isFrozen} onClick={props.onBlockGate} type="button">
+              <button className={styles.ghostButton} disabled title={UNSUPPORTED_V0_2_TITLE} type="button">
                 Block Gate
               </button>
             </div>
@@ -280,13 +282,13 @@ export function InspectorRail(props: InspectorRailProps) {
                     {memory.scope ?? 'project'} / {memory.retentionState ?? 'working'}
                   </p>
                   <div className={styles.actionRow}>
-                    <button className={styles.primaryButton} disabled={props.isFrozen} onClick={() => requestMemoryAction(memory.id, 'pin', isGlobal)} type="button">
+                    <button className={styles.primaryButton} disabled title={UNSUPPORTED_V0_2_TITLE} type="button">
                       Pin
                     </button>
-                    <button className={styles.secondaryButton} disabled={props.isFrozen} onClick={() => requestMemoryAction(memory.id, 'edit', isGlobal)} type="button">
+                    <button className={styles.secondaryButton} disabled title={UNSUPPORTED_V0_2_TITLE} type="button">
                       Edit
                     </button>
-                    <button className={styles.ghostButton} disabled={props.isFrozen} onClick={() => requestMemoryAction(memory.id, 'supersede', isGlobal)} type="button">
+                    <button className={styles.ghostButton} disabled title={UNSUPPORTED_V0_2_TITLE} type="button">
                       Supersede
                     </button>
                   </div>

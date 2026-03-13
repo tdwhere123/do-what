@@ -19,7 +19,13 @@
       "Bash(find \"D:\\\\makefun\\\\do-what\\\\do-what-new\\\\packages\\\\app\\\\src\\\\styles\" -type f -printf \"%p | %s bytes\\\\n\" | sort)",
       "Bash(cd D:/makefun/do-what/do-what-new && for f in projection ack-overlay reconcile-tracker governance-lease integration-gate; do echo \"=== $f ===\" && node packages/core/dist/__tests__/$f.test.js 2>&1 | grep -E \"fail|Error|stale|actual\" | head -5; done)",
       "Bash(cd D:/makefun/do-what/do-what-new && for f in hot-state-bootstrap native-surface-report topology-validator baseline-lock focus-surface; do echo \"=== $f ===\" && node packages/core/dist/__tests__/$f.test.js 2>&1 | grep -E \"^ℹ \\(fail|pass\\)\" | head -3; done)",
-      "Bash(cd D:/makefun/do-what/do-what-new && for f in migration approval-machine engine-machine policy-engine dag-builder fast-gate integrator event-bus database-worker sync-async-split ui-api; do echo -n \"$f: \" && node packages/core/dist/__tests__/$f.test.js 2>&1 | grep \"^ℹ fail\"; done)"
+      "Bash(cd D:/makefun/do-what/do-what-new && for f in migration approval-machine engine-machine policy-engine dag-builder fast-gate integrator event-bus database-worker sync-async-split ui-api; do echo -n \"$f: \" && node packages/core/dist/__tests__/$f.test.js 2>&1 | grep \"^ℹ fail\"; done)",
+      "Bash(for pkg:*)",
+      "Read(//d/makefun/do-what/do-what-new/packages/$pkg/**)",
+      "Bash(done)",
+      "Bash(find /d/makefun/do-what/do-what-new -maxdepth 2 -name 'vite*.config.*' -o -name 'forge.config.*' -o -name '.github' 2>/dev/null | head -20)",
+      "Bash(find /d/makefun/do-what/do-what-new/packages/app/src/pages -o /d/makefun/do-what/do-what-new/packages/app/src/components -type f -name \"*.tsx\" 2>/dev/null | head -20)",
+      "Bash(printf ' \\\\n' | pnpm approve-builds 2>&1 || true)"
     ]
   }
 }

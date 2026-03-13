@@ -5,6 +5,7 @@ import type {
   CoreCommandRequest,
   CoreProbeResult,
   CreateRunRequest,
+  CreateWorkspaceRequest,
   DriftResolutionRequest,
   InspectorSnapshot,
   IntegrationGateDecisionRequest,
@@ -106,7 +107,7 @@ export class HttpCoreApiAdapter implements CoreApiAdapter {
     this.client = createCoreHttpClient({
       baseUrl: config.baseUrl,
       fetchImpl,
-      sessionToken: config.sessionToken,
+      sessionToken: () => config.readFreshSessionToken?.() ?? config.sessionToken,
     });
   }
 
@@ -160,6 +161,8 @@ export class HttpCoreApiAdapter implements CoreApiAdapter {
         return this.postCreateRun(command);
       case 'run.message':
         return this.postRunMessage(command);
+      case 'workspace.create':
+        return this.postCreateWorkspace(command);
       case 'settings.update':
         return this.patchSettings(command);
       default:
@@ -216,6 +219,18 @@ export class HttpCoreApiAdapter implements CoreApiAdapter {
     };
 
     return parseCoreCommandAck(await this.client.post('/api/runs', body));
+  }
+
+  private async postCreateWorkspace(
+    command: CoreCommandRequest,
+  ): Promise<CoreCommandAck> {
+    const payload = extractCommandBody(command);
+    const body: CreateWorkspaceRequest = {
+      clientCommandId: command.clientCommandId,
+      name: readRequiredString(payload.name, 'name').trim(),
+    };
+
+    return parseCoreCommandAck(await this.client.post('/api/workspaces', body));
   }
 
   private async postDriftResolution(
@@ -363,3 +378,4 @@ export class HttpCoreApiAdapter implements CoreApiAdapter {
     return parseCoreCommandAck(await this.client.patch('/api/settings', body));
   }
 }
+

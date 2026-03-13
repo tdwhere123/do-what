@@ -939,17 +939,13 @@ export class UiQueryService {
 
       const runsByWorkspace = new Map<string, WorkbenchRunSummary[]>();
       for (const run of runs) {
-        const workspaceId = run.workspaceId ?? 'workspace-main';
+        const workspaceId = run.workspaceId ?? 'workspace-orphaned';
         const existing = runsByWorkspace.get(workspaceId) ?? [];
         runsByWorkspace.set(workspaceId, [...existing, run]);
       }
 
-      if (runsByWorkspace.size === 0) {
-        runsByWorkspace.set('workspace-main', []);
-      }
-
-      const workspaces = [...runsByWorkspace.entries()].map(([workspaceId, workspaceRuns]) => {
-        const workspace = workspaceById.get(workspaceId);
+      const workspaces = workspaceRows.map((workspace) => {
+        const workspaceRuns = runsByWorkspace.get(workspace.workspace_id) ?? [];
         const lastEventAt = workspaceRuns
           .map((run) => run.lastEventAt)
           .filter((value): value is string => typeof value === 'string')
@@ -958,15 +954,36 @@ export class UiQueryService {
         return WorkbenchSnapshotSchema.shape.workspaces.element.parse({
           lastEventAt,
           name:
-            workspace?.name
-            ?? (workspace?.root_path
+            workspace.name
+            || (workspace.root_path
               ? path.basename(workspace.root_path)
               : path.basename(this.workspaceRoot)),
           runIds: workspaceRuns.map((run) => run.runId),
           status: deriveWorkspaceStatus(workspaceRuns),
-          workspaceId,
+          workspaceId: workspace.workspace_id,
         }) as WorkbenchWorkspaceSummary;
       });
+
+      for (const [workspaceId, workspaceRuns] of runsByWorkspace.entries()) {
+        if (workspaceById.has(workspaceId)) {
+          continue;
+        }
+
+        const lastEventAt = workspaceRuns
+          .map((run) => run.lastEventAt)
+          .filter((value): value is string => typeof value === 'string')
+          .sort()
+          .at(-1);
+        workspaces.push(
+          WorkbenchSnapshotSchema.shape.workspaces.element.parse({
+            lastEventAt,
+            name: workspaceId,
+            runIds: workspaceRuns.map((run) => run.runId),
+            status: deriveWorkspaceStatus(workspaceRuns),
+            workspaceId,
+          }) as WorkbenchWorkspaceSummary,
+        );
+      }
 
       const recentEvents = hotState.recent_events
         .map((event) => AnyEventSchema.safeParse(event))

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CoreHttpError } from '../core-http-client';
 import {
   createEmptyInspectorSnapshot,
   createEmptySettingsSnapshot,
@@ -66,6 +67,27 @@ describe('core contracts', () => {
 
     expect(error.code).toBe('RUN_NOT_FOUND');
     expect(error.message).toBe('Run not found');
+  });
+
+  it('preserves structured CoreHttpError instances during normalization', () => {
+    const error = normalizeCoreError(
+      new CoreHttpError(
+        {
+          code: 'auth_required',
+          details: {
+            stage: 'bootstrap',
+          },
+          message: 'Unauthorized',
+        },
+        401,
+      ),
+    );
+
+    expect(error.code).toBe('auth_required');
+    expect(error.message).toBe('Unauthorized');
+    expect(error.details).toEqual({
+      stage: 'bootstrap',
+    });
   });
 
   it('parses legacy bare SSE events into the envelope contract', () => {

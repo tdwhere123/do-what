@@ -17,6 +17,7 @@ function readCoreSessionToken(): string | null {
 contextBridge.exposeInMainWorld('doWhatRuntime', {
   coreSessionToken: readCoreSessionToken(),
   coreSessionTokenPath: CORE_SESSION_TOKEN_PATH,
+  readFreshSessionToken: () => readCoreSessionToken(),
   platform: process.platform,
   versions: {
     chrome: process.versions.chrome,

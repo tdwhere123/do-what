@@ -39,5 +39,12 @@ describe('preload bridge', () => {
         }),
       }),
     );
+
+    const exposedRuntime = exposeInMainWorld.mock.calls[0]?.[1] as {
+      readFreshSessionToken?: () => string | null;
+    };
+
+    expect(exposedRuntime.readFreshSessionToken?.()).toBe('token-from-test');
+    expect(readFileSync).toHaveBeenCalledTimes(2);
   });
 });

@@ -1,4 +1,4 @@
-﻿import type { CoreApiAdapter } from '../core-http-client';
+import type { CoreApiAdapter } from '../core-http-client';
 import { usePendingCommandStore } from '../../stores/pending-command';
 import { dispatchCoreCommand } from './command-dispatcher';
 import type { CreateRunDraft } from '../../stores/ui';
@@ -35,6 +35,30 @@ export interface IntegrationGateDecisionInput {
   readonly runId: string;
 }
 
+export async function dispatchCreateWorkspace(
+  name: string,
+  coreApi: Pick<CoreApiAdapter, 'postCommand'>,
+) {
+  const trimmedName = name.trim();
+  if (!trimmedName) {
+    throw new Error('A workspace name is required.');
+  }
+
+  return dispatchCoreCommand(
+    {
+      action: 'create-workspace',
+      command: 'workspace.create',
+      entityType: 'workspace',
+      optimisticPayload: {
+        name: trimmedName,
+      },
+      payload: {
+        name: trimmedName,
+      },
+    },
+    coreApi,
+  );
+}
 export async function dispatchCreateRun(
   workspaceId: string,
   draft: CreateRunDraft,

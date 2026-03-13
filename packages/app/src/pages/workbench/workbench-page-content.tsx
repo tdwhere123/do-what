@@ -1,4 +1,4 @@
-import type { TemplateDescriptor } from '@do-what/protocol';
+import type { TemplateDescriptor, WorkbenchHealthSnapshot } from '@do-what/protocol';
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -27,6 +27,9 @@ import { dismissAckOverlay, retryAckOverlaySync, retryPendingMessageSync } from 
 import { getAppServices } from '../../lib/runtime/app-services';
 import {
   selectBootstrapError,
+  selectBootstrapFailureCode,
+  selectBootstrapFailureStage,
+  selectBootstrapFailureStatus,
   selectBootstrapStatus,
   selectGlobalInteractionLock,
   selectInspectorMode,
@@ -98,9 +101,46 @@ function fromCreateRunModalDraft(draft: CreateRunModalDraft): CreateRunDraft {
   };
 }
 
+const BOOTSTRAP_STAGE_LABELS = {
+  auth: 'Authentication',
+  connection: 'Core Reachability',
+  snapshot: 'Workbench Snapshot',
+  unknown: 'Bootstrap',
+} as const;
+
+function formatHealthStatus(status: string): string {
+  return status.replaceAll('_', ' ');
+}
+
+function buildBootstrapMeta(props: {
+  readonly bootstrapFailureCode: string | null;
+  readonly bootstrapFailureStatus: number | null;
+}): string | null {
+  const parts = [
+    props.bootstrapFailureCode ? `Code: ${props.bootstrapFailureCode}` : null,
+    props.bootstrapFailureStatus !== null ? `HTTP ${props.bootstrapFailureStatus}` : null,
+  ].filter((part): part is string => part !== null);
+
+  return parts.length ? parts.join(' ¡¤ ') : null;
+}
+
+function buildModuleStatusSummary(health: WorkbenchHealthSnapshot): string {
+  return [
+    `Core ${formatHealthStatus(health.core)}`,
+    `Network ${formatHealthStatus(health.network)}`,
+    `Claude ${formatHealthStatus(health.claude)}`,
+    `Codex ${formatHealthStatus(health.codex)}`,
+    `Soul ${formatHealthStatus(health.soul)}`,
+  ].join(' ¡¤ ');
+}
+
 function StatusBanner(props: {
   readonly bootstrapError: string | null;
+  readonly bootstrapFailureCode: string | null;
+  readonly bootstrapFailureStage: string | null;
+  readonly bootstrapFailureStatus: number | null;
   readonly bootstrapStatus: string;
+  readonly health: WorkbenchHealthSnapshot;
   readonly isFrozen: boolean;
   readonly lastError: string | null;
 }) {
@@ -114,10 +154,21 @@ function StatusBanner(props: {
   }
 
   if (props.bootstrapStatus === 'error') {
+    const bootstrapMeta = buildBootstrapMeta(props);
+    const stageLabel =
+      props.bootstrapFailureStage && props.bootstrapFailureStage in BOOTSTRAP_STAGE_LABELS
+        ? BOOTSTRAP_STAGE_LABELS[
+            props.bootstrapFailureStage as keyof typeof BOOTSTRAP_STAGE_LABELS
+          ]
+        : BOOTSTRAP_STAGE_LABELS.unknown;
+
     return (
       <div className={styles.banner}>
         <strong>Workbench bootstrap failed</strong>
+        <p>Stage: {stageLabel}</p>
         <p>{props.bootstrapError ?? 'Snapshot bootstrap did not complete.'}</p>
+        {bootstrapMeta ? <p>{bootstrapMeta}</p> : null}
+        <p>Module status: {buildModuleStatusSummary(props.health)}</p>
       </div>
     );
   }
@@ -154,6 +205,9 @@ export function WorkbenchPageContent() {
   const setTimelineViewMode = useUiStore((state) => state.setTimelineViewMode);
   const bootstrapStatus = useUiStore(selectBootstrapStatus);
   const bootstrapError = useUiStore(selectBootstrapError);
+  const bootstrapFailureCode = useUiStore(selectBootstrapFailureCode);
+  const bootstrapFailureStage = useUiStore(selectBootstrapFailureStage);
+  const bootstrapFailureStatus = useUiStore(selectBootstrapFailureStatus);
 
   const approvalsById = useHotStateStore((state) => state.approvalsById);
   const health = useHotStateStore((state) => state.health);
@@ -386,7 +440,11 @@ export function WorkbenchPageContent() {
         banner={
           <StatusBanner
             bootstrapError={bootstrapError}
+            bootstrapFailureCode={bootstrapFailureCode}
+            bootstrapFailureStage={bootstrapFailureStage}
+            bootstrapFailureStatus={bootstrapFailureStatus}
             bootstrapStatus={bootstrapStatus}
+            health={health}
             isFrozen={globalLocked}
             lastError={lastError?.message ?? null}
           />

@@ -15,15 +15,15 @@
 - `packages/app` 实现了 Electron + React 工作台，包含 workbench、timeline、inspector、settings、乐观消息 tail、ack overlay 和与 Core 对接的 HTTP/SSE 客户端。
 - `packages/protocol` 提供协议、事件、UI 合同、治理与 Soul 相关 Zod schema。
 - `packages/soul` 实现了独立的 `soul.db`、memory search、pointer open/healing、proposal/review、memory_repo Git 持久化等能力。
-- `packages/engines/claude` 与 `packages/engines/codex` 提供适配器和测试，但当前仓库里的 Core 进程没有看到直接拉起这两个适配器的接线。
+- `packages/engines/claude` 与 `packages/engines/codex` 提供适配器和测试，但当前仓库里的 Core 进程不会自动拉起这两个适配器。
 
-## 需要先知道的限制
+## v0.1 已知限制
 
-- UI 默认运行在 `mock` 传输模式，不是默认直连 Core。
-- Core 的 UI 命令面只部分闭环。`create run`、`send message`、`approval decision`、`settings update`、`memory proposal review` 有真实路径；`memory pin/edit/supersede`、`drift resolution`、`integration gate decision` 目前会返回失败或进入 desynced overlay。
-- `SettingsStore` 当前是 Core 进程内内存态，不是持久化配置中心。
-- 根仓库没有一键同时启动 Core 和 App 的脚本，需要分别启动。
-- `docs/archive/` 下是历史设计与任务记录，不应直接视为当前实现状态。
+| 限制 | 说明 | 计划版本 |
+| --- | --- | --- |
+| Settings 不持久化 | 设置只保存在进程内快照，重启后恢复默认值 | v0.2 |
+| 引擎需手动接入 | Create Run 会创建 RunMachine，但 Core 不会自动拉起 Claude/Codex 适配器 | v0.2 |
+| 部分 Inspector 操作不可用 | `memory pin/edit/supersede`、`drift resolution`、`integration gate decision` 当前仅保留可见 disabled 入口 | v0.2 |
 
 ## 仓库结构
 
@@ -46,50 +46,73 @@ scripts/               协议/适配器校验脚本
 
 ## 快速开始
 
-### 1. 安装与构建
+### 前置条件
+
+- Node.js >= 20
+- pnpm 10.x
+
+### 安装
 
 ```powershell
 pnpm install
 pnpm -w build
 ```
 
-### 2. 启动 Core
+### 启动（需要两个终端）
 
-`@do-what/core` 的 `start` 脚本直接运行 `dist/server/index.js`，因此通常应先构建。
-
-```powershell
-pnpm --filter @do-what/core start
-```
-
-默认监听：
-
-- `http://127.0.0.1:3847`
-- Bearer token 文件：`~/.do-what/run/session_token`
-
-### 3. 启动 UI
-
-默认启动的是 Electron 工作台，但默认传输模式仍是 `mock`：
+**终端 1：启动 Core daemon**
 
 ```powershell
-pnpm --filter @do-what/app start
+pnpm dev:core
+# Core 监听 127.0.0.1:3847，token 写入 ~/.do-what/run/session_token
 ```
 
-如果要让 UI 直连已经启动的 Core，可以在启动 App 前设置：
+**终端 2：启动 UI**
 
 ```powershell
-$env:VITE_CORE_TRANSPORT = "http"
-pnpm --filter @do-what/app start
+pnpm dev:app
+# Electron 窗口打开后会默认通过 HTTP 连接 Core
 ```
 
-可选地覆盖 Core 地址：
+> **注意：** Core 必须先于 UI 启动。若 Core 未运行，UI 会展示“Core 未运行”离线页，而不是静默退回 mock。
+
+### 开发调试（Mock 模式）
+
+不启动 Core、只验证 UI 组件时，需显式开启 mock：
 
 ```powershell
-$env:VITE_CORE_TRANSPORT = "http"
-$env:VITE_CORE_BASE_URL = "http://127.0.0.1:3847"
-pnpm --filter @do-what/app start
+pnpm dev:app
+# 然后在 Electron 开发地址后追加 ?transport=mock
 ```
 
-UI 预加载脚本会尝试从 `~/.do-what/run/session_token` 读取 token，因此直连模式下通常应先启动 Core，再启动 App。
+或使用环境变量：
+
+```powershell
+$env:VITE_CORE_TRANSPORT = 'mock'
+pnpm dev:app
+```
+
+UI 预加载脚本会尝试从 `~/.do-what/run/session_token` 读取 token，因此真实 Core 模式下通常应先启动 Core，再启动 App。
+
+## 引擎接入（高级）
+
+v0.1 中 Claude/Codex 适配器代码与测试已经存在，但需要人工外部接入；Core 不会自动拉起它们。
+
+**Claude Code 适配器**
+
+```powershell
+pnpm --filter @do-what/claude build
+# 然后将 Claude Code hooks 指向 packages/engines/claude/dist/hook-runner.js
+```
+
+**Codex 适配器**
+
+```powershell
+pnpm --filter @do-what/codex build
+# 之后按本地集成方式手动启动 codex adapter 入口；Core 不负责自动接线
+```
+
+若未手动接入引擎，`create-run` 只会创建 run 并停留在 waiting / idle，不会自动产生执行进展。
 
 ## 架构摘要
 
@@ -124,8 +147,8 @@ pnpm --filter @do-what/app typecheck
 
 补充说明：
 
-- 根仓库定义了 `build`、`test`、`lint` 三个 turbo 入口。
-- 当前仓库中没有看到统一的 ESLint / Prettier 配置文件，`lint` 是否可直接作为有效质量门取决于后续补齐情况；更稳妥的是优先使用各包自己的 `test` / `typecheck` / `build`。
+- 根仓库定义了 `build`、`test`、`typecheck` 三个 turbo 入口。
+- 当前仓库中没有统一的 ESLint / Prettier 配置文件，更稳妥的是优先使用各包自己的 `test` / `typecheck` / `build`。
 
 ## 文档导航
 
