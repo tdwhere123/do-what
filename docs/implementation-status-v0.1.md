@@ -34,6 +34,10 @@
 **已知缺口 / 限制**
 
 - Inspector 中的 `memory pin/edit/supersede`、`drift resolution`、`integration gate decision` 当前保留可见入口，但在 UI 中已 disabled，等待 v0.2 接通真实写路径。
+- `workspace.create` 命令和 Core 写路径已存在，但主界面仍未提供“创建 / 打开 workspace”的真实入口；左栏 `+` 与 Empty 主 CTA 仍偏向 `Create Run`，workspace-first 业务流尚未成立。
+- `workbench-page-content.tsx` 在无 workspace 时仍存在 `workspace-main` 硬编码 fallback，说明主路径仍未完全受真实 workspace 实体约束。
+- Settings 页面虽有五个 tab，但当前主体仍是“按 tab 选 section + 单一字段卡片 + runtime/lease/overlay 附加块”的结构，离目标信息架构仍有明显差距。
+- 运行时 SVG 已集中在 `packages/app/src/assets`，且当前代码未再直接引用 `UI/svg`；但 `UI/svg` 仍是设计源素材库，后续 UI 收口需继续按最小运行时集合维护这条边界。
 
 **是否可视为 v0.1 完成**
 
@@ -262,6 +266,8 @@
 - Core 启动后不会自动拉起 Claude/Codex 适配器；适配器需要人工外部启动。
 - `create-run` 会创建 RunMachine，但在无引擎事件输入时只会停留在 waiting / idle，不会自动产生执行进展。
 - 当前 UI 已有 timeline / inspector 空态，C005 的人工验收仍需确认无 `console.error`。
+- `WorkbenchHealthSnapshot` 与当前侧栏状态展示仍只提供较粗粒度的健康语义，尚未覆盖 `not_installed`、`auth_failed`、`disabled` 等更细的产品状态。
+- 左下状态区当前以 `health.claude` 代表 Engine 状态，尚未形成完整的引擎接入语义。
 
 **是否可视为 v0.1 完成**
 
@@ -364,6 +370,7 @@
 
 - 当前没有从仓库中直接看到覆盖率门禁。
 - 测试存在不等于默认运行体验完整。
+- `app-root.test.tsx` 与若干 fixtures 仍固化旧产品假设，例如把 `Create Run` 当作 Empty 主入口、使用 `workspace-main` 作为默认 fallback，并保留了带乱码的文案断言。
 
 **是否可视为 v0.1 完成**
 
@@ -389,6 +396,7 @@
 
 - archive 文档很多，但它们主要是历史方案和任务卡。
 - README 已回填真实启动路径、已知限制与引擎接入边界。
+- `docs/archive/v0.1-closure/code-vs-expected-audit.md` 现在承担“当前代码 vs 预期”的证据化审计，不再只靠任务卡口头描述。
 
 **已知缺口 / 限制**
 

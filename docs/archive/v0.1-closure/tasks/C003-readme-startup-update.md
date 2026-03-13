@@ -1,128 +1,65 @@
-# C003 — README 快速开始精确化
+# C003 - 建立 workspace-first 主业务契约
 
-**优先级：** P1（应该，封版质量）
-**依赖：** C001 完成后执行（默认 transport 改变后，启动流程才稳定）
-**涉及文件：** `README.md`
-**不得改动：** 任何代码文件
+**优先级：** P0  
+**依赖：** C002  
+**涉及范围：**
+
+- `packages/app/src/components/`
+- `packages/app/src/pages/`
+- `packages/app/src/lib/commands/`
+- `packages/core/src/server/`
+- 如需新增命令、HTTP 端点或 schema：`packages/protocol/src/`、`docs/INTERFACE_INDEX.md`
 
 ---
 
 ## 背景
 
-README 的快速开始章节需要反映 C001 之后的真实启动流程：
-- App 默认连接 Core（HTTP 模式）
-- 需要两个终端分别启动 Core 和 App
-- Mock 模式存在但需要显式开启
-
-同时需要明确列出 v0.1 已知限制，避免用户误解。
+当前实现容易滑向“先创建 run，再补 workspace”的错误业务顺序。  
+这会直接影响 Empty 页、左栏树、New Run modal 和列表选中逻辑。
 
 ---
 
 ## 目标
 
-更新 `README.md` 的以下内容（不新增章节，只精确化现有内容）：
-
-1. **快速开始** — 改为两终端流程，使用新的快捷脚本
-2. **已知限制** — 明确列出 3 项
-3. **引擎接入（高级）** — 说明手动启动引擎适配器的方式
+1. 把“先 workspace，后 run”写成唯一正确的业务顺序。
+2. 让 Empty 页、Sidebar、New Run modal 都围绕 workspace-first 语义工作。
+3. 停止把 run 当作脱离 workspace 的独立实体。
 
 ---
 
-## README 变更规格
+## 本任务必须完成
 
-### 快速开始章节
+1. Core 与 UI 的主业务顺序统一为：
+   - 进入 App
+   - 创建或打开 workspace
+   - 在该 workspace 下创建 run
+2. Empty 页必须把 `打开工作区` 作为第一动作。
+3. 左栏 `新建 Run` 不能绕过 workspace 直接创建孤立 run。
+4. New Run modal 可以打开，但提交前必须校验 workspace 条件。
+5. 若 `createRun()` 仍保留 workspace upsert，只能作为防御性兜底，不能再作为主路径。
+6. 若新增命令、端点或 schema，必须同步 protocol 与接口文档。
 
-替换为以下两步流程（保留已有的 `pnpm install` 前置步骤）：
+---
 
-```markdown
-## 快速开始
+## 本任务不包含
 
-### 前置条件
-
-- Node.js ≥ 20
-- pnpm 10.x（`npm install -g pnpm`）
-
-### 安装
-
-\`\`\`bash
-pnpm install
-pnpm -w build
-\`\`\`
-
-### 启动（需要两个终端）
-
-**终端 1 — 启动 Core daemon：**
-\`\`\`bash
-pnpm dev:core
-# Core 监听 127.0.0.1:3847，token 写入 ~/.do-what/run/session_token
-\`\`\`
-
-**终端 2 — 启动 UI：**
-\`\`\`bash
-pnpm dev:app
-# Electron 窗口打开后自动连接 Core
-\`\`\`
-
-> **注意：** Core 必须先于 UI 启动。若 Core 未运行，UI 会展示"Core 未运行"提示页面。
-
-### 开发调试（Mock 模式）
-
-不启动 Core，仅验证 UI 组件：
-\`\`\`bash
-# URL 参数方式（在 Electron 开发窗口地址栏加参数）
-pnpm dev:app   # 然后在地址栏加 ?transport=mock
-# 或通过环境变量
-VITE_CORE_TRANSPORT=mock pnpm dev:app
-\`\`\`
-```
-
-### 已知限制章节（新增或更新）
-
-```markdown
-## v0.1 已知限制
-
-| 限制 | 说明 | 计划版本 |
-|------|------|---------|
-| Settings 不持久化 | 设置在重启后恢复默认值，不保存到磁盘 | v0.2 |
-| 引擎需手动启动 | Create Run 不自动拉起 Claude/Codex 引擎，需手动启动适配器（见下方） | v0.2 |
-| 部分 Inspector 操作不可用 | Memory pin/edit/supersede、Drift resolution、Integration gate decision 为 v0.2 功能 | v0.2 |
-```
-
-### 引擎接入章节（新增）
-
-```markdown
-## 引擎接入（高级）
-
-v0.1 的引擎适配器已实现，但需要手动启动。Core 不会自动拉起引擎进程。
-
-**Claude Code 适配器：**
-\`\`\`bash
-# 需先构建
-pnpm --filter @do-what/claude build
-# 然后在 Claude Code 的 settings 中配置 hooks 指向 hook-runner
-\`\`\`
-
-**Codex 适配器：**
-\`\`\`bash
-pnpm --filter @do-what/codex build
-# 详见 packages/engines/codex/README.md（待补充）
-\`\`\`
-
-> 完整的引擎自动注册和生命周期管理将在 v0.2 中实现。
-```
+- 不实现 workspace 的高级管理能力。
+- 不做多仓库收藏、排序、重命名等增强功能。
+- 不做页面级视觉还原。
 
 ---
 
 ## 验收标准（DoD）
 
-1. `README.md` 快速开始章节包含两终端启动流程，命令使用 `pnpm dev:core` 和 `pnpm dev:app`
-2. "已知限制"章节存在，包含 Settings/Engine/Inspector 三项
-3. 引擎接入章节存在，说明手动启动方式
-4. 从零按 README 步骤操作，可以成功启动并看到 UI 连接 Core
+1. 用户首次进入时，会先看到创建或打开 workspace 的明确入口。
+2. 创建 run 的行为只能发生在已存在 workspace 的前提下。
+3. 左栏树与空态文案都围绕 workspace-first 语义展开。
+4. 若涉及接口变更，`docs/INTERFACE_INDEX.md` 已同步更新。
 
 ---
 
 ## 完成后更新
 
-- [ ] `docs/archive/v0.1-closure/closure-overview.md` 中 C003 状态改为"已完成"
-- [ ] `AGENTS.md` 当前阶段任务进度更新
+- [ ] `closure-overview.md` 中 C003 状态改为“已完成”
+- [ ] `AGENTS.md` 中收口任务进度同步
+- [ ] 若新增接口，`docs/INTERFACE_INDEX.md` 追加变更记录

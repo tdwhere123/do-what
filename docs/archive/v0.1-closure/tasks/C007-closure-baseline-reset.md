@@ -1,85 +1,68 @@
-# C007 — 重置 v0.1 收口定义与延期边界
+# C007 - 恢复 App 壳结构并剥离展示舞台
 
-**优先级：** P0（必须，阻断后续所有收口判断）
-**涉及文件：**
-- `docs/archive/v0.1-closure/closure-overview.md`
-- `AGENTS.md`
-- 如需同步状态口径，可更新 `docs/implementation-status-v0.1.md`
+**优先级：** P0  
+**依赖：** C006  
+**涉及范围：**
+
+- `packages/app/src/app/`
+- `packages/app/src/assets/`
+- `packages/app/src/components/`
+- `packages/app/src/styles/`
+- `UI/preview-active.html`
+- `UI/preview-empty.html`
+- `UI/preview-settings.html`
+- `UI/styles.css`
+- `UI/UI-DESIGN-SPEC.md`
+- `UI/svg/`
 
 ---
 
 ## 背景
 
-当前收口文档仍沿用“小范围轻量修补”的旧定义，并默认假设：
-
-1. 收口阶段不应触达后端包
-2. 需要接线或启动编排的问题都可以延期到 v0.2
-3. 只要命令面诚实即可，不必补齐最朴素业务闭环
-
-这和当前真实问题冲突：
-
-- UI 与设计基线偏离，产品观感已失真
-- 当前没有“先建 workspace，再建 run”的最小业务流
-- engine 默认未尝试拉起，模块状态长期 `unknown`
-- 启动仍要求分步手动拼接，主路径并不成立
-
-如果不先重置收口定义，后续任务会继续被旧规则误伤。
+在进入具体页面实现前，必须先把 App shell 级结构拉回正轨。  
+当前实现最容易犯的错误不是缺一个按钮，而是把 preview 的展示舞台误做进 App 本体，并在壳结构上继续自由发挥。
 
 ---
 
 ## 目标
 
-1. 重新定义 v0.1 收口：收口要补齐最朴素业务闭环，而不是只做不触碰后端的小修小补
-2. 明确哪些问题是 v0.1 必要项，哪些才允许延期到 v0.2
-3. 让 `closure-overview.md`、`AGENTS.md`、任务卡口径一致
+1. 恢复 App 本体的壳结构，而不是复刻展示舞台。
+2. 固定品牌、图标来源和页面框架。
+3. 为 C008-C010 提供稳定的页面承载骨架。
 
 ---
 
 ## 本任务必须完成
 
-1. 在 `closure-overview.md` 中新增“收口判定原则”：
-   - 以主路径成立为判断标准
-   - 只要阻断主路径，就属于 v0.1 收口
-   - 非关键增强项才允许延期
-2. 重写延期列表，把以下内容移出 v0.2：
-   - engine 默认拉起 / 模块默认接线
-   - 单入口或等价编排启动
-   - workspace-first 业务流
-   - 与 `UI/` 基线明显冲突的主界面结构问题
-3. 在 `AGENTS.md` 中移除“收口阶段不改动后端包”的绝对表述，改为：
-   - 不做与主路径无关的扩张
-   - 但允许为主路径所需的收口改动触达 `packages/core`、启动脚本和必要文档
-4. 明确 `UI/preview-active.html`、`UI/preview-empty.html`、`UI/preview-settings.html`、`UI/UI-DESIGN-SPEC.md` 是当前 UI 收口基线
-5. 为新增任务 `C008–C013` 建立依赖关系与优先级顺序
+1. 按 preview 与 `UI/UI-DESIGN-SPEC.md` 恢复 App shell 的基础框架。
+2. 明确剥离外层展示舞台：
+   - 外层灰棕背景不是 App 内部背景
+   - 外层留白和阴影不进入产品布局语义
+3. 顶栏品牌固定为纯文字 `do-what`。
+4. 设计源图标来自 `UI/svg/`，但运行时 SVG 必须迁入 `packages/app/src/assets/`。
+5. 不得把 `UI/` 当成运行时资源目录，也不得在运行时代码中直接引用 `UI/svg/**`。
+6. 为 Active / Empty / Settings 三类页面建立正确的外壳容器与区域边界。
 
 ---
 
 ## 本任务不包含
 
-- 不直接修复任何代码行为
-- 不直接修改现有 UI 或 Core 实现
-- 不把所有延期事项都拉回 v0.1，只重分与主路径直接相关的项目
+- 不完成 Empty、Sidebar、Workbench、Settings 的全部业务细节。
+- 不实现所有最终交互。
+- 不在本任务中处理占位按钮策略。
 
 ---
 
 ## 验收标准（DoD）
 
-1. `closure-overview.md` 明确出现新的收口定义，而不是继续只写“收口优先，不扩张”
-2. `AGENTS.md` 与 `closure-overview.md` 对收口边界的表述一致
-3. 新任务 `C008–C013` 已出现在任务总表中，并带有优先级、依赖和状态
-4. 延期列表中不再把 engine 默认接线、workspace-first、单入口启动继续标注为 v0.2
+1. Electron 窗口内显示的是 App 本体，而不是 preview 外层展示舞台。
+2. Active / Empty / Settings 三类页面都有稳定的壳结构承载。
+3. 品牌仍为纯文字 `do-what`。
+4. 运行时 SVG 仅位于 `packages/app/src/assets/`，且设计源可追溯到 `UI/svg/`。
 
 ---
 
-## 人工严苛验收标准
-
-- [ ] `closure-overview.md` 中”收口判定原则（2026-03-13 重置）”章节存在，措辞清晰，不是模糊表述
-- [ ] `AGENTS.md` 中不再有”收口阶段不改动后端包”的绝对表述（已改为：不做与主路径无关的扩张，但允许为主路径所需的改动触达 core/启动脚本）
-- [ ] C007 状态标注为”已完成”，不再显示”待执行”
-- [ ] 若 C007 已被创建任务集时隐式完成，直接验证文档一致性即可，不计为额外工作
-
 ## 完成后更新
 
-- [ ] `closure-overview.md` 中 C007 状态改为”已完成”
+- [ ] `closure-overview.md` 中 C007 状态改为“已完成”
 - [ ] `AGENTS.md` 中收口任务进度同步
-

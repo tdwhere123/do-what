@@ -1,410 +1,738 @@
-# do-what UI 设计规范 v0.2
+# do-what UI 设计规范（v0.1）
 
-> 来源：`do-what-proposal-v0.1.md` §16 + `UI/风格参考/` + `UI/svg/`
-> 适用范围：`packages/app`（Electron + React）
-> v0.2 变更：Soul 融入对话气泡角标 / 对话+CLI 合一时间线 / 右侧多模式面板 / Settings 归并
-
----
-
-## 1. 设计哲学
-
-**暖纸质感 + 有机 SVG 装饰 + 严格的功能区分离**
-
-- 整体基调：温暖的羊皮纸/米白底，不冷漠、不科技感，像一张有纹路的工作桌面
-- 装饰元素来自 `UI/svg/`，有机形（organic）用于导航与记忆区，几何形（geometric）用于状态指示与数据区
-- 手写体（Kalam）严格限于导航标签和装饰文字，所有信息密集区用系统无衬线或等宽字体
-- 动画节制：只有装饰性星星等闲置动画，操作中自动暂停，支持 `prefers-reduced-motion`
-- Soul 以「幽灵浮现」方式存在：越确定的记忆颜色越深，最淡的几乎感知不到
+> 目的：作为 v0.1 UI 还原与交互实现的唯一执行规范。  
+> 适用范围：`packages/app` 及其与 Core / Soul / Engine 的前端表现层。  
+> 本文不是开放式讨论文档，而是实现约束、交互契约与验收标准。  
+> 本文优先级低于 preview 的具体视觉结果，高于工程师的自由发挥。
 
 ---
 
-## 2. 色彩系统
+## 0. 为什么重写
 
-### 2.1 基础色票
+旧版 UI 规范已不适合作为 v0.1 收口执行基线，原因如下：
 
-| Token | 值 | 用途 |
-|-------|----|------|
-| `--bg` | `#F3EFEA` | 应用主背景（灰石米色，复古纸质感） |
-| `--surface` | `#FAF8F5` | 面板/卡片背景（旧书页浅色） |
-| `--surface-raised` | `#FFFFFF` | 悬浮弹窗、模态框 |
-| `--border` | `#E6DCD1` | 分割线、边框（温和奶咖边线） |
-| `--border-strong` | `#D1C7BB` | 强调边框 |
-| `--text-primary` | `#2D2520` | 主文字（深咖，柔和的碳黑色）|
-| `--text-secondary` | `#8F8176` | 次要文字（复古灰褐） |
-| `--text-muted` | `#B3A89F` | 弱化文字、占位符 |
+1. 它混入了过多 v0.2 倾向的抽象表达，而 v0.1 当前最需要的是按 preview 还原 UI。
+2. 它没有把哪些按钮是真功能、哪些只是展示、哪些只能占位写死，导致实现方容易把所有入口都做成业务按钮。
+3. 它没有把展示舞台、App 本体、启动路径、引擎降级语义写成硬约束，导致当前实现跑偏。
 
-### 2.2 强调色
+本修订版的目标是把以下事项写死：
 
-| Token | 值 | 用途 |
-|-------|----|------|
-| `--accent-primary` | `#654E40` | 主强调色（深摩卡棕，稳重人文）|
-| `--accent-primary-light` | `#826859` | hover/active 状态 |
-| `--accent-warm` | `#C48A7E` | 暖强调（灰调黏土橘，植物生命感）|
-| `--accent-warm-light` | `#DFAB9F` | 暖强调 hover |
-| `--accent-gold` | `#C99B4A` | 高亮/晋升标记（Canon 级记忆）|
-
-### 2.3 状态色
-
-| Token | 值 | 语义 |
-|-------|----|------|
-| `--status-running` | `#3D7A5E` | 运行中（深绿） |
-| `--status-success` | `#2D6B4A` | 完成 |
-| `--status-waiting` | `#8B6B35` | 等待审批（琥珀） |
-| `--status-error` | `#B54040` | 失败/错误 |
-| `--status-interrupted` | `#7A5E7A` | 被中断（灰紫） |
-| `--status-idle` | `#9A9282` | 空闲/未连接 |
-
-### 2.4 Soul 层专用色（幽灵三级）
-
-| Token | 值 | 气泡角标点色 | Tooltip 字色 |
-|-------|----|------------|------------|
-| `--soul-working` | `rgba(28,26,20,0.18)` | 极淡灰 | 极淡灰斜体 11px |
-| `--soul-consolidated` | `rgba(168,94,45,0.45)` | 中等暖棕 | 中等暖色斜体 12px |
-| `--soul-canon` | `#C99B4A` | 金色实心 | 金色 12px，左 2px 金线 |
-| `--soul-trial` | `rgba(122,138,122,0.35)` | 虚线边框灰绿 | 灰绿 |
+- 视觉真相到底以什么为准。
+- 哪些区域必须还原，哪些不属于 App 本体。
+- 每个页面的关键交互是什么语义。
+- 哪些属于 v0.1 必须可用，哪些只是本地 UI，哪些必须标为 `v0.2 实现`。
+- 启动、引擎、workspace-first 与 UI 的关系是什么。
 
 ---
 
-## 3. 字体系统
+## 1. 设计真相与优先级
 
-```css
-/* 装饰性手写体：导航标签、章节装饰文字 */
---font-display: 'Kalam', cursive;
+实现时必须遵守以下优先级：
 
-/* 功能性 UI 文字：所有信息密集区 */
---font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+1. `UI/preview-active.html`
+2. `UI/preview-empty.html`
+3. `UI/preview-settings.html`
+4. `UI/styles.css`
+5. 本文档 `UI/UI-DESIGN-SPEC.md`
+6. `UI/svg/`（设计源素材库）
 
-/* 代码/diff/日志/cue 内容/命令输出 */
---font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-```
+解释：
 
-### 字号阶梯
+- `preview-*.html` 与 `styles.css` 是视觉与布局的第一真相。
+- 本文档负责补足交互语义、按钮分层、状态逻辑与验收边界。
+- 若本文档与 preview 的具体视觉结果冲突，以 preview 为准。
+- 实现方不得以“我理解得更合理”为由另做一个差不多的 UI。
 
-| 用途 | 大小 | 字体 | 备注 |
-|------|------|------|------|
-| 导航标签 | 13px | Kalam | weight 400，字间距 0.02em |
-| 装饰标题 | 18–24px | Kalam | 仅用于空状态/欢迎页 |
-| UI 正文 | 13px | Inter | weight 400 |
-| UI 小字 | 11px | Inter | weight 400，--text-secondary |
-| 代码/日志 | 12px | Mono | |
-| Cue gist | 12px | Mono | 始终等宽 |
-| 状态文字 | 11px | Inter | weight 500，大写 |
-| 按钮标签 | 12px | Inter | weight 500 |
+### 1.2 运行时资产边界
 
----
+- `UI/` 是设计源目录，不是运行时资源目录。
+- `UI/svg/` 负责保存设计源素材，供比对、追溯和后续最小化迁移使用。
+- 运行时 UI 只能引用 `packages/app/src/assets/**` 下的 SVG。
+- 不允许在 `packages/app` 的运行时代码中直接导入或拼接 `UI/svg/**` 路径。
 
-## 4. SVG 图标规范
+### 1.1 明确禁止
 
-> 所有图标来自 `UI/svg/`，**不引入第三方图标库**。
+以下行为一律视为错误实现：
 
-### 4.1 使用规则
-
-- SVG 作为 React 组件内联（`<SvgIcon />`），不用 `<img>`，便于 CSS 控制 fill/stroke
-- 默认颜色：`currentColor`（将 SVG 中的硬编码颜色替换为 `currentColor`）
-- 图标尺寸规格：`16px`（小）/ `20px`（标准）/ `24px`（大）/ `32px`（装饰性）
-- 装饰性大图标（48px+）保留原始颜色，不替换为 `currentColor`
-
-### 4.2 导航/状态/Soul 图标映射
-
-| 用途 | SVG 路径 | 颜色 |
-|------|----------|------|
-| Automations（导航） | `organic/shape/flower/Elements-organic-shape-flower-nature-splash.svg` | `--accent-primary` |
-| Soul（导航） | `organic/shape/spiral/Elements-organic-shape-spiral.svg` | `--accent-warm` |
-| Settings（导航底部） | `organic/shape/sun/Elements-organic-shape-sun.svg` | `--text-secondary` |
-| 运行中（旋转） | `organic/shape/circle/Elements-organic-shape-circle--loading-spin.svg` | `--status-running` |
-| 完成 | `organic/shape/star/Elements-organic-shape-star-wink.svg` | `--status-success` |
-| 等待审批 | `organic/shape/hand/Elements-organic-shape-hand.svg` | `--status-waiting` |
-| 失败 | `organic/shape/abstract/Elements-organic-shape-abstract-comet.svg` | `--status-error` |
-| 发送/Run | `organic/shape/abstract/Elements-organic-shape-abstract-sparkle-dash.svg` | `--accent-warm` |
-| 用户头像 | `organic/shape/face/Elements-organic-shape-face.svg` | `--text-secondary` |
-| 引擎头像 | `organic/shape/smile/Elements-organic-shape-smile-eye.svg` | `--accent-primary` |
-| Soul cue Working | `organic/shape/leaves/Elements-organic-shape-leaves-nature-twig.svg` | `--soul-working` (不透明度 20%) |
-| Soul cue Consolidated | `organic/shape/leaves/Elements-organic-shape-leaves-nature-2.svg` | `--soul-consolidated` (不透明度 60%) |
-| Soul cue Canon | `organic/shape/flower/Elements-organic-shape-flower-nature-cute.svg` | `--soul-canon` (不透明度 100%) |
-| Checkpoint | `organic/shape/abstract/Elements-organic-shape-abstract-footprint-tulip.svg` | `--accent-warm` |
-| 提案/Proposal | `organic/shape/abstract/Elements-organic-shape-abstract-sparkle-dash.svg` | `--accent-gold` |
-| 闲置星星（装饰） | `geometric/shape/star/Elements-geometric-shape-star-sparkle.svg` | `--accent-primary @0.35` |
+1. 仅保留左中右三栏骨架，就声称“已还原 UI”。
+2. 把展示页外层背景、留白、舞台阴影当成 App 内部背景。
+3. 随意改动布局比例、模块位置、信息密度。
+4. 自行引入新图标库或重新设计 App Logo。
+5. 把 preview 里所有按钮都当成真实功能入口。
+6. 后端没接通时，让按钮空响应或误导性跳转。
+7. 以 v0.2 为借口跳过 v0.1 主路径收口。
 
 ---
 
-## 5. 主窗口布局
+## 2. v0.1 设计原则
 
-### 5.1 三栏结构
+v0.1 的 UI 目标不是“更完整”，而是“更忠实、更可体验、更诚实”。
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│  顶栏（40px）：[do-what] [工作区名] [Claude|Codex] [+ New Run] [⚙]  │
-├──────────────────┬───────────────────────────────┬───────────────┤
-│ 左：Run 列表      │  中：对话时间线（fluid）          │ 右：多模式纵向栏│
-│ （200px）        │                               │ （260px）     │
-│                  │  ┌──────────────────────────┐ │ ┌───────────┐ │
-│ [● Run #1]       │  │ [face] 你          21:30 │ │ │ ▼ 概览     │ │
-│ [◎ Run #2]       │  │        帮我分析错误...     │ │ │  (未选中)  │ │
-│ [○ Run #3]       │  │                          │ │ ├───────────┤ │
-│ ──────────────── │  │ [smile] do-what [Cl]21:31│ │ │ ▼ 历史     │ │
-│ + New Run        │  │         好的，我看看...    │ │ └───────────┘ │
-│                  │  │                          │ │  或 (选中态): │
-│                  │  │         → [▶ shell_exe]  │ │ ┌───────────┐ │
-│                  │  └──────────────────────────┘ │ │ ▼ Files     │ │
-│                  │                               │ ├───────────┤ │
-│                  │  [输入框 ─────────────── 发送] │ │ ▼ Tasks     │ │
-│                  │                               │ ├───────────┤ │
-│                  │                               │ │ ▼ CLI/Git ⟷ │ │
-│                  │                               │ └───────────┘ │
-├──────────────────┴───────────────────────────────┴───────────────┤
-│  状态栏（28px）：Core ● | Claude ● | 网络 ● | Soul: 完整            │
-└──────────────────────────────────────────────────────────────────┘
-```
+### 2.1 忠实还原
 
-### 5.2 顶栏（40px）
+- UI 不只是还原骨架，而是尽量忠实还原 preview 中的配色、图标、留白、层级、信息密度、分栏关系、品牌呈现、输入区姿态、右栏组织方式和底部状态区。
+- 若工程实现与 preview 差异明显，即视为未还原。
 
-- 背景 `--surface`，底边 1px `--border`
-- 左：`do-what` 用 Kalam 16px + 工作区名 Inter 13px `--text-secondary`
-- 中：引擎 Pill（Claude / Codex），选中态 `--accent-primary` 填充
-- 右：`[+ New Run]` 主按钮 + `[⚙]` Ghost 按钮（点击进入 Settings 页）
+### 2.2 主路径优先
 
-### 5.3 左侧 Run 列表（200px）
+v0.1 的 UI 必须优先保障以下主路径成立：
 
-- 背景 `--bg`，右边 1px `--border`
-- 每个 Run：状态图标（16px）+ RunId mono 字体 + 引擎名小字 + 相对时间
-- 运行中：`circle--loading-spin.svg` 旋转
-- 完成：`star-sparkle-wink.svg` 静态
-- 等待审批：`hand.svg` 轻微脉冲
-- 激活项：左侧 2px `--accent-primary` 实线 + 背景 `--surface`
-- 底部：`[+ New Run]` Ghost 按钮
+1. 打开 App。
+2. 进入正确的 Workbench 或 Empty 状态。
+3. 创建或打开 workspace。
+4. 看到 Engine / Core / Soul 的真实状态。
+5. 在条件满足时创建 Run。
 
-### 5.4 状态栏（28px，底部固定）
+### 2.3 诚实降级
 
-- 背景 `--accent-primary`，文字 `rgba(255,255,255,0.85)`，Inter 11px weight 500
-- 分段：`Core ●` · `Claude ●` · `Codex ●` · `网络 ●` · `Soul: 完整`
-- 异常时对应段变 `--status-error`（保持 mocha 底色不变）
+- 本地没有引擎，不得阻断 App 打开。
+- 未实现功能可以保留入口，但必须明确标记 `v0.2 实现`，或以禁用态展示。
+- 不能把“没做”伪装成“能点但没反应”。
+
+### 2.4 不重新设计
+
+本轮不允许“顺手优化 UI”。
+
+不允许：
+
+- 改品牌样式。
+- 改控件位置。
+- 换图标风格。
+- 改色彩气质。
+- 改字体策略。
+- 把右栏改抽屉、把底部状态改顶部、把左栏层级扁平化。
 
 ---
 
-## 6. 中间对话时间线
+## 3. App 本体与展示舞台的边界
 
-**对话与 CLI 工具调用共用同一条时间线**，不再分割为独立区域。
+### 3.1 展示舞台不属于 App 本体
 
-### 6.1 消息区文档流排版
+在 preview 中：
 
-不再使用气泡，改为文档型排版，用头像区分发言人：
+- `body { padding: 24px; background: #D6D0C6; }`
+- `.window-chrome`
 
-- 头像：20px 有机 SVG，`face.svg`（用户） / `smile-eye.svg`（引擎），置于消息块左侧
-- 发言人标签：Inter 12px `--text-secondary`，头像右侧
-- 时间戳：最右侧，Inter 11px `--text-muted`
-- 消息正文：头像右方，与发言人标签同容器向下延展，`--text-primary` 13px
-- 代码块：深色背景（`#1C1A14`），JetBrains Mono 12px，圆角 8px
-- 消息间距：消息块之间用垂直间距（16px）自然区分，不需要气泡框与水平分割线
+这些属于展示舞台包装，不属于 App 内部设计语义。
 
-### 6.2 Soul 边注系统（左侧）
+### 3.2 App 本体的真实还原范围
 
-取消原有的气泡角标，改为在整个时间线左侧预留 16px 的边注通道：
+真正要还原的是：
 
-- **图标通过形态和透明度（颜色深浅）区分显影程度：**
-  - **Working**：`organic/shape/leaves/Elements-organic-shape-leaves-nature-twig.svg`（单枝桠），不透明度 `20%`
-  - **Consolidated**：`organic/shape/leaves/Elements-organic-shape-leaves-nature-2.svg`（双叶），不透明度 `60%`
-  - **Canon**：`organic/shape/flower/Elements-organic-shape-flower-nature-cute.svg`（开花），不透明度 `100%`，带 `--accent-gold` 点缀
-- Hover：展开 tooltip（Mono 11px），点击进入 Soul 详情
-- 无 cue 时：通道为空白，不显示任何占位元素
+- `.window-chrome` 内部的 `.app-frame`
+- `.window-chrome` 内部的 `.settings-frame`
 
-### 6.3 工具调用内联卡片
+也就是说：
 
-工具调用作为时间线中的独立行（非气泡），样式：
-```
-[▶ file_write] packages/core/src/db.ts  ✓ 23ms
-[▶ shell_exec] pnpm test --filter core  ⟳ running...
-[▶ git_commit] "feat: add policy engine" ✓ 12ms
-```
-- 左侧工具图标（对应 SVG 16px）+ 工具名 Mono 12px
-- 右侧状态徽章（running/success/error）+ 耗时
-- 点击展开参数/输出详情（折叠）
-- 背景：`--bg`（与主体区分层次）
+- 外层灰棕色不是 App 内部背景。
+- 外层留白不是 App 内部边距。
+- 外层阴影或截图式舞台不应被误实现成 Workbench 内容层。
 
-### 6.4 审批与 Ask 操作区
+### 3.3 落地规则
 
-当引擎处于 WaitingApproval 或 Ask 状态时，**在输入框正上方弹出 CLI 风格操作区**：
-
-```
-┌───────────────────────────┐
-│ ⚠ Claude 请求执行：shell_exec  │
-│ ❯ 允许一次                  │
-│   本次会话允许              │
-│   查看详情 ↗                │
-│   拒绝                      │
-└───────────────────────────┘
-```
-
-- 背景 `--surface-raised`，风格极致收敛，贴近代码终端体验
-- 使用上下方向键或鼠标悬浮高亮当前选项（`❯` 前缀，行内高亮背景色）
-- 选项纵向排列，最新审批在最前
+- Electron 窗口内默认只还原 App 本体，不强制复刻 HTML 展示舞台。
+- 若开发环境为了 Demo 保留外层舞台，也必须明确该层不是产品界面本体，且不能污染应用布局。
 
 ---
 
-## 7. 右侧多模式纵向栏（260px）
+## 4. 品牌、图标与 SVG 规则
 
-不再使用横向 Tab 切换，改为纵向堆叠的区块布局，所有信息一览无余。内容区背景使用 `--bg`，overflow-y 滚动。
+### 4.1 品牌
 
-### 7.1 空闲状态（无活跃 Run 时）
+- 顶栏品牌固定为简单文字：`do-what`
+- 不新增图形 Logo
+- 不对文字做重新设计
 
-固定分为上下两栏：
+### 4.2 图标来源
 
-- **概览 (Overview)**：引擎状态、Soul 模式、工具链健康摘要等全局指标。
-- **历史记录 (History)**：所有历史 Run 的精简列表。
+- 设计源只允许来自 `UI/svg/` 中已有 SVG 资产
+- 运行时引用只允许来自 `packages/app/src/assets/**`
+- 不引入第三方 icon library：lucide、heroicons、phosphor、tabler、fontawesome 等一律禁止
+- 不允许在已有 SVG 之外新增一套风格明显不同的图标
 
-### 7.2 活跃状态（有一项及以上活跃 Run 时）
+### 4.3 SVG 使用规则
 
-固定分为竖向三个区块：
+- 功能性小图标优先封装为 React 组件
+- 可改为 `currentColor` 驱动，但不得改变原始气质
+- 装饰性 SVG 允许保留原图形细节
+- 从 `UI/svg/` 选中的运行时素材必须先迁入 `packages/app/src/assets/**` 再被页面引用
+- 不为了“快”用 emoji、占位字母、第三方默认 icon 替换
 
-1. **文件 (Files)**（顶部）：
-   - 当前 Run 影响到的文件列表。
-   - 每行展示 `文件路径（mono 12px）` + `+N`（绿）`-M`（红）增删量。
-   - 点击查看统一的 Diff 预览区。
-   - 空状态："No files changed yet"。
+### 4.4 图标语义原则
 
-2. **任务 (Tasks)**（中部）：
-   - 对话中产生的当前 Todo 清单。
-   - 每行前置 checkbox 复选框，已完成条目使用删除线并置灰（`--text-muted`）。
-   - 空状态："Nothing to do"。
-
-3. **CLI Cluster / Git Tree**（底部）：
-   - 提供区块右上角 toggle 图标，在这两项视图中来回切换。
-   - **CLI Cluster**：DAG 节点连线视图，展示当前 Worktree 并行状态，反映 Proposal / Integrator 并发执行情况。
-   - **Git 树**：代码版本树状结构。
-   - 空状态："No parallel runs"。
+- 左下角状态、Soul 提示、发送按钮、品牌附近装饰等均应遵循 preview 与 `UI/svg/` 的既定风格
+- 若新增交互确实缺少合适图标，先用文字，不要擅自引入新图标体系
 
 ---
 
-## 8. Settings 页
+## 5. 视觉系统
 
-点击顶栏 ⚙ 进入，独立页面（不是模态框），点击任意 Run 或 X 返回。
+### 5.1 色彩气质
 
-**分组卡片布局：**
+整体应维持：
 
-### 8.1 引擎配置
-- Claude / Codex 各一张卡片
-- 内容：路径、API Key（masked）、模式切换、健康检查指标
-- 外部管理时显示只读横幅
+- 温暖、纸感、灰棕米白基底
+- 轻微复古，不科技蓝，不高饱和未来风
+- 强调色只在关键动作和激活态使用，不泛滥
 
-### 8.2 Soul 高级设置
-- ComputeProvider 选择
-- 预算/频率上限滑块
-- 自动 Checkpoint 开关
+实现时以 `styles.css` 的实际变量为准，不再重做一套“更整洁”的 token 体系。
 
-### 8.3 Policy / 审批规则
-- 工具审批策略列表（auto-allow / require-approval / block）
-- 可编辑 JSON 规则
+### 5.2 字体
 
-### 8.4 工具链状态
-- Git / Node / pnpm / ripgrep 各一行
-- 已安装（绿）/ 缺失（红）/ 版本低（琥珀）
-- `[安装]` 或 `[升级]` 操作按钮
+本轮默认按 preview 的实际表现落地：
 
-### 8.5 主题/动画偏好
-- 减少动画开关（同步 `prefers-reduced-motion`）
-- 暗色模式预留开关（v0.2 不实现，占位）
+- 展示性字体：`Caveat`
+- UI 正文：中文系统无衬线
+- Mono：`JetBrains Mono` 或等价
 
----
+### 5.3 圆角、边框、阴影
 
-## 9. Checkpoint Modal（记忆审阅）
+- 圆角偏小到中等，不做大圆角卡片化
+- 阴影克制，仅用于窗口舞台包装、弹层和少量浮层
+- 主体区边界依赖浅色分割线与背景层级，而非重阴影
 
-居中模态框（max-width 720px），来源：左侧 Run 列表出现审批图标时触发。
+### 5.4 信息密度
 
-- 标题：`[sparkle-dash.svg] 记忆提案待审阅`（Kalam 18px）
-- 左栏：当前 cue（旧版）/ 右栏：提案（新版），两列 diff 对比
-- 底部操作：`[Reject]` `[Hint Only]` `[Edit]` `[Accept]`（从左到右优先级升序）
+- 左栏较紧凑
+- 中间消息流是主要视觉焦点
+- 右栏信息密度高于中间区，但低于 IDE 式极密布局
+- 输入区简洁，不做巨大聊天气泡或花哨工具条
 
 ---
 
-## 10. 组件规范
+## 6. 信息架构总览
 
-### 10.1 按钮
+App 共有三类主要界面：
 
-```
-Primary:   bg --accent-primary, text white, border-radius 8px, px 16 py 8
-Secondary: bg transparent, border 1px --border, text --text-primary
-Danger:    bg transparent, border 1px --status-error, text --status-error
-Ghost:     bg transparent, no border, text --text-secondary, hover bg --border@0.4
-```
+1. Empty：无活跃 workspace 或 run 时的空态页
+2. Active / Workbench：有 workspace 和 run 时的主工作页
+3. Settings：配置中心页
 
-- hover 变亮 8%，active 变暗 8%，transition 80ms ease
-- 禁用态 opacity 0.4，pointer-events none
+三者必须保持同一视觉语言，但承载不同任务。
 
-### 10.2 状态徽章
+### 6.1 Empty
 
-```
-[图标 12px] [文字 11px Inter weight 500 uppercase]
-圆角 4px，padding 2px 8px
-```
+必须清晰表达：
 
-### 10.3 卡片
+- 当前没有活跃工作路径
+- 可以打开工作区
+- 可以浏览历史
+- 可以预先发起 New Run，但前提仍依赖 workspace 和 engine 条件
 
-- 背景 `--surface`，border 1px `--border`，border-radius 12px，padding 16px
-- 悬浮卡片：`--surface-raised` + shadow `0 4px 16px rgba(44,40,20,0.08)`
+### 6.2 Active / Workbench
 
----
+必须清晰表达：
 
-## 11. 动画规范
+- 当前在哪个 workspace
+- 左栏是 workspace / run 结构
+- 中间是消息、工具调用、审批与结果流
+- 右栏是与当前 run 相关的文件、计划、Git 协作信息
+- 底部左侧是系统状态与设置入口，不是普通导航菜单
 
-### 11.1 星星闪烁（装饰性，左栏顶部）
+### 6.3 Settings
 
-```css
-@keyframes sparkle-blink {
-  0%, 100% { opacity: 0; transform: scale(0.6) rotate(0deg); }
-  50%       { opacity: 1; transform: scale(1)   rotate(15deg); }
-}
-.sparkle { animation: sparkle-blink 2.8s ease-in-out infinite; }
-```
+必须分为五个域：
 
-- 多颗错开 delay（0s / 0.9s / 1.8s）
-- 交互期间 `animation-play-state: paused`，交互结束 3s 后恢复
+- 引擎
+- Soul
+- 策略
+- 环境
+- 外观
 
-### 11.2 加载旋转
-
-```css
-@keyframes spin { to { transform: rotate(360deg); } }
-.loading-spin { animation: spin 1.2s linear infinite; }
-```
-
-### 11.3 减少动画
-
-```css
-@media (prefers-reduced-motion: reduce) {
-  .sparkle, .decorative-anim { animation: none; opacity: 0.6; }
-}
-```
-
-### 11.4 其他过渡
-
-- 抽屉/面板：transform + opacity，200ms ease-out
-- 模态框：scale(0.96→1) + opacity，150ms ease-out
-- 页面切换：opacity，120ms
+且每个域内容显著不同。
 
 ---
 
-## 12. 空状态设计
+## 7. 页面结构规范
 
-每个空状态：装饰 SVG（48–80px，居中）+ Kalam 18px 主文 + Inter 13px 次要说明。
+### 7.1 Active / Workbench 页面
 
-| 区域 | SVG | 主文 |
-|------|-----|------|
-| 无 Run | `organic/shape/abstract/Elements-organic-shape-abstract-wave.svg` | No runs yet |
-| Soul 无记忆 | `organic/shape/spiral/Elements-organic-shape-spiral-circle.svg` | Memory is blank |
-| Files 无改动 | `organic/shape/leaves/Elements-organic-shape-leaves-nature-twig.svg` | No files changed |
-| CLI 无并行 | `organic/shape/bush/Elements-organic-shape-bush-curly-nature.svg` | No parallel runs |
-| Tasks 空 | `organic/shape/leaves/Elements-organic-shape-leaves-nature-vine.svg` | Nothing to do |
+#### 7.1.1 顶栏
+
+- 左侧仅显示 `do-what`
+- 右侧保持轻量，不在 v0.1 顶栏塞入复杂操作区
+
+#### 7.1.2 左栏
+
+包含四部分：
+
+1. `工作区` 标题
+2. 添加工作区按钮 `+`
+3. workspace tree 与 run list
+4. 底部状态区（Engine / Core / Soul / 设置）
+
+workspace 是第一层，run 是 workspace 下的第二层。一个 workspace 可折叠或展开，`新建 Run` 明确挂在当前 workspace 下。
+
+#### 7.1.3 中央主流区
+
+中间区域只显示：
+
+- 对话消息
+- 工具调用块
+- 审批块
+- 结果块
+- 输入框
+- 必要的 Soul 浮层或注解
+
+#### 7.1.4 右栏
+
+按 `preview-active` 的结构组织：
+
+1. 已修改文件
+2. 计划
+3. Git / 协作
+4. 对应的明细树或切换内容
+
+#### 7.1.5 左下状态区
+
+状态区固定在左栏底部，包含：
+
+- Engine
+- Core
+- Soul
+- 设置
+
+状态必须来自真实数据或诚实占位，设置入口固定在这里。
+
+### 7.2 Empty 页面
+
+Empty 页面不是阉割版 Active，而是专门的开始页。
+
+必须包含：
+
+- 左栏仍保留工作区结构与底部状态区
+- 中央有明确的空态文案与两个关键动作：
+  - `打开工作区`
+  - `浏览历史`
+- 仍可从左栏 `新建 Run` 进入 modal，但其行为受 workspace 和 engine 条件约束
+
+### 7.3 Settings 页面
+
+Settings 页面采用独立 frame，不沿用 Active 页右栏模式。
+
+结构：
+
+1. 顶部返回按钮与 `设置` 标题
+2. 顶部 tab bar
+3. 下方滚动内容区
+
+五个标签固定为：
+
+- 引擎
+- Soul
+- 策略
+- 环境
+- 外观
 
 ---
 
-## 13. SVG 组件目录约定
+## 8. 交互分层模型
 
-```
-packages/app/src/assets/icons/
-  nav/          ← flower-nature-splash, spiral, sun
-  status/       ← circle-loading, star-wink, hand, comet
-  actions/      ← sparkle-dash, face, smile-eye
-  soul/         ← leaves-nature-twig, leaves-nature-2, flower-nature-cute
-  empty/        ← wave, spiral-circle, leaves-nature-twig, bush-curly-nature, leaves-nature-vine
-```
+所有交互必须分为四类，禁止混淆。
 
-每个 SVG 封装为 React 组件，接受 `size?: number` 和 `className?: string`。
-颜色通过 CSS `color` 或 `fill` 控制。
+### A 类：v0.1 必须真实可用的主路径动作
+
+- 添加或打开工作区
+- 左栏 workspace 选择
+- 左栏 run 切换
+- New Run modal 的打开和关闭
+- 设置入口与返回
+- 引擎连接状态查看与重新检测
+- 主输入框发送（在前置条件满足时）
+
+### B 类：允许只是本地 UI 交互
+
+- 右栏 Git / 协作视图切换
+- Settings 内 tab 切换
+- modal 内模式选择、节点选择、更多选项展开
+- toggle 组件的本地开关动画
+- Soul popover 的展开和收起
+
+### C 类：可保留为占位，但必须诚实标识
+
+- Soul 的“本次提升 / 忽略”真实写入
+- 浏览历史的完整历史页
+- 策略页高级规则编辑
+- 环境页复杂安装 / 集成操作
+- 外观页真正持久化主题设置
+
+### D 类：纯展示元素
+
+- 纯装饰 SVG
+- 视觉标签
+- 仅用于说明状态的非交互徽标
+- preview 中为了演示界面饱满度而出现的示意内容
+
+---
+
+## 9. Active / Workbench 详细交互规范
+
+### 9.1 左栏：添加工作区按钮 `+`
+
+- 类型：A 类
+- 行为：打开系统目录选择器；选择成功后，新 workspace 进入左栏列表；同路径不重复创建
+
+### 9.2 左栏：workspace 展开 / 收起
+
+- 类型：A 类
+- 行为：点击标题或 chevron 折叠 / 展开对应 run 列表
+
+### 9.3 左栏：run item
+
+- 类型：A 类
+- 行为：切换当前活跃 run；中央与右栏同步切换
+
+### 9.4 左栏：`新建 Run`
+
+- 类型：A 类
+- 行为：打开 New Run modal；没有 workspace 时优先提示先创建或打开 workspace；workspace 存在但引擎不可用时，可打开 modal，但提交阶段必须诚实拦截
+
+### 9.5 中央：Soul inline trigger
+
+- 类型：B 类
+- 行为：展开或收起对应 cue popover；同屏只允许一个 popover 处于打开态
+
+### 9.6 Soul popover 内 `本次提升` / `忽略`
+
+- 类型：C 类
+- 行为：若真实写链未打通，则显示 `v0.2 实现` 或禁用态说明
+
+### 9.7 主输入框 textarea
+
+- 类型：A 类
+- 行为：绑定当前 run 的追加要求；没有活跃 run 时禁用或引导先创建 run
+
+### 9.8 发送按钮
+
+- 类型：A 类
+- 行为：
+  - 存在 workspace、活跃 run、可用引擎时发送请求
+  - 引擎不可用时给出“未连接引擎 / 请前往设置”的诚实提示
+  - 没有活跃 run 时禁用或提示先创建 run
+
+### 9.9 审批块中的选项
+
+- 类型：A 类或 B 类
+- 若审批链已接通，则至少有一个真实审批链可用
+- 若仅做 UI 演示，必须明确标注“仅 UI 演示”
+
+### 9.10 右栏 `Git 树 / 协作`
+
+- 类型：B 类
+- 行为：稳定切换当前显示块，即使内容仍为 demo 数据也必须稳定
+
+### 9.11 New Run modal：关闭按钮 / 取消
+
+- 类型：A 类
+- 行为：关闭 modal，行为一致，不得产生假提交
+
+### 9.12 New Run modal：说明输入框
+
+- 类型：A 类
+- 行为：作为 run 草稿描述输入区，保持 preview 文案、层级和尺寸感
+
+### 9.13 New Run modal：模式选择卡片
+
+- 类型：B 类
+- 行为：前端单选态切换；`单引擎执行` 应作为默认安全选项
+
+### 9.14 New Run modal：节点选择卡片
+
+- 类型：B 类
+- 行为：前端选中或取消选中；至少让 `Claude Code` 与 `Codex` 呈现清楚的已选状态
+
+### 9.15 New Run modal：`更多选项`
+
+- 类型：B 类
+- 行为：展开或收起，不要求所有内部字段真实生效
+
+### 9.16 New Run modal：`开始 Run`
+
+- 类型：A 类
+- 行为：校验前置条件；在已有 workspace 下创建 run；引擎不可用时明确报错，不造假 run 或假启动
+
+---
+
+## 10. Empty 页面详细交互规范
+
+### 10.1 `打开工作区`
+
+- 类型：A 类
+- 这是 Empty 页第一优先动作
+- 行为：打开本地目录选择器，成功后进入对应 workspace 的 Active 视图
+
+### 10.2 `浏览历史`
+
+- 类型：C 类
+- 若没有真实历史页，必须标注 `v0.2 实现`
+
+### 10.3 Empty 页中的 `新建 Run`
+
+- 类型：A 类
+- 行为：允许打开 modal，但真正开始前必须检查 workspace 条件
+
+---
+
+## 11. Settings 页面详细交互规范
+
+### 11.1 通用规则
+
+- Settings 的 tab 切换属于 B 类，本地 UI 必须稳定
+- 各 tab 内容必须显著不同
+- 按钮分为真实可用、本地 UI 和占位三层
+
+### 11.2 引擎 tab
+
+引擎 tab 是 v0.1 最重要的 settings 域，必须承担以下职责：
+
+- 展示当前引擎连接状态
+- 展示连接模式
+- 提供重新检测
+- 在无引擎时说明如何配置或接入
+
+状态语义至少需要区分：
+
+- 已连接
+- 未连接
+- 未安装
+- 检测失败
+- 认证失败
+- 禁用
+
+禁止长期显示 `unknown`。
+
+### 11.3 Soul tab
+
+- 承载记忆相关配置
+- v0.1 允许大部分内容先是前端配置壳
+- 但必须与其他 tab 明显不同
+
+### 11.4 策略 tab
+
+- 承载审批、自动批准、规则入口
+- v0.1 可以是较轻的配置壳
+
+### 11.5 环境 tab
+
+- 表达工具链、worktree、运行环境健康
+- 查看与重新检测优先接真实检测
+- 安装或修复类默认属于 C 类
+
+### 11.6 外观 tab
+
+- 承载主题、动效、排版等
+- v0.1 可先作为展示壳
+- 持久化保存若未实现，需明确标注“当前会话生效”或 `v0.2 实现`
+
+### 11.7 返回按钮
+
+- 类型：A 类
+- 行为：返回上一个主界面，不丢失关键全局状态
+
+---
+
+## 12. Workspace-first 业务语义
+
+### 12.1 业务顺序
+
+正确顺序：
+
+1. 用户进入 App
+2. 创建或打开 workspace
+3. 在该 workspace 下创建 run
+4. 在该 run 上追加需求、查看执行、审批、观察产出
+
+错误顺序：
+
+- 先造 run，再补 workspace
+- run 脱离 workspace 独立漂浮
+
+### 12.2 空态语义
+
+如果当前没有 workspace：
+
+- Empty 页面优先引导 `打开工作区`
+- 左栏 `新建 Run` 不应绕过这一点直接创造孤立运行体
+
+### 12.3 左栏是业务语义，不只是 UI 结构
+
+左栏必须真实反映：
+
+- workspace 树
+- 每个 workspace 下的 run
+- 当前选中项
+
+---
+
+## 13. 启动与引擎接入的 UI 语义
+
+### 13.1 单命令启动是默认主路径
+
+v0.1 的用户路径应为：
+
+- 一条命令启动 App
+- App 自行等待 Core 就绪
+- App 启动后自动探测本地引擎
+
+### 13.2 本地有引擎时
+
+- 自动 probe
+- 左下 Engine 状态进入可解释健康态
+- Settings / 引擎页显示已连接或可用
+
+### 13.3 本地无引擎时
+
+- App 仍能进入 Empty 或 Active 主界面
+- Engine 状态显示未连接、未安装或待配置
+- 设置页中给出对应说明
+- 不阻断用户浏览界面和创建 workspace
+
+### 13.4 本地引擎异常时
+
+必须区分：
+
+- 路径不存在
+- 未安装
+- 认证失败
+- probe 失败
+- 被禁用
+
+不要全部折叠为 `unknown` 或 `error`。
+
+---
+
+## 14. 错误态与禁用态规范
+
+### 14.1 禁用态原则
+
+- 视觉上应明确比可用态更弱
+- 不能与正常按钮混淆
+- 悬浮时可说明原因
+
+### 14.2 `v0.2 实现` 原则
+
+对于本轮不做的真实链路：
+
+- 优先禁用按钮加 tooltip
+- 或点击后轻量 toast / inline hint：`v0.2 实现`
+- 不要弹复杂假页面
+
+### 14.3 启动失败 / 离线态
+
+若 Core 未连通或模块初始化失败：
+
+- 页面必须给出明确原因
+- 可以进入 Offline 或 Bootstrap Error 视图
+- 文案必须区分：Core 不可达、引擎未安装、认证失败、Soul 未启用等
+
+---
+
+## 15. 页面级按钮分层清单
+
+### 15.1 Active 页面
+
+| 元素 | 类别 | v0.1 要求 |
+| --- | --- | --- |
+| 添加工作区 `+` | A | 真实目录选择 |
+| workspace 展开 / 收起 | A | 真实列表交互 |
+| run item | A | 真实切换活跃 run |
+| `新建 Run` | A | 打开 modal，受 workspace / engine 约束 |
+| Soul inline trigger | B | 打开 / 关闭 popover |
+| `本次提升` / `忽略` | C | 默认 `v0.2 实现` 或禁用 |
+| 主输入框 | A | 绑定当前 run |
+| 发送按钮 | A | 条件满足才发送，否则诚实提示 |
+| Git 树 / 协作切换 | B | 本地切换 |
+| modal 关闭 / 取消 | A | 真实关闭 |
+| 模式选择卡片 | B | 前端单选 |
+| 节点选择卡片 | B | 前端选中 |
+| 更多选项 | B | 展开 / 收起 |
+| 开始 Run | A | 真实校验并创建 run |
+
+### 15.2 Empty 页面
+
+| 元素 | 类别 | v0.1 要求 |
+| --- | --- | --- |
+| 添加工作区 `+` | A | 真实目录选择 |
+| `新建 Run` | A | 打开 modal，但创建前检查 workspace |
+| `打开工作区` | A | 真实目录选择 |
+| `浏览历史` | C | 默认 `v0.2 实现` |
+| modal 内部交互 | 同 Active | 同上 |
+
+### 15.3 Settings 页面
+
+| 元素 | 类别 | v0.1 要求 |
+| --- | --- | --- |
+| 返回 | A | 返回主界面 |
+| tab 切换 | B | 本地 UI 稳定 |
+| 引擎模式单选 | B | 本地选择 |
+| 健康检查 / 重新检测 | A | 真实 probe 优先 |
+| API Key 修改 | C | 未接通则占位说明 |
+| Budget slider | B | 本地交互 |
+| toggle 开关 | B | 本地交互，可附“未持久化” |
+| 添加规则 / 编辑模式 | C | 默认 `v0.2 实现` |
+| 查看类按钮 | B/C | 依是否接通而定 |
+
+---
+
+## 16. v0.1 必须满足的验收线
+
+### 16.1 UI 还原线
+
+- Active / Empty / Settings 三个页面的主体结构明显回到 preview 设计
+- 不引入新的图标体系
+- 品牌仍为简单文字 `do-what`
+- 外层灰棕舞台不进入 App 内部语义
+
+### 16.2 主路径线
+
+用户必须能走通：
+
+- 启动 App
+- 打开工作区
+- 看到 workspace 出现在左栏
+- 看到引擎真实状态
+- 在条件满足时创建 run
+
+### 16.3 诚实性线
+
+- 未实现按钮必须有明确处理
+- 无引擎时 App 仍可启动
+- 状态不可长期 `unknown`
+
+### 16.4 Settings 线
+
+- 五个 tab 内容显著不同
+- 引擎 tab 至少承担真实状态查看与重新检测
+
+---
+
+## 17. 实现后必须提交的报告
+
+完成 UI 收口后，必须提交一份实现报告，而不是只说“改了哪些文件”。
+
+报告至少包含：
+
+1. 哪些页面已按 preview 还原。
+2. 外层展示舞台与 App 本体如何剥离。
+3. 图标设计源是否全部来自 `UI/svg/`，以及运行时引用是否全部来自 `packages/app/src/assets/`。
+4. 是否移除了第三方图标。
+5. 品牌是否仍为 `do-what` 文字。
+6. 每个按钮按 A / B / C / D 分类后的结果。
+7. 哪些已接真实链路，哪些仍是本地 UI，哪些是 `v0.2 实现`。
+8. 本地有引擎、无引擎、探测失败三种情况下的 UI 表现。
+9. preview 与实现的对照截图。
+10. 仍未完成但不阻塞 v0.1 的项目清单。
+
+---
+
+## 18. 最终执行口径
+
+- 不要再“参考”设计稿，要还原设计稿。
+- 不要再把所有按钮都当成已定义业务入口。
+- 不要再把展示舞台误当成 App 本体。
+- 不要再用自由发挥替代精确实现。
+- 不要把 v0.1 主路径问题推迟到 v0.2。
+
+v0.1 的 UI 收口标准不是“看起来像一个产品”，而是：
+
+**它就是已经定稿的那个产品界面，并且主路径能被顺利、诚实地体验。**

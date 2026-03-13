@@ -1,87 +1,65 @@
-# C008 — 按 `UI/` 恢复 Workbench / Empty / Settings 基线
+# C008 - 恢复 Empty 与 Sidebar 的 workspace-first 体验
 
-**优先级：** P0（必须，当前前端观感与信息层级已偏离）
+**优先级：** P0  
+**依赖：** C007  
 **涉及范围：**
-- `packages/app/src/app/`
-- `packages/app/src/components/`
-- `packages/app/src/pages/`
-- `packages/app/src/styles/`
-- `UI/preview-active.html`
-- `UI/preview-empty.html`
-- `UI/preview-settings.html`
-- `UI/UI-DESIGN-SPEC.md`
 
-**注意：** `UI/` 是设计真相源，只读参考，不要把偏离现状继续当成目标。
+- `packages/app/src/components/sidebar/`
+- `packages/app/src/pages/`
+- `packages/app/src/lib/commands/`
+- `UI/preview-empty.html`
+- `UI/preview-active.html`
+- `UI/UI-DESIGN-SPEC.md`
 
 ---
 
 ## 背景
 
-你已把之前的 UI 基线重新放回项目目录，但当前 React/Electron 前端与该基线存在明显偏差：
+在完成 App 壳结构后，第一批真正承载业务语义的 UI 不是中央主流区，而是 Empty 与 Sidebar：
 
-- 主界面布局、信息密度、层级和交互入口已明显变化
-- Sidebar、Timeline、右侧信息栏、Settings 结构都与设计稿不一致
-- 这不是简单视觉细节问题，而是产品已经失去原本的信息架构
-
-收口阶段不能继续以“当前代码长什么样”为准，而要回到已恢复的设计基线。
+- Empty 决定用户第一步是否理解“先打开工作区”
+- Sidebar 决定 workspace tree 是否真的成立
+- New Run 是否被正确挡在 workspace 之后，也由这两处决定
 
 ---
 
 ## 目标
 
-1. 以前端目录 `UI/` 为准，恢复 Workbench / Empty / Settings 的结构骨架
-2. 恢复关键业务入口、信息分区和视觉层级，而不是只做样式微调
-3. 让 UI 再次成为 v0.1 产品定义的一部分，而不是临时壳子
+1. 让 Empty 页面回到 workspace-first 的开始页语义。
+2. 让左栏真正成为 workspace / run 的业务树，而不是装饰目录。
+3. 让创建 workspace、选择 workspace、New Run 前置校验回到正确路径。
 
 ---
 
 ## 本任务必须完成
 
-1. 以 `UI/preview-active.html` 为基线，恢复 Workbench 主界面结构：
-   - 顶部栏
-   - 左侧 workspace / run 区域
-   - 中央 timeline / feed 区域
-   - 右侧 files / plan / git-collab 信息区
-2. 以 `UI/preview-empty.html` 为基线，恢复无 workspace / 无 run 时的空态结构和入口
-3. 以 `UI/preview-settings.html` 为基线，恢复 Settings 的布局分区、卡片层次和页内组织方式
-4. 关键入口必须与设计基线对齐：
-   - 创建 workspace 入口
-   - 创建 run 入口
-   - Settings 入口
-   - 状态区入口
-5. 若当前组件层次无法支撑基线结构，允许拆分/重组 `packages/app` 前端组件
-6. 任务卡实现时必须先做一次“现状页面 vs `UI/` 基线”的对照清单，避免只改颜色和字号
+1. Empty 页面必须包含明确的 `打开工作区` 主动作。
+2. 左栏必须展示真实的 workspace tree 与 run list 层级。
+3. 添加工作区按钮 `+` 必须承担真实目录选择或等价创建入口。
+4. `新建 Run` 在没有 workspace 时不得直接创建孤立 run。
+5. New Run modal 可以打开，但在提交前必须校验 workspace 条件。
+6. 当前选中 workspace 与左栏高亮、Empty / Active 页面状态保持一致。
 
 ---
 
 ## 本任务不包含
 
-- 不要求一次补齐所有动效、悬停细节和像素级装饰
-- 不要求一次补齐所有 Soul / 协作浮层的最终行为
-- 不要求一次解决所有数据源问题；本任务优先恢复结构与入口
+- 不恢复中央 Workbench 主流区的全部细节。
+- 不完成 Settings 信息架构。
+- 不处理所有占位按钮的最终禁用态。
 
 ---
 
 ## 验收标准（DoD）
 
-1. Workbench 页面整体结构与 `UI/preview-active.html` 一致，不再只保留一个简化版骨架
-2. 空态页面与 `UI/preview-empty.html` 的入口和层级一致
-3. Settings 页面整体布局与 `UI/preview-settings.html` 的分区一致
-4. 代码评审时可以逐段指出哪些区域已回到 `UI/` 基线，不能再用“整体看起来差不多”作为验收
+1. 没有 workspace 时，用户会首先看到 `打开工作区` 的明确入口。
+2. 创建或打开 workspace 后，左栏能反映真实 workspace 与 run 层级。
+3. 没有 workspace 时，`新建 Run` 不会绕过约束直接创建 run。
+4. 左栏与页面状态都遵循 workspace-first 语义。
 
 ---
 
-## 人工严苛验收标准
-
-- [ ] 打开 Workbench，与 `UI/preview-active.html` 逐区域对比：顶部栏 / 左侧 workspace-run 区 / 中央 timeline / 右侧信息区，**四个区域都能识别出对应结构**，不接受”整体看起来差不多”
-- [ ] 必须能逐一指出每个区域对应设计稿的哪个部分
-- [ ] 空态页面有明显”创建 workspace”入口，与 `UI/preview-empty.html` 布局方向一致
-- [ ] Settings 页面切换 3 个以上 tab，内容**明显不同**，不出现高度同质化
-- [ ] Settings 布局与 `UI/preview-settings.html` 主分区一致（分区命名和大结构吻合）
-- [ ] `pnpm -w test` 全通过（不允许因本任务导致新的 FAIL）
-
 ## 完成后更新
 
-- [ ] `closure-overview.md` 中 C008 状态改为”已完成”
+- [ ] `closure-overview.md` 中 C008 状态改为“已完成”
 - [ ] `AGENTS.md` 中收口任务进度同步
-
