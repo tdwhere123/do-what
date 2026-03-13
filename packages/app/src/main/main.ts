@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import started from 'electron-squirrel-startup';
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -36,8 +36,23 @@ function createMainWindow(): BrowserWindow {
   return mainWindow;
 }
 
+async function pickWorkspaceDirectory(): Promise<string | null> {
+  const browserWindow =
+    BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0] ?? null;
+  const result = await dialog.showOpenDialog(browserWindow ?? undefined, {
+    properties: ['openDirectory'],
+    title: 'Open Workspace',
+  });
+  if (result.canceled) {
+    return null;
+  }
+
+  return result.filePaths[0] ?? null;
+}
+
 app.whenReady().then(() => {
   createMainWindow();
+  ipcMain.handle('do-what:pick-workspace-directory', async () => pickWorkspaceDirectory());
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

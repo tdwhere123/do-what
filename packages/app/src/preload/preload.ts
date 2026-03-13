@@ -1,7 +1,7 @@
 ﻿import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { contextBridge } from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
 
 const CORE_SESSION_TOKEN_PATH = path.join(os.homedir(), '.do-what', 'run', 'session_token');
 
@@ -17,6 +17,8 @@ function readCoreSessionToken(): string | null {
 contextBridge.exposeInMainWorld('doWhatRuntime', {
   coreSessionToken: readCoreSessionToken(),
   coreSessionTokenPath: CORE_SESSION_TOKEN_PATH,
+  openWorkspaceDirectory: () =>
+    ipcRenderer.invoke('do-what:pick-workspace-directory') as Promise<string | null>,
   readFreshSessionToken: () => readCoreSessionToken(),
   platform: process.platform,
   versions: {

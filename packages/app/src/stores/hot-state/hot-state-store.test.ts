@@ -84,6 +84,28 @@ describe('hot state store', () => {
     expect(useHotStateStore.getState().globalInteractionLock).toBe(true);
   });
 
+  it('maps bootstrap diagnostics onto the shared modules contract', () => {
+    useHotStateStore.getState().applyBootstrapDiagnostics({
+      connectionState: 'connected',
+      error: {
+        code: 'auth_required',
+        message: 'Unauthorized',
+      },
+      health: {
+        claude: 'booting',
+        codex: 'booting',
+        core: 'degraded',
+        network: 'healthy',
+        soul: 'booting',
+      },
+    });
+
+    expect(useHotStateStore.getState().modules.core.phase).toBe('degraded');
+    expect(useHotStateStore.getState().modules.core.status).toBe('connected');
+    expect(useHotStateStore.getState().modules.engines.claude.phase).toBe('probing');
+    expect(useHotStateStore.getState().modules.soul.phase).toBe('probing');
+  });
+
   it('updates inactive run summaries directly from normalized events', () => {
     useHotStateStore.getState().applyWorkbenchSnapshot(EMPTY_WORKBENCH_FIXTURE);
 
@@ -135,6 +157,7 @@ describe('hot state store', () => {
 
     expect(useHotStateStore.getState().coreSessionId).toBe('mock-core-restarted');
     expect(useHotStateStore.getState().health.core).toBe('booting');
+    expect(useHotStateStore.getState().modules.core.phase).toBe('probing');
   });
 
   it('derives healthy engine state from system events', () => {
@@ -146,5 +169,6 @@ describe('hot state store', () => {
 
     expect(useHotStateStore.getState().health.codex).toBe('healthy');
     expect(useHotStateStore.getState().health.core).toBe('healthy');
+    expect(useHotStateStore.getState().modules.engines.codex.status).toBe('connected');
   });
 });

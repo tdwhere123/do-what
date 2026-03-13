@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   AnyEventSchema,
   CoreCommandAckSchema,
@@ -14,6 +16,7 @@ import {
   type MemoryPinRequest,
   type MemoryProposalReviewRequest,
   type MemorySupersedeRequest,
+  type OpenWorkspaceRequest,
   type SettingsPatchRequest,
 } from '@do-what/protocol';
 import type { SoulToolDispatcher } from '@do-what/soul';
@@ -36,6 +39,8 @@ interface ApprovalRow {
 }
 
 interface WorkspaceLookupRow {
+  name: string;
+  root_path: string;
   workspace_id: string;
 }
 
@@ -43,6 +48,15 @@ interface CommandAckState {
   ackId: string;
   causedBy: CoreSseCause;
   entityId: string;
+  entityType:
+    | 'approval'
+    | 'drift'
+    | 'event'
+    | 'gate'
+    | 'memory'
+    | 'run'
+    | 'settings'
+    | 'workspace';
 }
 
 const RUN_METADATA_UPSERT_SQL = `
@@ -71,6 +85,13 @@ INSERT INTO workspaces (
   created_at,
   last_opened_at
 ) VALUES (?, ?, ?, ?, ?, ?)
+`;
+
+const WORKSPACE_LAST_OPENED_UPDATE_SQL = `
+UPDATE workspaces
+SET name = COALESCE(?, name),
+    last_opened_at = ?
+WHERE workspace_id = ?
 `;
 
 export class CoreApiError extends Error {
@@ -130,6 +151,24 @@ function normalizeReviewAction(
   mode: MemoryProposalReviewRequest['mode'],
 ): 'accept' | 'hint_only' | 'reject' {
   return mode;
+}
+
+function normalizeWorkspaceRootPath(rootPath: string): string {
+  const resolved = path.resolve(rootPath.trim());
+  return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+}
+
+function readWorkspaceName(
+  resolvedRootPath: string,
+  requestedName?: string,
+): string {
+  const trimmedName = requestedName?.trim();
+  if (trimmedName) {
+    return trimmedName;
+  }
+
+  const derivedName = path.basename(resolvedRootPath);
+  return derivedName.length > 0 ? derivedName : resolvedRootPath;
 }
 
 export class UiCommandService {
@@ -236,10 +275,10 @@ export class UiCommandService {
         type: 'START',
       });
 
-      return this.commitAck(ack.ackId);
+      return this.commitAck(ack);
     } catch (error) {
       return this.failAck(
-        ack.ackId,
+        ack,
         error instanceof Error ? error.message : String(error),
       );
     }
@@ -267,12 +306,49 @@ export class UiCommandService {
         ],
         sql: WORKSPACE_INSERT_SQL,
       });
-      return this.commitAck(ack.ackId);
+      return this.commitAck(ack);
     } catch (error) {
       return this.failAck(
-        ack.ackId,
+        ack,
         error instanceof Error ? error.message : String(error),
       );
+    }
+  }
+
+  async openWorkspace(input: OpenWorkspaceRequest): Promise<CoreCommandAck> {
+    const resolvedRootPath = this.resolveWorkspaceDirectory(input.rootPath);
+    const existingWorkspace = this.findWorkspaceByRootPath(resolvedRootPath);
+    const workspaceId = existingWorkspace?.workspace_id ?? `workspace-${randomUUID()}`;
+    const ack = this.createAck({
+      clientCommandId: input.clientCommandId,
+      entityId: workspaceId,
+      entityType: 'workspace',
+    });
+    const now = new Date().toISOString();
+
+    try {
+      if (existingWorkspace) {
+        await this.workerClient.write({
+          params: [input.name?.trim() || null, now, existingWorkspace.workspace_id],
+          sql: WORKSPACE_LAST_OPENED_UPDATE_SQL,
+        });
+        return this.commitAck(ack);
+      }
+
+      await this.workerClient.write({
+        params: [
+          workspaceId,
+          readWorkspaceName(resolvedRootPath, input.name),
+          resolvedRootPath,
+          null,
+          now,
+          now,
+        ],
+        sql: WORKSPACE_INSERT_SQL,
+      });
+      return this.commitAck(ack);
+    } catch (error) {
+      return this.failAck(ack, error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -327,7 +403,7 @@ export class UiCommandService {
         timestamp: now,
         toolName: approval.tool_name,
       });
-      return this.commitAck(ack.ackId, published.revision);
+      return this.commitAck(ack, published.revision);
     }
 
     this.approvalMachine.approve(approvalId, 'user');
@@ -348,7 +424,7 @@ export class UiCommandService {
       timestamp: now,
       toolName: approval.tool_name,
     });
-    return this.commitAck(ack.ackId, published.revision);
+    return this.commitAck(ack, published.revision);
   }
 
   async patchSettings(input: SettingsPatchRequest): Promise<CoreCommandAck> {
@@ -375,7 +451,7 @@ export class UiCommandService {
     });
     const revision = this.hotStateManager.snapshot().last_event_seq;
     this.settingsStore.updateFields(input.fields, revision);
-    return this.commitAck(ack.ackId, revision);
+    return this.commitAck(ack, revision);
   }
 
   async reviewMemoryProposal(
@@ -406,10 +482,10 @@ export class UiCommandService {
         },
         name: 'soul.review_memory_proposal',
       });
-      return this.commitAck(ack.ackId);
+      return this.commitAck(ack);
     } catch (error) {
       return this.failAck(
-        ack.ackId,
+        ack,
         error instanceof Error ? error.message : String(error),
       );
     } finally {
@@ -441,7 +517,7 @@ export class UiCommandService {
       timestamp: new Date().toISOString(),
       type: 'token_stream',
     });
-    return this.commitAck(ack.ackId, published.revision);
+    return this.commitAck(ack, published.revision);
   }
 
   rejectUnsupportedDriftAction(
@@ -504,15 +580,18 @@ export class UiCommandService {
     });
   }
 
-  private commitAck(ackId: string, revision?: number): CoreCommandAck {
+  private commitAck(ack: CommandAckState, revision?: number): CoreCommandAck {
     if (typeof revision === 'number') {
-      this.ackTracker.setRevision(ackId, revision);
+      this.ackTracker.setRevision(ack.ackId, revision);
     }
-    const ack = this.ackTracker.markCommitted(ackId) ?? this.ackTracker.get(ackId);
+    const trackedAck =
+      this.ackTracker.markCommitted(ack.ackId) ?? this.ackTracker.get(ack.ackId);
     return CoreCommandAckSchema.parse({
-      ackId,
+      ackId: ack.ackId,
+      entityId: ack.entityId,
+      entityType: ack.entityType,
       ok: true,
-      revision: ack?.revision,
+      revision: trackedAck?.revision,
     });
   }
 
@@ -544,6 +623,7 @@ export class UiCommandService {
         clientCommandId: input.clientCommandId,
       },
       entityId: input.entityId,
+      entityType: input.entityType,
     };
   }
 
@@ -554,15 +634,18 @@ export class UiCommandService {
     message: string;
   }): CoreCommandAck {
     const ack = this.createAck(input);
-    return this.failAck(ack.ackId, input.message);
+    return this.failAck(ack, input.message);
   }
 
-  private failAck(ackId: string, error: string): CoreCommandAck {
-    const ack = this.ackTracker.markFailed(ackId, error) ?? this.ackTracker.get(ackId);
+  private failAck(ack: CommandAckState, error: string): CoreCommandAck {
+    const trackedAck =
+      this.ackTracker.markFailed(ack.ackId, error) ?? this.ackTracker.get(ack.ackId);
     return CoreCommandAckSchema.parse({
-      ackId,
+      ackId: ack.ackId,
+      entityId: ack.entityId,
+      entityType: ack.entityType,
       ok: true,
-      revision: ack?.revision,
+      revision: trackedAck?.revision,
     });
   }
 
@@ -629,5 +712,64 @@ export class UiCommandService {
     } finally {
       db.close();
     }
+  }
+
+  private findWorkspaceByRootPath(rootPath: string): WorkspaceLookupRow | null {
+    const normalizedRootPath = normalizeWorkspaceRootPath(rootPath);
+    const db = createReadConnection(this.stateDbPath);
+    try {
+      const rows = db
+        .prepare(
+          `SELECT workspace_id, name, root_path
+           FROM workspaces`,
+        )
+        .all() as WorkspaceLookupRow[];
+      return (
+        rows.find(
+          (row) => normalizeWorkspaceRootPath(row.root_path) === normalizedRootPath,
+        ) ?? null
+      );
+    } finally {
+      db.close();
+    }
+  }
+
+  private resolveWorkspaceDirectory(rootPath: string): string {
+    const trimmedPath = rootPath.trim();
+    if (trimmedPath.length === 0) {
+      throw new CoreApiError({
+        code: 'workspace_path_required',
+        message: 'Workspace root path is required.',
+        status: 400,
+      });
+    }
+
+    const resolvedRootPath = path.resolve(trimmedPath);
+    let stats: fs.Stats;
+    try {
+      stats = fs.statSync(resolvedRootPath);
+    } catch {
+      throw new CoreApiError({
+        code: 'workspace_path_not_found',
+        details: {
+          rootPath: resolvedRootPath,
+        },
+        message: `Workspace path does not exist: ${resolvedRootPath}`,
+        status: 404,
+      });
+    }
+
+    if (!stats.isDirectory()) {
+      throw new CoreApiError({
+        code: 'workspace_path_not_directory',
+        details: {
+          rootPath: resolvedRootPath,
+        },
+        message: `Workspace path is not a directory: ${resolvedRootPath}`,
+        status: 400,
+      });
+    }
+
+    return resolvedRootPath;
   }
 }

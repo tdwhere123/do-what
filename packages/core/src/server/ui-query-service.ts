@@ -2,6 +2,7 @@ import path from 'node:path';
 import {
   AnyEventSchema,
   ApprovalProbeSchema,
+  deriveWorkbenchHealthSnapshot,
   InspectorSnapshotSchema,
   MemoryProbeSchema,
   SettingsSnapshotSchema,
@@ -13,10 +14,11 @@ import {
   type CoreSseCause,
   type InspectorSnapshot,
   type MemoryProbe,
+  type ModulesHotState,
   type SettingsSnapshot,
   type TimelineEntry,
   type TimelinePage,
-  type WorkbenchHealthSnapshot,
+  type WorkbenchModulesSnapshot,
   type WorkbenchRunSummary,
   type WorkbenchSnapshot,
   type WorkbenchWorkspaceSummary,
@@ -290,36 +292,32 @@ function deriveWorkspaceStatus(
   return 'idle';
 }
 
-function deriveEngineHealth(
-  engineId: 'claude' | 'codex',
-  runs: readonly WorkbenchRunSummary[],
-  hotState: ReturnType<HotStateManager['snapshot']>,
-): WorkbenchHealthSnapshot['claude'] {
-  if (runs.some((run) => run.engine === engineId && ACTIVE_RUN_STATUSES.has(run.status))) {
-    return 'running';
-  }
-
-  const engine = hotState.engines.get(engineId);
-  if (!engine) {
-    return 'idle';
-  }
-
-  switch (engine.status) {
-    case 'connected':
-      return 'healthy';
-    case 'circuit_open':
-      return 'degraded';
-    case 'disconnected':
-      return 'offline';
-    default:
-      return 'idle';
-  }
+function mapModuleState(
+  module: ModulesHotState['core'],
+): WorkbenchModulesSnapshot['core'] {
+  return {
+    kind: module.kind,
+    label: module.label,
+    meta: module.meta ? { ...module.meta } : undefined,
+    moduleId: module.module_id,
+    phase: module.phase,
+    reason: module.reason,
+    status: module.status,
+    updatedAt: module.updated_at,
+  };
 }
 
-function deriveSoulHealth(recentEvents: readonly AnyEvent[]): WorkbenchHealthSnapshot['soul'] {
-  return recentEvents.some((event) => event.source.startsWith('soul'))
-    ? 'running'
-    : 'idle';
+function mapModulesSnapshot(
+  modules: ModulesHotState,
+): WorkbenchModulesSnapshot {
+  return {
+    core: mapModuleState(modules.core),
+    engines: {
+      claude: mapModuleState(modules.engines.claude),
+      codex: mapModuleState(modules.engines.codex),
+    },
+    soul: mapModuleState(modules.soul),
+  };
 }
 
 function mapEventToTimelineEntry(event: AnyEvent): TimelineEntry {
@@ -988,17 +986,13 @@ export class UiQueryService {
       const recentEvents = hotState.recent_events
         .map((event) => AnyEventSchema.safeParse(event))
         .flatMap((result) => (result.success ? [result.data] : []));
+      const modules = mapModulesSnapshot(hotState.modules);
 
       return WorkbenchSnapshotSchema.parse({
         connectionState: 'connected',
         coreSessionId: this.coreSessionId,
-        health: {
-          claude: deriveEngineHealth('claude', runs, hotState),
-          codex: deriveEngineHealth('codex', runs, hotState),
-          core: 'healthy',
-          network: 'healthy',
-          soul: deriveSoulHealth(recentEvents),
-        },
+        health: deriveWorkbenchHealthSnapshot(modules),
+        modules,
         pendingApprovals: [...hotState.pending_approvals.values()]
           .sort((left, right) => left.requested_at.localeCompare(right.requested_at))
           .map((approval) => ({

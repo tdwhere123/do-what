@@ -76,11 +76,17 @@ function isAuthFailure(error: CoreError, status: number | null): boolean {
   );
 }
 
+function isUnresolvedModule(
+  module: WorkbenchSnapshot['modules']['core'],
+): boolean {
+  return module.phase === 'probing' || module.status === 'disconnected';
+}
+
 function buildBootstrapHealth(
   connectionState: 'connected' | 'disconnected',
   failureStage?: BootstrapFailureStage,
 ): WorkbenchHealthSnapshot {
-  const current = useHotStateStore.getState().health;
+  const current = useHotStateStore.getState();
   const unresolvedStatus =
     connectionState === 'disconnected'
       ? 'offline'
@@ -89,11 +95,17 @@ function buildBootstrapHealth(
         : 'booting';
 
   return {
-    claude: current.claude === 'unknown' ? unresolvedStatus : current.claude,
-    codex: current.codex === 'unknown' ? unresolvedStatus : current.codex,
+    claude: isUnresolvedModule(current.modules.engines.claude)
+      ? unresolvedStatus
+      : current.health.claude,
+    codex: isUnresolvedModule(current.modules.engines.codex)
+      ? unresolvedStatus
+      : current.health.codex,
     core: connectionState === 'disconnected' ? 'offline' : 'degraded',
     network: connectionState === 'disconnected' ? 'offline' : 'healthy',
-    soul: current.soul === 'unknown' ? unresolvedStatus : current.soul,
+    soul: isUnresolvedModule(current.modules.soul)
+      ? unresolvedStatus
+      : current.health.soul,
   };
 }
 

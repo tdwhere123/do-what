@@ -5,8 +5,10 @@ import {
   CoreErrorSchema,
   CoreProbeResultSchema,
   CoreSseEnvelopeSchema,
+  deriveWorkbenchHealthSnapshot,
   InspectorSnapshotSchema,
   MemoryProbeSchema,
+  type ModuleStatusSnapshot,
   SettingsSnapshotSchema,
   TemplateDescriptorSchema,
   TimelinePageSchema,
@@ -25,13 +27,42 @@ import {
   type WorkbenchSnapshot,
 } from '@do-what/protocol';
 
-const EMPTY_HEALTH = {
-  claude: 'unknown',
-  codex: 'unknown',
-  core: 'healthy',
-  network: 'unknown',
-  soul: 'unknown',
-} as const;
+export function createEmptyModulesSnapshot(): WorkbenchSnapshot['modules'] {
+  const updatedAt = new Date(0).toISOString();
+  const createModule = (
+    input: Pick<ModuleStatusSnapshot, 'kind' | 'label' | 'moduleId'>,
+  ): ModuleStatusSnapshot => ({
+    ...input,
+    phase: 'probing',
+    status: 'disconnected',
+    updatedAt,
+  });
+
+  return {
+    core: createModule({
+      kind: 'core',
+      label: 'Core',
+      moduleId: 'core',
+    }),
+    engines: {
+      claude: createModule({
+        kind: 'engine',
+        label: 'Claude',
+        moduleId: 'claude',
+      }),
+      codex: createModule({
+        kind: 'engine',
+        label: 'Codex',
+        moduleId: 'codex',
+      }),
+    },
+    soul: createModule({
+      kind: 'soul',
+      label: 'Soul',
+      moduleId: 'soul',
+    }),
+  };
+}
 
 interface LegacyPendingApproval {
   approvalId?: unknown;
@@ -104,10 +135,12 @@ function parsePendingApprovals(value: unknown): WorkbenchSnapshot['pendingApprov
 export function createEmptyWorkbenchSnapshot(
   overrides: Partial<WorkbenchSnapshot> = {},
 ): WorkbenchSnapshot {
+  const modules = overrides.modules ?? createEmptyModulesSnapshot();
   return WorkbenchSnapshotSchema.parse({
     connectionState: 'connected',
     coreSessionId: null,
-    health: EMPTY_HEALTH,
+    health: overrides.health ?? deriveWorkbenchHealthSnapshot(modules),
+    modules,
     pendingApprovals: [],
     recentEvents: [],
     revision: 0,

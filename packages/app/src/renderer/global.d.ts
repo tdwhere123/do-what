@@ -1,6 +1,7 @@
 interface DoWhatRuntimeInfo {
   readonly coreSessionToken: string | null;
   readonly coreSessionTokenPath: string;
+  readonly openWorkspaceDirectory?: () => Promise<string | null>;
   readonly readFreshSessionToken?: () => string | null;
   readonly platform: string;
   readonly versions: {

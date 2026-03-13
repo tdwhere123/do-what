@@ -1,5 +1,5 @@
-import { WorkbenchPageContent } from '../../pages/workbench/workbench-page-content';
+import { WorkspaceFirstWorkbenchPageContent } from '../workbench-page-content';
 
 export function WorkbenchPage() {
-  return <WorkbenchPageContent />;
+  return <WorkspaceFirstWorkbenchPageContent />;
 }

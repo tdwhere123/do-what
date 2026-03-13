@@ -7,6 +7,7 @@ import {
   CoreProbeResultSchema,
   CoreSseEnvelopeSchema,
   MemoryProbeSchema,
+  OpenWorkspaceRequestSchema,
   SettingsPatchRequestSchema,
   SettingsSnapshotSchema,
   TemplateDescriptorSchema,
@@ -20,11 +21,49 @@ describe('ui contract schemas', () => {
       connectionState: 'connected',
       coreSessionId: 'core-session-1',
       health: {
-        claude: 'healthy',
-        codex: 'idle',
+        claude: 'degraded',
+        codex: 'degraded',
         core: 'healthy',
         network: 'healthy',
-        soul: 'idle',
+        soul: 'healthy',
+      },
+      modules: {
+        core: {
+          kind: 'core',
+          label: 'Core',
+          moduleId: 'core',
+          phase: 'ready',
+          status: 'connected',
+          updatedAt: '2026-03-10T00:00:00.000Z',
+        },
+        engines: {
+          claude: {
+            kind: 'engine',
+            label: 'Claude',
+            moduleId: 'claude',
+            phase: 'degraded',
+            reason: 'probe failed',
+            status: 'probe_failed',
+            updatedAt: '2026-03-10T00:00:00.000Z',
+          },
+          codex: {
+            kind: 'engine',
+            label: 'Codex',
+            moduleId: 'codex',
+            phase: 'degraded',
+            reason: 'not installed',
+            status: 'not_installed',
+            updatedAt: '2026-03-10T00:00:00.000Z',
+          },
+        },
+        soul: {
+          kind: 'soul',
+          label: 'Soul',
+          moduleId: 'soul',
+          phase: 'ready',
+          status: 'connected',
+          updatedAt: '2026-03-10T00:00:00.000Z',
+        },
       },
       pendingApprovals: [
         {
@@ -42,6 +81,7 @@ describe('ui contract schemas', () => {
 
     expect(parsed.revision).toBe(12);
     expect(parsed.pendingApprovals[0]?.approvalId).toBe('approval-1');
+    expect(parsed.modules.engines.claude.status).toBe('probe_failed');
   });
 
   it('accepts timeline, settings, and template descriptor baselines', () => {
@@ -101,6 +141,14 @@ describe('ui contract schemas', () => {
     ).toBe('Primary Workspace');
 
     expect(
+      OpenWorkspaceRequestSchema.parse({
+        clientCommandId: 'cmd-workspace-open-1',
+        name: 'do-what-new',
+        rootPath: 'D:/makefun/do-what/do-what-new',
+      }).rootPath,
+    ).toBe('D:/makefun/do-what/do-what-new');
+
+    expect(
       SettingsPatchRequestSchema.parse({
         clientCommandId: 'cmd-2',
         fields: {
@@ -138,10 +186,12 @@ describe('ui contract schemas', () => {
     expect(
       CoreCommandAckSchema.parse({
         ackId: 'ack-1',
+        entityId: 'workspace-1',
+        entityType: 'workspace',
         ok: true,
         revision: 3,
-      }).ackId,
-    ).toBe('ack-1');
+      }).entityId,
+    ).toBe('workspace-1');
 
     expect(
       CoreProbeResultSchema.parse({

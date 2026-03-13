@@ -60,6 +60,6 @@
 
 ## 完成后更新
 
-- [ ] `closure-overview.md` 中 C003 状态改为“已完成”
-- [ ] `AGENTS.md` 中收口任务进度同步
-- [ ] 若新增接口，`docs/INTERFACE_INDEX.md` 追加变更记录
+- [x] `closure-overview.md` 中 C003 状态改为“已完成”
+- [x] `AGENTS.md` 中收口任务进度同步
+- [x] 若新增接口，`docs/INTERFACE_INDEX.md` 追加变更记录

@@ -1,4 +1,5 @@
 import type { BaseEvent } from '../events/base.js';
+import type { ModuleKind, ModulePhase, ModuleStatus } from './module-status.js';
 
 export type RunHotStatus =
   | 'created'
@@ -58,7 +59,28 @@ export interface CheckpointHotState {
   readonly triggered_at: string;
 }
 
+export interface ModuleHotState {
+  readonly kind: ModuleKind;
+  readonly label: string;
+  readonly meta?: Readonly<Record<string, unknown>>;
+  readonly module_id: string;
+  readonly phase: ModulePhase;
+  readonly reason?: string;
+  readonly status: ModuleStatus;
+  readonly updated_at: string;
+}
+
+export interface ModulesHotState {
+  readonly core: ModuleHotState;
+  readonly engines: Readonly<{
+    claude: ModuleHotState;
+    codex: ModuleHotState;
+  }>;
+  readonly soul: ModuleHotState;
+}
+
 export interface CoreHotState {
+  readonly modules: ModulesHotState;
   readonly runs: ReadonlyMap<string, RunHotState>;
   readonly engines: ReadonlyMap<string, EngineHotState>;
   readonly pending_approvals: ReadonlyMap<string, ApprovalHotState>;

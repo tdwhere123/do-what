@@ -3,6 +3,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { SettingsSnapshot } from '@do-what/protocol';
 import { useNavigate } from 'react-router-dom';
 import { dispatchSettingsSave } from '../../lib/commands';
+import {
+  formatModuleState,
+  selectPrimaryEngineModule,
+} from '../../lib/module-status';
 import { dismissAckOverlay, retryAckOverlaySync } from '../../lib/reconciliation';
 import { getAppServices } from '../../lib/runtime/app-services';
 import { useAckOverlayStore } from '../../stores/ack-overlay';
@@ -111,6 +115,7 @@ export function SettingsPageContent() {
   const navigate = useNavigate();
   const runtime = window.doWhatRuntime ?? FALLBACK_RUNTIME;
   const globalLocked = useHotStateStore((state) => state.globalInteractionLock);
+  const modules = useHotStateStore((state) => state.modules);
   const activeTab = useUiStore((state) => state.settingsActiveTab);
   const setActiveTab = useUiStore((state) => state.setSettingsActiveTab);
   const setActiveModal = useUiStore((state) => state.setActiveModal);
@@ -170,6 +175,7 @@ export function SettingsPageContent() {
   );
 
   const activeSection = useMemo(() => getSectionForTab(query.data, activeTab), [activeTab, query.data]);
+  const primaryEngineModule = useMemo(() => selectPrimaryEngineModule(modules), [modules]);
 
   const saveDisabled = globalLocked || Object.keys(draftFields).length === 0 || query.isLoading;
 
@@ -212,6 +218,42 @@ export function SettingsPageContent() {
 
             {query.isLoading ? <p className={styles.rowSubtext}>Loading settings snapshot...</p> : null}
             {query.error ? <p className={styles.errorText}>{query.error instanceof Error ? query.error.message : 'Failed to load settings.'}</p> : null}
+
+            {activeTab === 'engines' ? (
+              <>
+                <div className={styles.settingsRow}>
+                  <div className={styles.settingsRowLabel}>
+                    <span className={styles.labelMain}>Core</span>
+                    <span className={styles.labelSub}>{modules.core.reason ?? 'Core module status from workbench snapshot.'}</span>
+                  </div>
+                  <span className={styles.valueLabel}>{formatModuleState(modules.core)}</span>
+                </div>
+                {(['claude', 'codex'] as const).map((engineId) => {
+                  const engine = modules.engines[engineId];
+                  return (
+                    <div className={styles.settingsRow} key={engine.moduleId}>
+                      <div className={styles.settingsRowLabel}>
+                        <span className={styles.labelMain}>{engine.label}</span>
+                        <span className={styles.labelSub}>
+                          {engine.reason ??
+                            (engine.moduleId === primaryEngineModule.moduleId
+                              ? 'Primary engine signal used in the sidebar.'
+                              : 'Secondary engine status from the shared module contract.')}
+                        </span>
+                      </div>
+                      <span className={styles.valueLabel}>{formatModuleState(engine)}</span>
+                    </div>
+                  );
+                })}
+                <div className={styles.settingsRow}>
+                  <div className={styles.settingsRowLabel}>
+                    <span className={styles.labelMain}>Soul</span>
+                    <span className={styles.labelSub}>{modules.soul.reason ?? 'Soul module status from the same Core snapshot.'}</span>
+                  </div>
+                  <span className={styles.valueLabel}>{formatModuleState(modules.soul)}</span>
+                </div>
+              </>
+            ) : null}
 
             {(activeSection?.fields ?? []).map((field) => {
               const locked = globalLocked || field.locked || (activeSection?.locked ?? false) || lockedFieldIds.includes(field.fieldId);

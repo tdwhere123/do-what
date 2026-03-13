@@ -39,7 +39,7 @@
 
 ### 本轮审计输出
 
-- 本轮允许直接修改的代码范围仅限 UI 资产收口。
+- 本轮允许直接修改的代码范围以 `AGENTS.md` 为准：凡 v0.1 主路径成立所必需的改动，允许触达 `packages/app`、`packages/core`、启动脚本、必要文档，以及相关 `packages/protocol` schema。
 - 其余与预期不符的实现问题，先记录到 `docs/archive/v0.1-closure/code-vs-expected-audit.md`，作为 closure 审计与后续实现依据。
 - 产品体验阻断项以代码证据为准，不以历史任务文案或预期口头描述为准。
 
@@ -49,21 +49,21 @@
 
 | ID | 任务 | 优先级 | 依赖 | 状态 |
 | --- | --- | --- | --- | --- |
-| C001 | `tasks/C001-fix-default-transport.md` | P0 | - | 已完成（任务体系已重置） |
-| C002 | `tasks/C002-disable-unsupported-buttons.md` | P0 | C001 | 已完成 |
-| C003 | `tasks/C003-readme-startup-update.md` | P0 | C002 | 待执行 |
-| C004 | `tasks/C004-settings-banner.md` | P0 | C003 | 待执行 |
-| C005 | `tasks/C005-engine-boundary-docs.md` | P0 | C004 | 待执行 |
-| C006 | `tasks/C006-debug-offline-screen.md` | P0 | C005 | 待执行 |
-| C007 | `tasks/C007-closure-baseline-reset.md` | P0 | C006 | 待执行 |
-| C008 | `tasks/C008-restore-ui-to-design-baseline.md` | P0 | C007 | 待执行 |
-| C009 | `tasks/C009-workspace-first-flow.md` | P0 | C008 | 待执行 |
-| C010 | `tasks/C010-engine-and-module-bootstrap.md` | P0 | C009 | 待执行 |
-| C011 | `tasks/C011-single-command-startup.md` | P1 | C010 | 待执行 |
-| C012 | `tasks/C012-fix-settings-information-architecture.md` | P1 | C011 | 待执行 |
-| C013 | `tasks/C013-bootstrap-error-honesty.md` | P0 | C012 | 待执行 |
+| C001 | 重置 closure 基线与文档真相源 | P0 | - | 已完成（任务体系已重置） |
+| C002 | 修复 bootstrap 错误诚实性 | P0 | C001 | 已完成 |
+| C003 | 建立 workspace-first 主业务契约 | P0 | C002 | 已完成 |
+| C004 | 补齐 Core / Engine / Soul 默认接线与状态语义 | P0 | C003 | 已完成 |
+| C005 | 收口为单入口启动 | P0 | C004 | 待执行 |
+| C006 | 建立 UI 交互分层模型 | P0 | C005 | 待执行 |
+| C007 | 恢复 App 壳结构并剥离展示舞台 | P0 | C006 | 待执行 |
+| C008 | 恢复 Empty 与 Sidebar 的 workspace-first 体验 | P0 | C007 | 待执行 |
+| C009 | 恢复 Active / Workbench 主页面 | P0 | C008 | 待执行 |
+| C010 | 重建 Settings 信息架构 | P0 | C009 | 待执行 |
+| C011 | 同步 README 与实现边界文档 | P1 | C010 | 待执行 |
+| C012 | 硬化占位能力与 UI 诚实性 | P1 | C011 | 待执行 |
+| C013 | 最终 UI fidelity 与 closure sign-off | P0 | C012 | 待执行 |
 
-> 文件名沿用历史编号与路径，正文已全部重写为新的线性任务定义。
+> 任务卡文件名仍沿用历史路径；以正文主题和本表编号为准。
 
 ---
 

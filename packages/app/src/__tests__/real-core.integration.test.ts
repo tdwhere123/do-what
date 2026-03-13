@@ -108,6 +108,7 @@ async function startTestServer(
   const stateDir = path.join(tempDir, 'state');
   const workspaceRoot = path.join(tempDir, 'workspace');
   const worktreeBasePath = path.join(tempDir, 'worktrees');
+  fs.mkdirSync(stateDir, { recursive: true });
   fs.mkdirSync(workspaceRoot, { recursive: true });
   await runGit(['init'], workspaceRoot);
   await runGit(['config', 'user.email', 'codex@example.com'], workspaceRoot);
@@ -261,6 +262,35 @@ function openSoulDb(stateDir: string): Database.Database {
   return new Database(path.join(stateDir, 'soul.db'));
 }
 
+function insertWorkspace(
+  stateDir: string,
+  workspaceRoot: string,
+  input: {
+    readonly name?: string;
+    readonly workspaceId: string;
+  },
+): void {
+  const db = openStateDb(stateDir);
+  const now = new Date().toISOString();
+
+  try {
+    db.prepare(
+      `INSERT INTO workspaces (
+        workspace_id, name, root_path, engine_type, created_at, last_opened_at
+      ) VALUES (?, ?, ?, ?, ?, ?)`,
+    ).run(
+      input.workspaceId,
+      input.name ?? input.workspaceId,
+      workspaceRoot,
+      'claude',
+      now,
+      now,
+    );
+  } finally {
+    db.close();
+  }
+}
+
 function insertApproval(
   stateDir: string,
   input: {
@@ -325,7 +355,7 @@ function insertGovernanceLease(
       '[]',
       '[]',
       '2026-03-12T10:00:00.000Z',
-      '2026-03-13T10:00:00.000Z',
+      '2099-01-01T00:00:00.000Z',
       'active',
     );
   } finally {
@@ -482,6 +512,9 @@ afterEach(async () => {
 describe('real-core integration', () => {
   it('boots the app store runtime against real Core and settles create-run plus send-message flow', async () => {
     const context = await startTestServer();
+    insertWorkspace(context.stateDir, context.workspaceRoot, {
+      workspaceId: 'ws-bootstrap',
+    });
     const services = createHttpServices(context.baseUrl, context.token);
 
     await startRuntime(services);
@@ -554,6 +587,9 @@ describe('real-core integration', () => {
     const context = await startTestServer({
       isDevelopment: false,
     });
+    insertWorkspace(context.stateDir, context.workspaceRoot, {
+      workspaceId: 'ws-probes',
+    });
     const runId = await createRunViaHttp(
       context.baseUrl,
       context.token,
@@ -620,6 +656,9 @@ describe('real-core integration', () => {
   it('merges paged timeline history from the real query surface without disturbing the optimistic tail', async () => {
     const context = await startTestServer({
       isDevelopment: false,
+    });
+    insertWorkspace(context.stateDir, context.workspaceRoot, {
+      workspaceId: 'ws-pagination',
     });
     const runId = await createRunViaHttp(
       context.baseUrl,
@@ -700,6 +739,9 @@ describe('real-core integration', () => {
     const context = await startTestServer({
       isDevelopment: false,
     });
+    insertWorkspace(context.stateDir, context.workspaceRoot, {
+      workspaceId: 'ws-memory',
+    });
     const runId = await createRunViaHttp(
       context.baseUrl,
       context.token,
@@ -739,6 +781,9 @@ describe('real-core integration', () => {
     const context = await startTestServer({
       isDevelopment: false,
     });
+    insertWorkspace(context.stateDir, context.workspaceRoot, {
+      workspaceId: 'ws-drift',
+    });
     const runId = await createRunViaHttp(
       context.baseUrl,
       context.token,
@@ -773,6 +818,9 @@ describe('real-core integration', () => {
     'engages the global interaction lock when the real event client disconnects',
     async () => {
     const context = await startTestServer();
+    insertWorkspace(context.stateDir, context.workspaceRoot, {
+      workspaceId: 'ws-offline',
+    });
     const services = createHttpServices(context.baseUrl, context.token, 5_000);
     const cleanupRuntime = await startRuntime(services);
 

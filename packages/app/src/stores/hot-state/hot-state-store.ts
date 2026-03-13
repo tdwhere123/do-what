@@ -1,11 +1,15 @@
-import type {
-  CoreConnectionState,
-  CoreError,
-  WorkbenchHealthSnapshot,
-  WorkbenchPendingApproval,
-  WorkbenchRunSummary,
-  WorkbenchSnapshot,
-  WorkbenchWorkspaceSummary,
+import {
+  type CoreHealthStatus,
+  deriveWorkbenchHealthSnapshot,
+  type CoreConnectionState,
+  type CoreError,
+  type ModuleStatusSnapshot,
+  type WorkbenchHealthSnapshot,
+  type WorkbenchModulesSnapshot,
+  type WorkbenchPendingApproval,
+  type WorkbenchRunSummary,
+  type WorkbenchSnapshot,
+  type WorkbenchWorkspaceSummary,
 } from '@do-what/protocol';
 import { create } from 'zustand';
 import type { CoreSessionTransition } from '../../lib/core-session-guard';
@@ -44,6 +48,7 @@ export interface HotStateSnapshot {
   readonly governanceByRunId: Record<string, HotGovernanceSummary>;
   readonly health: WorkbenchHealthSnapshot;
   readonly lastError: CoreError | null;
+  readonly modules: WorkbenchModulesSnapshot;
   readonly nodesById: Record<string, HotNodeSummary>;
   readonly revision: number;
   readonly runIds: readonly string[];
@@ -76,6 +81,42 @@ const EMPTY_HEALTH: WorkbenchHealthSnapshot = {
   soul: 'unknown',
 };
 
+function createEmptyModule(
+  input: Pick<ModuleStatusSnapshot, 'kind' | 'label' | 'moduleId'>,
+): ModuleStatusSnapshot {
+  return {
+    ...input,
+    phase: 'probing',
+    status: 'disconnected',
+    updatedAt: new Date(0).toISOString(),
+  };
+}
+
+const EMPTY_MODULES: WorkbenchModulesSnapshot = {
+  core: createEmptyModule({
+    kind: 'core',
+    label: 'Core',
+    moduleId: 'core',
+  }),
+  engines: {
+    claude: createEmptyModule({
+      kind: 'engine',
+      label: 'Claude',
+      moduleId: 'claude',
+    }),
+    codex: createEmptyModule({
+      kind: 'engine',
+      label: 'Codex',
+      moduleId: 'codex',
+    }),
+  },
+  soul: createEmptyModule({
+    kind: 'soul',
+    label: 'Soul',
+    moduleId: 'soul',
+  }),
+};
+
 const TERMINAL_RUN_STATUSES = new Set([
   'cancelled',
   'completed',
@@ -93,6 +134,7 @@ function createInitialState(): HotStateSnapshot {
     governanceByRunId: {},
     health: EMPTY_HEALTH,
     lastError: null,
+    modules: EMPTY_MODULES,
     nodesById: {},
     revision: 0,
     runIds: [],
@@ -209,18 +251,114 @@ function applyNodeEvent(
   };
 }
 
-function updateHealthFromEvent(
-  health: WorkbenchHealthSnapshot,
+function cloneModule(
+  module: ModuleStatusSnapshot,
+): ModuleStatusSnapshot {
+  return {
+    ...module,
+    meta: module.meta ? { ...module.meta } : undefined,
+  };
+}
+
+function applyHealthToModule(
+  module: ModuleStatusSnapshot,
+  health: CoreHealthStatus,
+  updatedAt: string,
+  reason?: string,
+): ModuleStatusSnapshot {
+  if (health === 'unknown') {
+    return cloneModule(module);
+  }
+
+  const base = cloneModule(module);
+  if (health === 'offline') {
+    return {
+      ...base,
+      phase: 'degraded',
+      reason: reason ?? base.reason,
+      status: 'disconnected',
+      updatedAt,
+    };
+  }
+
+  if (health === 'booting' || health === 'rebooting') {
+    return {
+      ...base,
+      phase: 'probing',
+      reason,
+      status: 'connected',
+      updatedAt,
+    };
+  }
+
+  if (health === 'healthy' || health === 'idle' || health === 'running') {
+    return {
+      ...base,
+      phase: 'ready',
+      reason,
+      status: 'connected',
+      updatedAt,
+    };
+  }
+
+  return {
+    ...base,
+    phase: 'degraded',
+    reason: reason ?? base.reason,
+    status: 'connected',
+    updatedAt,
+  };
+}
+
+function applyBootstrapDiagnosticsToModules(
+  modules: WorkbenchModulesSnapshot,
+  input: {
+    connectionState: CoreConnectionState;
+    error: CoreError | null;
+    health: WorkbenchHealthSnapshot;
+  },
+): WorkbenchModulesSnapshot {
+  const updatedAt = new Date().toISOString();
+  const coreReason =
+    input.connectionState === 'disconnected'
+      ? 'Core is unreachable'
+      : input.error?.message;
+
+  return {
+    ...modules,
+    core: applyHealthToModule(modules.core, input.health.core, updatedAt, coreReason),
+    engines: {
+      claude: applyHealthToModule(modules.engines.claude, input.health.claude, updatedAt),
+      codex: applyHealthToModule(modules.engines.codex, input.health.codex, updatedAt),
+    },
+    soul: applyHealthToModule(modules.soul, input.health.soul, updatedAt),
+  };
+}
+
+function updateModulesFromEvent(
+  modules: WorkbenchModulesSnapshot,
   event: NormalizedCoreEvent,
-): WorkbenchHealthSnapshot {
+): WorkbenchModulesSnapshot {
   const systemEvent = readStringField(event, 'event');
   const engineType = readStringField(event, 'engineType');
 
   if (systemEvent === 'engine_connect' && (engineType === 'claude' || engineType === 'codex')) {
     return {
-      ...health,
-      [engineType]: 'healthy',
-      core: 'healthy',
+      ...modules,
+      engines: {
+        ...modules.engines,
+        [engineType]: {
+          ...cloneModule(modules.engines[engineType]),
+          meta: {
+            ...(modules.engines[engineType].meta ?? {}),
+            version: readStringField(event, 'version'),
+          },
+          phase: 'ready',
+          reason: undefined,
+          status: 'connected',
+          updatedAt: event.event.timestamp,
+        },
+      },
     };
   }
 
@@ -229,36 +367,104 @@ function updateHealthFromEvent(
     (engineType === 'claude' || engineType === 'codex')
   ) {
     return {
-      ...health,
-      [engineType]: 'degraded',
-      core: 'degraded',
+      ...modules,
+      engines: {
+        ...modules.engines,
+        [engineType]: {
+          ...cloneModule(modules.engines[engineType]),
+          phase: 'degraded',
+          reason: readStringField(event, 'reason'),
+          status: 'disconnected',
+          updatedAt: event.event.timestamp,
+        },
+      },
     };
   }
 
   if (systemEvent === 'circuit_break' && (engineType === 'claude' || engineType === 'codex')) {
     return {
-      ...health,
-      [engineType]: 'degraded',
-      core: 'degraded',
+      ...modules,
+      engines: {
+        ...modules.engines,
+        [engineType]: {
+          ...cloneModule(modules.engines[engineType]),
+          meta: {
+            ...(modules.engines[engineType].meta ?? {}),
+            failureCount: (event.event as Record<string, unknown>).failureCount,
+          },
+          phase: 'degraded',
+          reason: 'circuit breaker open',
+          status: 'connected',
+          updatedAt: event.event.timestamp,
+        },
+      },
     };
   }
 
-  if (systemEvent === 'network_status') {
+  if (systemEvent === 'soul_mode' || readStringField(event, 'operation')) {
     return {
-      ...health,
-      network: (event.event as Record<string, unknown>).online === true ? 'healthy' : 'offline',
+      ...modules,
+      soul: {
+        ...cloneModule(modules.soul),
+        meta:
+          systemEvent === 'soul_mode'
+            ? {
+                ...(modules.soul.meta ?? {}),
+                provider: readStringField(event, 'provider'),
+                soulMode: readStringField(event, 'soul_mode'),
+              }
+            : modules.soul.meta,
+        phase: 'ready',
+        reason: readStringField(event, 'reason'),
+        status: 'connected',
+        updatedAt: event.event.timestamp,
+      },
     };
   }
 
-  const operation = readStringField(event, 'operation');
-  if (operation) {
-    return {
-      ...health,
-      soul: operation === 'commit' ? 'healthy' : 'running',
-    };
+  return modules;
+}
+
+function markCoreBooting(
+  modules: WorkbenchModulesSnapshot,
+): WorkbenchModulesSnapshot {
+  return {
+    ...modules,
+    core: {
+      ...cloneModule(modules.core),
+      phase: 'probing',
+      reason: undefined,
+      status: 'connected',
+      updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+function applyConnectionStateToModules(
+  modules: WorkbenchModulesSnapshot,
+  connectionState: CoreConnectionState,
+): WorkbenchModulesSnapshot {
+  if (connectionState === 'connecting') {
+    return modules;
   }
 
-  return health;
+  if (connectionState === 'connected') {
+    return modules.core.status === 'disconnected' ? markCoreBooting(modules) : modules;
+  }
+
+  return {
+    ...modules,
+    core: {
+      ...cloneModule(modules.core),
+      phase: connectionState === 'reconnecting' ? 'probing' : 'degraded',
+      reason:
+        connectionState === 'reconnecting'
+          ? 'waiting for Core event stream'
+          : 'Core is unreachable',
+      status: 'disconnected',
+      updatedAt: new Date().toISOString(),
+    },
+  };
 }
 
 function buildSnapshotNodes(
@@ -341,22 +547,28 @@ export const useHotStateStore = create<HotStateStore>((set, get) => ({
   ...createInitialState(),
 
   applyBootstrapDiagnostics: (input) => {
+    const modules = applyBootstrapDiagnosticsToModules(get().modules, input);
+    const health = deriveWorkbenchHealthSnapshot(modules);
     set({
       connectionState: input.connectionState,
       globalInteractionLock: computeGlobalInteractionLock(
         input.connectionState,
-        input.health,
+        health,
       ),
-      health: input.health,
+      health,
       lastError: input.error,
+      modules,
     });
   },
 
   applyConnectionState: (connectionState) => {
-    const health = get().health;
+    const modules = applyConnectionStateToModules(get().modules, connectionState);
+    const health = deriveWorkbenchHealthSnapshot(modules);
     set({
       connectionState,
       globalInteractionLock: computeGlobalInteractionLock(connectionState, health),
+      health,
+      modules,
     });
   },
 
@@ -453,7 +665,8 @@ export const useHotStateStore = create<HotStateStore>((set, get) => ({
               workspaceId,
             },
           };
-    const nextHealth = updateHealthFromEvent(current.health, event);
+    const nextModules = updateModulesFromEvent(current.modules, event);
+    const nextHealth = deriveWorkbenchHealthSnapshot(nextModules);
 
     set({
       approvalsById: nextApprovalsById,
@@ -463,6 +676,8 @@ export const useHotStateStore = create<HotStateStore>((set, get) => ({
       ),
       governanceByRunId: nextGovernanceByRunId,
       health: nextHealth,
+      lastError: null,
+      modules: nextModules,
       nodesById: applyNodeEvent(current.nodesById, event),
       revision: Math.max(current.revision, event.revision),
       runIds: upsertUnique(current.runIds, event.runId),
@@ -477,12 +692,11 @@ export const useHotStateStore = create<HotStateStore>((set, get) => ({
 
   applySessionTransition: (transition) => {
     const current = get();
-    const nextHealth: WorkbenchHealthSnapshot =
+    const nextModules =
+      transition.type === 'changed' ? markCoreBooting(current.modules) : current.modules;
+    const nextHealth =
       transition.type === 'changed'
-        ? {
-            ...current.health,
-            core: 'booting',
-          }
+        ? deriveWorkbenchHealthSnapshot(nextModules)
         : current.health;
 
     set({
@@ -492,6 +706,7 @@ export const useHotStateStore = create<HotStateStore>((set, get) => ({
         nextHealth,
       ),
       health: nextHealth,
+      modules: nextModules,
       revision: transition.type === 'changed' ? 0 : current.revision,
     });
   },
@@ -499,7 +714,7 @@ export const useHotStateStore = create<HotStateStore>((set, get) => ({
   applyWorkbenchSnapshot: (snapshot) => {
     const runsById = buildRecord(snapshot.runs, 'runId');
     const workspacesById = buildRecord(snapshot.workspaces, 'workspaceId');
-    const health = snapshot.health;
+    const health = deriveWorkbenchHealthSnapshot(snapshot.modules);
 
     set({
       approvalsById: buildSnapshotApprovals(snapshot.pendingApprovals, snapshot.revision),
@@ -509,6 +724,7 @@ export const useHotStateStore = create<HotStateStore>((set, get) => ({
       governanceByRunId: buildSnapshotGovernance(snapshot.runs),
       health,
       lastError: null,
+      modules: snapshot.modules,
       nodesById: buildSnapshotNodes(snapshot.runs),
       revision: snapshot.revision,
       runIds: snapshot.runs.map((run) => run.runId),

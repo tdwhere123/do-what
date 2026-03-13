@@ -162,12 +162,26 @@
 | `EngineHotState` | `engine_id`, `kind: 'claude' \| 'codex'`, `status`, `current_run_id?`, `updated_at`, `version?`, `reason?` | 引擎连接与退化状态 |
 | `ApprovalHotState` | `approval_id`, `run_id`, `tool_name`, `status: 'pending' \| 'approved' \| 'denied' \| 'timeout'`, `requested_at`, `resolved_at?`, `resolver?` | 当前审批热态 |
 | `CheckpointHotState` | `checkpoint_id`, `run_id`, `project_id?`, `active`, `triggered_at` | 当前激活的 checkpoint |
-| `CoreHotState` | `runs`, `engines`, `pending_approvals`, `active_checkpoints`, `recent_events`, `last_event_seq` | Core 内存控制态总视图 |
+| `CoreHotState` | `modules`, `runs`, `engines`, `pending_approvals`, `active_checkpoints`, `recent_events`, `last_event_seq` | Core 内存控制态总视图；`modules` 是 Core / Engine / Soul 状态真相源 |
 
 补充说明：
 - `/state` 读路径现基于 `HotStateManager` 的内存热态，而不是每次直接从 SQLite 现查。
 - `/state` 对外 JSON 结构保持兼容，仍返回 `revision`, `recentEvents`, `pendingApprovals`。
 - `RunHotState.status` 当前覆盖 `created | started | running | waiting_approval | completed | failed | cancelled | interrupted | governance_invalid`。
+
+### module-status
+
+| 类型 | 关键字段 | 说明 |
+|---|---|---|
+| `ModuleKind` | `'core' \| 'engine' \| 'soul'` | 模块类别 |
+| `ModuleStatus` | `'connected' \| 'disconnected' \| 'not_installed' \| 'probe_failed' \| 'auth_failed' \| 'disabled'` | 模块连接 / 探测结果 |
+| `ModulePhase` | `'probing' \| 'ready' \| 'degraded'` | 模块当前阶段 |
+| `ModuleHotState` | `module_id`, `kind`, `label`, `status`, `phase`, `updated_at`, `reason?`, `meta?` | Core 内部模块热态 |
+| `ModulesHotState` | `core`, `engines.claude`, `engines.codex`, `soul` | Core / Engine / Soul 聚合热态 |
+
+补充说明：
+- Core 启动后会主动探测 Claude / Codex CLI，并将结果诚实落到 `modules`。
+- `createRun()` 不会为缺失 workspace 做防御性 upsert；workspace 的按路径幂等 upsert 只保留在 `openWorkspace()` 路径。
 
 ### projection
 
@@ -208,7 +222,7 @@
 
 | 类型 | 关键字段 | 说明 |
 |---|---|---|
-| `WorkbenchSnapshot` | `revision`, `coreSessionId`, `connectionState`, `health`, `pendingApprovals[]`, `recentEvents[]`, `runs[]`, `workspaces[]` | 前端 workbench 初始化与热态消费基线，允许 real adapter 以兼容映射补默认值 |
+| `WorkbenchSnapshot` | `revision`, `coreSessionId`, `connectionState`, `health`, `modules`, `pendingApprovals[]`, `recentEvents[]`, `runs[]`, `workspaces[]` | 前端 workbench 初始化与热态消费基线；`modules` 为正式模块状态契约，`health` 为兼容派生字段 |
 | `TimelinePage` | `runId`, `revision`, `entries[]`, `limit`, `nextBeforeRevision`, `hasMore` | Timeline 分页读模型，保留 optimistic tail 追加空间 |
 | `InspectorSnapshot` | `runId`, `revision`, `overview`, `files[]`, `plans[]`, `history[]`, `governance` | Inspector 右侧面板查询基线 |
 | `SettingsSnapshot` | `revision`, `coreSessionId`, `lease`, `sections[]` | Settings Query-first 读模型与 lease 锁定态基线 |
@@ -218,6 +232,7 @@
 
 | 类型 | 关键字段 | 说明 |
 |---|---|---|
+| `OpenWorkspaceRequest` | `clientCommandId`, `rootPath`, `name?` | `POST /api/workspaces/open` 请求体；按工作区目录打开或导入 workspace |
 | `CreateRunRequest` | `clientCommandId`, `workspaceId`, `templateId`, `templateInputs`, `templateVersion?`, `participants[]` | `POST /api/runs` 请求体 |
 | `RunMessageRequest` | `clientCommandId`, `body` | `POST /api/runs/:runId/messages` 请求体 |
 | `ApprovalDecisionRequest` | `clientCommandId`, `decision: 'allow_once' \| 'allow_session' \| 'reject'` | `POST /api/approvals/:approvalId/decide` 请求体 |
@@ -229,7 +244,7 @@
 | `DriftResolutionRequest` | `clientCommandId`, `mode: 'reconcile' \| 'rollback'` | `POST /api/nodes/:nodeId/resolve-drift` 请求体 |
 | `IntegrationGateDecisionRequest` | `clientCommandId`, `decision: 'approve' \| 'block'`, `gateId?` | `POST /api/runs/:runId/integration-gate/decide` 请求体 |
 | `CoreCommandRequest` | `clientCommandId`, `command`, `payload`, `runId?`, `workspaceId?` | 前端 command 写入口统一请求体 |
-| `CoreCommandAck` | `ok`, `ackId`, `revision?` | command 接收确认包 |
+| `CoreCommandAck` | `ok`, `ackId`, `revision?`, `entityType?`, `entityId?` | command 接收确认包；当命令同步确定了目标实体时回传实体类型与实体 ID |
 | `CoreProbeResult` | `ackId`, `status`, `revision?`, `entityType?`, `entityId?`, `createdAt?`, `committedAt?`, `error?` | ack/probe 标准化查询结果 |
 | `ApprovalProbe` | `approvalId`, `runId`, `toolName`, `status`, `updatedAt`, `revision` | `GET /api/approvals/:approvalId` 返回体 |
 | `MemoryProbe` | `memoryId`, `claimSummary`, `scope`, `slotStatus`, `manifestationState`, `retentionState`, `updatedAt`, `revision` | `GET /api/memory/:memoryId` 返回体 |
@@ -241,7 +256,9 @@
 
 | 类型 | 判别 / 关键字段 | 说明 |
 |---|---|---|
-| `WorkbenchHealthSnapshot` | `core`, `claude`, `codex`, `soul`, `network`（均为 `CoreHealthStatus`）| workbench health 格, 各子系统一格一列 |
+| `WorkbenchHealthSnapshot` | `core`, `claude`, `codex`, `soul`, `network`（均为 `CoreHealthStatus`）| workbench health 兼容视图，由 `WorkbenchModulesSnapshot` 派生 |
+| `ModuleStatusSnapshot` | `moduleId`, `kind`, `label`, `status`, `phase`, `updatedAt`, `reason?`, `meta?` | UI 消费的单模块状态快照 |
+| `WorkbenchModulesSnapshot` | `core`, `engines.claude`, `engines.codex`, `soul` | Workbench 左下状态区、bootstrap 错误区与 Settings 引擎页共享的模块状态读模型 |
 | `WorkbenchRunSummary` | `runId`, `status`（`created \| queued \| started \| running \| waiting_approval \| completed \| failed \| cancelled \| interrupted \| governance_invalid`）, `title`, `workspaceId?`, `engine?` | runs 列表条目 |
 | `WorkbenchPendingApproval` | `approvalId`, `runId`, `toolName`, `createdAt`, `summary?` | pendingApprovals 列表条目 |
 | `TimelineEntry` | `id`, `runId`, `kind`（`message \| tool_call \| approval \| memory \| system \| plan \| diff \| checkpoint`）, `timestamp`, `title?`, `body?`, `status?`, `meta?`, `causedBy?` | Timeline 单条记录 |
@@ -369,14 +386,15 @@
 | `GET` | `/events` | legacy SSE 事件流 | 每条消息为 `data: <CoreSseEnvelope JSON>` |
 | `GET` | `/api/events/stream` | 正式 SSE 事件流 | 每条消息为 `data: <CoreSseEnvelope JSON>` |
 | `GET` | `/state` | 当前 `hot_state` 读模型 | 返回 `revision`, `recentEvents`, `pendingApprovals` |
-| `GET` | `/api/workbench/snapshot` | Workbench 查询面 | 返回 `WorkbenchSnapshot` |
+| `GET` | `/api/workbench/snapshot` | Workbench 查询面 | 返回 `WorkbenchSnapshot`；`modules` 为正式模块状态，`health` 为兼容派生字段 |
 | `GET` | `/api/workflows/templates` | Create Run 模板查询 | 返回 `TemplateDescriptor[]` |
 | `GET` | `/api/runs/:runId/timeline` | Timeline 分页查询 | 支持 `beforeRevision`、`limit` 查询参数，返回 `TimelinePage` |
 | `GET` | `/api/runs/:runId/inspector` | Inspector 查询面 | 返回 `InspectorSnapshot` |
 | `GET` | `/api/settings` | Settings 查询面 | 返回 `SettingsSnapshot` |
 | `GET` | `/api/approvals/:approvalId` | Approval probe | 返回 `ApprovalProbe` |
 | `GET` | `/api/memory/:memoryId` | Memory probe | 返回 `MemoryProbe` |
-| `POST` | `/api/runs` | Create Run 命令入口 | 请求体为 `CreateRunRequest`，返回 `CoreCommandAck` |
+| `POST` | `/api/workspaces/open` | 打开或导入 workspace | 请求体为 `OpenWorkspaceRequest`，按 `rootPath` 幂等 upsert，返回 `CoreCommandAck` |
+| `POST` | `/api/runs` | Create Run 命令入口 | 请求体为 `CreateRunRequest`，返回 `CoreCommandAck`；当 `workspaceId` 不存在时返回 `workspace_not_found`，不会隐式 upsert workspace |
 | `POST` | `/api/runs/:runId/messages` | 发送 message 命令入口 | 请求体为 `RunMessageRequest`，返回 `CoreCommandAck` |
 | `POST` | `/api/approvals/:approvalId/decide` | Approval 决策入口 | 请求体为 `ApprovalDecisionRequest`，返回 `CoreCommandAck` |
 | `POST` | `/api/memory/proposals/:proposalId/review` | Memory proposal 审核入口 | 请求体为 `MemoryProposalReviewRequest`，返回 `CoreCommandAck` |
@@ -667,3 +685,5 @@ Codex 原始事件类型当前归一化规则：
 | 2026-03-09 | T045 | 补充 `OrchestrationTemplate`、`TopologyValidator`、`run_topology_invalid` 与 `governance_invalid` 终态 |
 | 2026-03-10 | T002 | 补充 v0.1-UI `WorkbenchSnapshot`、`TimelinePage`、`InspectorSnapshot`、`SettingsSnapshot`、`TemplateDescriptor`、`CoreCommand*`、`CoreSseEnvelope` 前端共享契约 |
 | 2026-03-11 | T030 / T031 / T032 | 补充 `/api/*` query / command / probe surface、`AckEntityType` 扩展，以及 `CoreSseEnvelope` 的 `coreSessionId` / `causedBy` 实际输出说明 |
+| 2026-03-13 | C003 | 新增 `OpenWorkspaceRequest`、`POST /api/workspaces/open`，并为 `CoreCommandAck` 补充 `entityType` / `entityId` 回传说明 |
+| 2026-03-13 | C004 | 新增 `ModuleStatus*` / `WorkbenchModulesSnapshot` / `CoreHotState.modules`，明确 `/api/workbench/snapshot` 的 `modules` 契约、`health` 派生语义，以及 `POST /api/runs` 的 `workspace_not_found` 边界 |

@@ -3,6 +3,10 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppRoot } from './app-root';
+import {
+  createEmptyModulesSnapshot,
+  createEmptyWorkbenchSnapshot,
+} from '../lib/contracts';
 import { CoreHttpError } from '../lib/core-http-client';
 import { CoreSessionGuard } from '../lib/core-session-guard';
 import { NormalizedEventBus } from '../lib/events';
@@ -14,12 +18,51 @@ import { resetProjectionStore } from '../stores/projection';
 import { resetSettingsBridgeStore } from '../stores/settings-bridge';
 import { resetUiStore } from '../stores/ui';
 
+function createWorkbenchModules(
+  overrides: Partial<{
+    claude: Partial<ReturnType<typeof createEmptyModulesSnapshot>['engines']['claude']>;
+    codex: Partial<ReturnType<typeof createEmptyModulesSnapshot>['engines']['codex']>;
+    core: Partial<ReturnType<typeof createEmptyModulesSnapshot>['core']>;
+    soul: Partial<ReturnType<typeof createEmptyModulesSnapshot>['soul']>;
+  }> = {},
+): ReturnType<typeof createEmptyModulesSnapshot> {
+  const updatedAt = '2026-03-10T00:00:00.000Z';
+  const modules = createEmptyModulesSnapshot();
+  return {
+    core: {
+      ...modules.core,
+      phase: 'ready',
+      status: 'connected',
+      updatedAt,
+      ...overrides.core,
+    },
+    engines: {
+      claude: {
+        ...modules.engines.claude,
+        updatedAt,
+        ...overrides.claude,
+      },
+      codex: {
+        ...modules.engines.codex,
+        updatedAt,
+        ...overrides.codex,
+      },
+    },
+    soul: {
+      ...modules.soul,
+      updatedAt,
+      ...overrides.soul,
+    },
+  };
+}
+
 function installRuntimeBridge(): void {
   Object.defineProperty(window, 'doWhatRuntime', {
     configurable: true,
     value: {
       coreSessionToken: 'mock-core-token',
       coreSessionTokenPath: 'C:/Users/lenovo/.do-what/run/session_token',
+      openWorkspaceDirectory: vi.fn(async () => 'D:/makefun/do-what/do-what-new'),
       platform: 'win32',
       versions: {
         chrome: '134.0.0.0',
@@ -87,6 +130,56 @@ describe('AppRoot scaffold', () => {
       expect(screen.getByText('Create Run')).toBeTruthy();
       expect(screen.getByText(/Workspace:/)).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Start Run' })).toBeTruthy();
+    });
+  });
+
+  it('shows Open Workspace as the primary empty-state action when no workspace exists', async () => {
+    setAppServicesForTesting({
+      config: {
+        baseUrl: 'http://127.0.0.1:3847',
+        mockScenario: 'empty',
+        readFreshSessionToken: () => 'mock-core-token',
+        reconnectDelayMs: 1000,
+        sessionToken: 'mock-core-token',
+        transportMode: 'mock',
+      },
+      coreApi: {
+        getApprovalProbe: vi.fn(),
+        getInspectorSnapshot: vi.fn(),
+        getMemoryProbe: vi.fn(),
+        getSettingsSnapshot: vi.fn(),
+        getTimelinePage: vi.fn(),
+        getWorkbenchSnapshot: vi.fn().mockResolvedValue(
+          createEmptyWorkbenchSnapshot({
+            coreSessionId: 'mock-core-empty',
+            modules: createWorkbenchModules({
+              soul: {
+                phase: 'ready',
+                status: 'connected',
+              },
+            }),
+          }),
+        ),
+        listTemplates: vi.fn().mockResolvedValue([]),
+        postCommand: vi.fn(),
+        probeCommand: vi.fn(),
+      },
+      eventBus: new NormalizedEventBus(),
+      eventClient: {
+        start: vi.fn(() => () => {}),
+        stop: vi.fn(),
+      },
+      sessionGuard: new CoreSessionGuard(),
+      templateRegistry: {
+        listTemplates: vi.fn().mockResolvedValue([]),
+      },
+    });
+
+    render(<AppRoot />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Open Workspace' })).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Create Run' })).toBeNull();
     });
   });
 
@@ -274,22 +367,12 @@ describe('AppRoot scaffold', () => {
 
   it('shows a module-stage error when runtime initialization fails after snapshot success', async () => {
     const eventBus = new NormalizedEventBus();
-    const getWorkbenchSnapshot = vi.fn().mockResolvedValue({
-      connectionState: 'connected',
-      coreSessionId: 'core-session-1',
-      health: {
-        claude: 'unknown',
-        codex: 'unknown',
-        core: 'healthy',
-        network: 'healthy',
-        soul: 'unknown',
-      },
-      pendingApprovals: [],
-      recentEvents: [],
-      revision: 0,
-      runs: [],
-      workspaces: [],
-    });
+    const getWorkbenchSnapshot = vi.fn().mockResolvedValue(
+      createEmptyWorkbenchSnapshot({
+        coreSessionId: 'core-session-1',
+        modules: createWorkbenchModules(),
+      }),
+    );
 
     setAppServicesForTesting({
       config: {

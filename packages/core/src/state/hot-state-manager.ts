@@ -1,5 +1,15 @@
 import type Database from 'better-sqlite3';
-import { BaseEventSchema, type ApprovalHotState, type BaseEvent, type CheckpointHotState, type CoreHotState, type EngineHotState, type RunHotState } from '@do-what/protocol';
+import {
+  BaseEventSchema,
+  type ApprovalHotState,
+  type BaseEvent,
+  type CheckpointHotState,
+  type CoreHotState,
+  type EngineHotState,
+  type ModuleHotState,
+  type ModulesHotState,
+  type RunHotState,
+} from '@do-what/protocol';
 import { createReadConnection } from '../db/read-connection.js';
 import { TABLE_APPROVAL_QUEUE, TABLE_EVENT_LOG, TABLE_RUNS } from '../db/schema.js';
 
@@ -43,6 +53,7 @@ interface InternalCoreHotState {
   active_checkpoints: Map<string, CheckpointHotState>;
   engines: Map<string, EngineHotState>;
   last_event_seq: number;
+  modules: ModulesHotState;
   pending_approvals: Map<string, ApprovalHotState>;
   recent_events: readonly BaseEvent[];
   runs: Map<string, RunHotState>;
@@ -75,9 +86,80 @@ function createEmptyState(): InternalCoreHotState {
     active_checkpoints: new Map(),
     engines: new Map(),
     last_event_seq: 0,
+    modules: createEmptyModules(),
     pending_approvals: new Map(),
     recent_events: [],
     runs: new Map(),
+  };
+}
+
+function createModuleState(input: {
+  readonly kind: ModuleHotState['kind'];
+  readonly label: string;
+  readonly meta?: Readonly<Record<string, unknown>>;
+  readonly moduleId: string;
+  readonly phase: ModuleHotState['phase'];
+  readonly reason?: string;
+  readonly status: ModuleHotState['status'];
+  readonly updatedAt: string;
+}): ModuleHotState {
+  return {
+    kind: input.kind,
+    label: input.label,
+    meta: input.meta,
+    module_id: input.moduleId,
+    phase: input.phase,
+    reason: input.reason,
+    status: input.status,
+    updated_at: input.updatedAt,
+  };
+}
+
+function createEmptyModules(
+  updatedAt = new Date(0).toISOString(),
+): ModulesHotState {
+  return {
+    core: createModuleState({
+      kind: 'core',
+      label: 'Core',
+      moduleId: 'core',
+      phase: 'probing',
+      status: 'disconnected',
+      updatedAt,
+    }),
+    engines: {
+      claude: createModuleState({
+        kind: 'engine',
+        label: 'Claude',
+        moduleId: 'claude',
+        phase: 'probing',
+        status: 'disconnected',
+        updatedAt,
+      }),
+      codex: createModuleState({
+        kind: 'engine',
+        label: 'Codex',
+        moduleId: 'codex',
+        phase: 'probing',
+        status: 'disconnected',
+        updatedAt,
+      }),
+    },
+    soul: createModuleState({
+      kind: 'soul',
+      label: 'Soul',
+      moduleId: 'soul',
+      phase: 'probing',
+      status: 'disconnected',
+      updatedAt,
+    }),
+  };
+}
+
+function cloneModule(module: ModuleHotState): ModuleHotState {
+  return {
+    ...module,
+    meta: module.meta ? { ...module.meta } : undefined,
   };
 }
 
@@ -94,6 +176,14 @@ function cloneState(state: InternalCoreHotState): InternalCoreHotState {
     active_checkpoints: cloneMapValues(state.active_checkpoints),
     engines: cloneMapValues(state.engines),
     last_event_seq: state.last_event_seq,
+    modules: {
+      core: cloneModule(state.modules.core),
+      engines: {
+        claude: cloneModule(state.modules.engines.claude),
+        codex: cloneModule(state.modules.engines.codex),
+      },
+      soul: cloneModule(state.modules.soul),
+    },
     pending_approvals: cloneMapValues(state.pending_approvals),
     recent_events: state.recent_events.map((event) => ({ ...event })),
     runs: cloneMapValues(state.runs),
@@ -328,6 +418,127 @@ function clearPendingApprovalsForRun(state: InternalCoreHotState, runId: string)
   }
 }
 
+function updateSoulModuleState(
+  state: InternalCoreHotState,
+  event: BaseEvent,
+  candidate: BaseEvent & Record<string, unknown>,
+): void {
+  if (candidate.event !== 'soul_mode') {
+    return;
+  }
+
+  state.modules = {
+    ...state.modules,
+    soul: createModuleState({
+      kind: 'soul',
+      label: 'Soul',
+      meta: {
+        provider: typeof candidate.provider === 'string' ? candidate.provider : undefined,
+        soulMode: typeof candidate.soul_mode === 'string' ? candidate.soul_mode : undefined,
+      },
+      moduleId: 'soul',
+      phase: 'ready',
+      reason: typeof candidate.reason === 'string' ? candidate.reason : undefined,
+      status: 'connected',
+      updatedAt: event.timestamp,
+    }),
+  };
+}
+
+function replaceEngineModule(
+  state: InternalCoreHotState,
+  engineType: 'claude' | 'codex',
+  module: ModuleHotState,
+): void {
+  state.modules = {
+    ...state.modules,
+    engines: {
+      ...state.modules.engines,
+      [engineType]: module,
+    },
+  };
+}
+
+function updateEngineModuleState(
+  state: InternalCoreHotState,
+  event: BaseEvent,
+  candidate: BaseEvent & Record<string, unknown>,
+): void {
+  if (candidate.engineType !== 'claude' && candidate.engineType !== 'codex') {
+    return;
+  }
+
+  const existing = state.modules.engines[candidate.engineType];
+  if (candidate.event === 'engine_connect') {
+    replaceEngineModule(
+      state,
+      candidate.engineType,
+      createModuleState({
+        kind: 'engine',
+        label: existing.label,
+        meta: {
+          version: typeof candidate.version === 'string' ? candidate.version : undefined,
+        },
+        moduleId: candidate.engineType,
+        phase: 'ready',
+        status: 'connected',
+        updatedAt: event.timestamp,
+      }),
+    );
+    return;
+  }
+
+  if (candidate.event === 'engine_disconnect') {
+    replaceEngineModule(
+      state,
+      candidate.engineType,
+      createModuleState({
+        kind: 'engine',
+        label: existing.label,
+        meta: existing.meta,
+        moduleId: candidate.engineType,
+        phase: 'degraded',
+        reason: typeof candidate.reason === 'string' ? candidate.reason : undefined,
+        status: 'disconnected',
+        updatedAt: event.timestamp,
+      }),
+    );
+    return;
+  }
+
+  if (candidate.event !== 'circuit_break') {
+    return;
+  }
+
+  replaceEngineModule(
+    state,
+    candidate.engineType,
+    createModuleState({
+      kind: 'engine',
+      label: existing.label,
+      meta: {
+        ...existing.meta,
+        failureCount:
+          typeof candidate.failureCount === 'number' ? candidate.failureCount : undefined,
+      },
+      moduleId: candidate.engineType,
+      phase: 'degraded',
+      reason: 'circuit breaker open',
+      status: 'connected',
+      updatedAt: event.timestamp,
+    }),
+  );
+}
+
+function updateModulesFromEvent(
+  state: InternalCoreHotState,
+  event: BaseEvent,
+): void {
+  const candidate = event as BaseEvent & Record<string, unknown>;
+  updateSoulModuleState(state, event, candidate);
+  updateEngineModuleState(state, event, candidate);
+}
+
 function parseEventPayload(
   row: EventLogBootstrapRow,
 ): BaseEvent | null {
@@ -360,6 +571,7 @@ export class HotStateManager {
     upsertApprovalFromEvent(nextState, event);
     upsertEngineFromEvent(nextState, event);
     upsertCheckpointFromEvent(nextState, event);
+    updateModulesFromEvent(nextState, event);
     this.state = nextState;
   }
 
@@ -388,6 +600,7 @@ export class HotStateManager {
         nextState.recent_events = appendRecentEvent(nextState.recent_events, event, this.maxRecentEvents);
         upsertEngineFromEvent(nextState, event);
         upsertCheckpointFromEvent(nextState, event);
+        updateModulesFromEvent(nextState, event);
       }
 
       const runRows = db
@@ -459,10 +672,24 @@ export class HotStateManager {
       active_checkpoints: cloned.active_checkpoints,
       engines: cloned.engines,
       last_event_seq: cloned.last_event_seq,
+      modules: cloned.modules,
       pending_approvals: cloned.pending_approvals,
       recent_events: cloned.recent_events,
       runs: cloned.runs,
     };
+  }
+
+  replaceModules(modules: ModulesHotState): void {
+    const nextState = cloneState(this.state);
+    nextState.modules = {
+      core: cloneModule(modules.core),
+      engines: {
+        claude: cloneModule(modules.engines.claude),
+        codex: cloneModule(modules.engines.codex),
+      },
+      soul: cloneModule(modules.soul),
+    };
+    this.state = nextState;
   }
 
   syncApprovalDecision(change: ApprovalResolutionChange): void {

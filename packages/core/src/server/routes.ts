@@ -9,6 +9,7 @@ import {
   MemoryPinRequestSchema,
   MemoryProposalReviewRequestSchema,
   MemorySupersedeRequestSchema,
+  OpenWorkspaceRequestSchema,
   RunMessageRequestSchema,
   SettingsPatchRequestSchema,
 } from '@do-what/protocol';
@@ -267,6 +268,15 @@ export function registerRoutes(
     try {
       const body = parseBody(CreateWorkspaceRequestSchema, request.body);
       await sendData(reply, await options.commandService.createWorkspace(body), 202);
+    } catch (error) {
+      await sendError(reply, error);
+    }
+  });
+
+  app.post('/api/workspaces/open', async (request, reply) => {
+    try {
+      const body = parseBody(OpenWorkspaceRequestSchema, request.body);
+      await sendData(reply, await options.commandService.openWorkspace(body), 202);
     } catch (error) {
       await sendError(reply, error);
     }

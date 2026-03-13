@@ -1,27 +1,77 @@
 import type { WorkbenchSnapshot } from '@do-what/protocol';
 import { createEmptyWorkbenchSnapshot } from '../../lib/contracts';
 
+interface ModuleOverrides {
+  readonly core?: Partial<WorkbenchSnapshot['modules']['core']>;
+  readonly engines?: {
+    readonly claude?: Partial<WorkbenchSnapshot['modules']['engines']['claude']>;
+    readonly codex?: Partial<WorkbenchSnapshot['modules']['engines']['codex']>;
+  };
+  readonly soul?: Partial<WorkbenchSnapshot['modules']['soul']>;
+}
+
+function createModules(
+  overrides: ModuleOverrides = {},
+): WorkbenchSnapshot['modules'] {
+  const updatedAt = '2026-03-10T09:00:00.000Z';
+  return {
+    core: {
+      kind: 'core',
+      label: 'Core',
+      moduleId: 'core',
+      phase: 'ready',
+      status: 'connected',
+      updatedAt,
+      ...overrides.core,
+    },
+    engines: {
+      claude: {
+        kind: 'engine',
+        label: 'Claude',
+        moduleId: 'claude',
+        phase: 'degraded',
+        status: 'not_installed',
+        updatedAt,
+        ...overrides.engines?.claude,
+      },
+      codex: {
+        kind: 'engine',
+        label: 'Codex',
+        moduleId: 'codex',
+        phase: 'degraded',
+        status: 'not_installed',
+        updatedAt,
+        ...overrides.engines?.codex,
+      },
+    },
+    soul: {
+      kind: 'soul',
+      label: 'Soul',
+      moduleId: 'soul',
+      phase: 'ready',
+      status: 'connected',
+      updatedAt,
+      ...overrides.soul,
+    },
+  };
+}
+
 export const EMPTY_WORKBENCH_FIXTURE: WorkbenchSnapshot = createEmptyWorkbenchSnapshot({
   connectionState: 'connected',
   coreSessionId: 'mock-core-empty',
-  health: {
-    claude: 'idle',
-    codex: 'idle',
-    core: 'healthy',
-    network: 'healthy',
-    soul: 'idle',
-  },
+  modules: createModules(),
 });
 
 export const ACTIVE_WORKBENCH_FIXTURE: WorkbenchSnapshot = createEmptyWorkbenchSnapshot({
   coreSessionId: 'mock-core-active',
-  health: {
-    claude: 'running',
-    codex: 'idle',
-    core: 'healthy',
-    network: 'healthy',
-    soul: 'running',
-  },
+  modules: createModules({
+    engines: {
+      codex: {
+        phase: 'ready',
+        status: 'connected',
+      },
+    },
+  }),
   pendingApprovals: [
     {
       approvalId: 'approval-active-1',
@@ -57,13 +107,24 @@ export const ACTIVE_WORKBENCH_FIXTURE: WorkbenchSnapshot = createEmptyWorkbenchS
 
 export const DESYNCED_WORKBENCH_FIXTURE: WorkbenchSnapshot = createEmptyWorkbenchSnapshot({
   coreSessionId: 'mock-core-desynced',
-  health: {
-    claude: 'degraded',
-    codex: 'idle',
-    core: 'degraded',
-    network: 'healthy',
-    soul: 'degraded',
-  },
+  modules: createModules({
+    core: {
+      phase: 'degraded',
+      reason: 'session drift detected',
+    },
+    engines: {
+      claude: {
+        phase: 'degraded',
+        reason: 'probe failed',
+        status: 'probe_failed',
+      },
+    },
+    soul: {
+      phase: 'degraded',
+      reason: 'dispatcher degraded',
+      status: 'probe_failed',
+    },
+  }),
   revision: 31,
   runs: [
     {

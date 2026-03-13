@@ -1,5 +1,10 @@
 import { z } from 'zod';
 import { AnyEventSchema } from '../events/index.js';
+import {
+  ModuleKindSchema,
+  ModulePhaseSchema,
+  ModuleStatusSchema,
+} from './module-status.js';
 
 const JsonValueSchema: z.ZodType<unknown> = z.lazy(() =>
   z.union([
@@ -50,6 +55,32 @@ export const WorkbenchHealthSnapshotSchema = z
   })
   .passthrough();
 
+export const ModuleStatusSnapshotSchema = z
+  .object({
+    kind: ModuleKindSchema,
+    label: z.string(),
+    meta: z.record(JsonValueSchema).optional(),
+    moduleId: z.string(),
+    phase: ModulePhaseSchema,
+    reason: z.string().optional(),
+    status: ModuleStatusSchema,
+    updatedAt: z.string().datetime(),
+  })
+  .passthrough();
+
+export const WorkbenchModulesSnapshotSchema = z
+  .object({
+    core: ModuleStatusSnapshotSchema,
+    engines: z
+      .object({
+        claude: ModuleStatusSnapshotSchema,
+        codex: ModuleStatusSnapshotSchema,
+      })
+      .passthrough(),
+    soul: ModuleStatusSnapshotSchema,
+  })
+  .passthrough();
+
 export const WorkbenchWorkspaceSummarySchema = z
   .object({
     lastEventAt: z.string().datetime().optional(),
@@ -89,6 +120,7 @@ export const WorkbenchSnapshotSchema = z
     connectionState: CoreConnectionStateSchema,
     coreSessionId: z.string().nullable(),
     health: WorkbenchHealthSnapshotSchema,
+    modules: WorkbenchModulesSnapshotSchema,
     pendingApprovals: z.array(WorkbenchPendingApprovalSchema),
     recentEvents: z.array(AnyEventSchema),
     revision: z.number().int().nonnegative(),
@@ -266,6 +298,14 @@ export const CreateWorkspaceRequestSchema = z
   })
   .passthrough();
 
+export const OpenWorkspaceRequestSchema = z
+  .object({
+    clientCommandId: z.string(),
+    name: z.string().trim().min(1).max(120).optional(),
+    rootPath: z.string().trim().min(1),
+  })
+  .passthrough();
+
 export const RunMessageRequestSchema = z
   .object({
     body: z.string().min(1),
@@ -346,6 +386,8 @@ export const CoreCommandRequestSchema = z
 export const CoreCommandAckSchema = z
   .object({
     ackId: z.string(),
+    entityId: z.string().optional(),
+    entityType: z.string().optional(),
     ok: z.literal(true),
     revision: z.number().int().nonnegative().optional(),
   })
@@ -416,6 +458,7 @@ export const CoreSseEnvelopeSchema = z
   .passthrough();
 
 export type CoreConnectionState = z.infer<typeof CoreConnectionStateSchema>;
+export type CoreHealthStatus = z.infer<typeof CoreHealthStatusSchema>;
 export type ApprovalDecisionRequest = z.infer<typeof ApprovalDecisionRequestSchema>;
 export type ApprovalProbe = z.infer<typeof ApprovalProbeSchema>;
 export type CoreCommandAck = z.infer<typeof CoreCommandAckSchema>;
@@ -436,6 +479,8 @@ export type MemoryPinRequest = z.infer<typeof MemoryPinRequestSchema>;
 export type MemoryProbe = z.infer<typeof MemoryProbeSchema>;
 export type MemoryProposalReviewRequest = z.infer<typeof MemoryProposalReviewRequestSchema>;
 export type MemorySupersedeRequest = z.infer<typeof MemorySupersedeRequestSchema>;
+export type ModuleStatusSnapshot = z.infer<typeof ModuleStatusSnapshotSchema>;
+export type OpenWorkspaceRequest = z.infer<typeof OpenWorkspaceRequestSchema>;
 export type RunMessageRequest = z.infer<typeof RunMessageRequestSchema>;
 export type SettingsPatchRequest = z.infer<typeof SettingsPatchRequestSchema>;
 export type SettingsSnapshot = z.infer<typeof SettingsSnapshotSchema>;
@@ -443,6 +488,7 @@ export type TemplateDescriptor = z.infer<typeof TemplateDescriptorSchema>;
 export type TimelineEntry = z.infer<typeof TimelineEntrySchema>;
 export type TimelinePage = z.infer<typeof TimelinePageSchema>;
 export type WorkbenchHealthSnapshot = z.infer<typeof WorkbenchHealthSnapshotSchema>;
+export type WorkbenchModulesSnapshot = z.infer<typeof WorkbenchModulesSnapshotSchema>;
 export type WorkbenchPendingApproval = z.infer<typeof WorkbenchPendingApprovalSchema>;
 export type WorkbenchRunSummary = z.infer<typeof WorkbenchRunSummarySchema>;
 export type WorkbenchSnapshot = z.infer<typeof WorkbenchSnapshotSchema>;

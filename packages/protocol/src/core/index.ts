@@ -4,6 +4,8 @@ export * from './drift.js';
 export * from './focus-surface.js';
 export * from './governance.js';
 export * from './hot-state.js';
+export * from './module-status.js';
+export * from './module-status-helpers.js';
 export * from './projection.js';
 export * from './topology.js';
 export * from './ui-contract.js';

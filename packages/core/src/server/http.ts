@@ -24,6 +24,7 @@ import { AckTracker, HotStateManager } from '../state/index.js';
 import { BaselineTracker, FastGate, Integrator } from '../integrator/index.js';
 import { WorktreeLifecycle } from '../run/index.js';
 import { authMiddleware, generateAndSaveToken } from './auth.js';
+import { createProbedModules } from './module-probe.js';
 import { registerRoutes } from './routes.js';
 import { SettingsStore } from './settings-store.js';
 import { SseManager } from './sse.js';
@@ -291,6 +292,7 @@ export async function startHttpServer(
     publishEvent: (event) => eventBus.publish(event),
     workspaceRoot,
   });
+  hotStateManager.replaceModules(createProbedModules({ soulReady: true }));
   const projectionManager = new ProjectionManager({
     definitions: {
       healing_stats_view: {

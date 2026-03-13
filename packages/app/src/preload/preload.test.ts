@@ -1,11 +1,15 @@
 ﻿import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const exposeInMainWorld = vi.fn();
+const invoke = vi.fn(async () => 'D:/makefun/do-what/do-what-new');
 const readFileSync = vi.fn(() => 'token-from-test');
 
 vi.mock('electron', () => ({
   contextBridge: {
     exposeInMainWorld,
+  },
+  ipcRenderer: {
+    invoke,
   },
 }));
 
@@ -18,6 +22,7 @@ vi.mock('node:fs', () => ({
 describe('preload bridge', () => {
   beforeEach(() => {
     exposeInMainWorld.mockClear();
+    invoke.mockClear();
     readFileSync.mockClear();
     vi.resetModules();
   });
@@ -41,10 +46,15 @@ describe('preload bridge', () => {
     );
 
     const exposedRuntime = exposeInMainWorld.mock.calls[0]?.[1] as {
+      openWorkspaceDirectory?: () => Promise<string | null>;
       readFreshSessionToken?: () => string | null;
     };
 
+    await expect(exposedRuntime.openWorkspaceDirectory?.()).resolves.toBe(
+      'D:/makefun/do-what/do-what-new',
+    );
     expect(exposedRuntime.readFreshSessionToken?.()).toBe('token-from-test');
     expect(readFileSync).toHaveBeenCalledTimes(2);
+    expect(invoke).toHaveBeenCalledWith('do-what:pick-workspace-directory');
   });
 });

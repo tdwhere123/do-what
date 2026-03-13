@@ -94,6 +94,8 @@ pnpm dev:app
 
 UI 预加载脚本会尝试从 `~/.do-what/run/session_token` 读取 token，因此真实 Core 模式下通常应先启动 Core，再启动 App。
 
+当 Core 已可达但 `~/.do-what/run/session_token` 尚未写出时，App 不会立刻判定启动失败，而是按 3 秒间隔自动重试 bootstrap，直到 token 可读或 Core 真正离线。
+
 ## 引擎接入（高级）
 
 v0.1 中 Claude/Codex 适配器代码与测试已经存在，但需要人工外部接入；Core 不会自动拉起它们。
