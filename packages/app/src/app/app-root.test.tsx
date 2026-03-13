@@ -206,15 +206,138 @@ describe('AppRoot scaffold', () => {
       expect(screen.getByText('Workbench bootstrap failed')).toBeTruthy();
       expect(screen.getByText('Stage: Authentication')).toBeTruthy();
       expect(screen.getByText('Unauthorized')).toBeTruthy();
-      expect(screen.getByText('Code: auth_required ¡¤ HTTP 401')).toBeTruthy();
+      expect(screen.getByText('Code: auth_required | HTTP 401')).toBeTruthy();
       expect(
         screen.getByText(
-          'Module status: Core degraded ¡¤ Network healthy ¡¤ Claude booting ¡¤ Codex booting ¡¤ Soul booting',
+          'Module status: Core degraded | Network healthy | Claude booting | Codex booting | Soul booting',
         ),
       ).toBeTruthy();
     });
 
-    expect(screen.queryByText('Core Î´ÔËÐÐ')).toBeNull();
+    expect(screen.queryByRole('heading', { name: /Core/ })).toBeNull();
+  });
+
+  it('shows a snapshot-stage error for non-auth bootstrap failures', async () => {
+    const eventBus = new NormalizedEventBus();
+    const getWorkbenchSnapshot = vi.fn().mockRejectedValue(
+      new CoreHttpError(
+        {
+          code: 'snapshot_unavailable',
+          message: 'Snapshot query failed',
+        },
+        500,
+      ),
+    );
+
+    setAppServicesForTesting({
+      config: {
+        baseUrl: 'http://127.0.0.1:3847',
+        mockScenario: 'active',
+        readFreshSessionToken: () => 'mock-core-token',
+        reconnectDelayMs: 1000,
+        sessionToken: 'mock-core-token',
+        transportMode: 'http',
+      },
+      coreApi: {
+        getApprovalProbe: vi.fn(),
+        getInspectorSnapshot: vi.fn(),
+        getMemoryProbe: vi.fn(),
+        getSettingsSnapshot: vi.fn(),
+        getTimelinePage: vi.fn(),
+        getWorkbenchSnapshot,
+        listTemplates: vi.fn().mockResolvedValue([]),
+        postCommand: vi.fn(),
+        probeCommand: vi.fn(),
+      },
+      eventBus,
+      eventClient: {
+        start: vi.fn(() => () => {}),
+        stop: vi.fn(),
+      },
+      sessionGuard: new CoreSessionGuard(),
+      templateRegistry: {
+        listTemplates: vi.fn().mockResolvedValue([]),
+      },
+    });
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 200 })) as typeof fetch);
+    window.history.replaceState(null, '', '#/');
+
+    render(<AppRoot />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Workbench bootstrap failed')).toBeTruthy();
+      expect(screen.getByText('Stage: Workbench Snapshot')).toBeTruthy();
+      expect(screen.getByText('Snapshot query failed')).toBeTruthy();
+      expect(screen.getByText('Code: snapshot_unavailable | HTTP 500')).toBeTruthy();
+    });
+  });
+
+  it('shows a module-stage error when runtime initialization fails after snapshot success', async () => {
+    const eventBus = new NormalizedEventBus();
+    const getWorkbenchSnapshot = vi.fn().mockResolvedValue({
+      connectionState: 'connected',
+      coreSessionId: 'core-session-1',
+      health: {
+        claude: 'unknown',
+        codex: 'unknown',
+        core: 'healthy',
+        network: 'healthy',
+        soul: 'unknown',
+      },
+      pendingApprovals: [],
+      recentEvents: [],
+      revision: 0,
+      runs: [],
+      workspaces: [],
+    });
+
+    setAppServicesForTesting({
+      config: {
+        baseUrl: 'http://127.0.0.1:3847',
+        mockScenario: 'active',
+        readFreshSessionToken: () => 'mock-core-token',
+        reconnectDelayMs: 1000,
+        sessionToken: 'mock-core-token',
+        transportMode: 'http',
+      },
+      coreApi: {
+        getApprovalProbe: vi.fn(),
+        getInspectorSnapshot: vi.fn(),
+        getMemoryProbe: vi.fn(),
+        getSettingsSnapshot: vi.fn(),
+        getTimelinePage: vi.fn(),
+        getWorkbenchSnapshot,
+        listTemplates: vi.fn().mockResolvedValue([]),
+        postCommand: vi.fn(),
+        probeCommand: vi.fn(),
+      },
+      eventBus,
+      eventClient: {
+        start: vi.fn(() => {
+          throw new Error('Event stream failed to initialize');
+        }),
+        stop: vi.fn(),
+      },
+      sessionGuard: new CoreSessionGuard(),
+      templateRegistry: {
+        listTemplates: vi.fn().mockResolvedValue([]),
+      },
+    });
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 200 })) as typeof fetch);
+    window.history.replaceState(null, '', '#/');
+
+    render(<AppRoot />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Workbench bootstrap failed')).toBeTruthy();
+      expect(screen.getByText('Stage: Module Initialization')).toBeTruthy();
+      expect(screen.getByText('Event stream failed to initialize')).toBeTruthy();
+      expect(
+        screen.getByText(
+          'Module status: Core degraded | Network healthy | Claude degraded | Codex degraded | Soul degraded',
+        ),
+      ).toBeTruthy();
+    });
   });
 
   it('redirects unknown hash routes back to the workbench shell', async () => {
@@ -228,3 +351,4 @@ describe('AppRoot scaffold', () => {
     });
   });
 });
+

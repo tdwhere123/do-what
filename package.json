@@ -18,7 +18,10 @@
     "dev:app": "pnpm --filter @do-what/app start"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["electron", "better-sqlite3"]
+    "onlyBuiltDependencies": [
+      "electron",
+      "better-sqlite3"
+    ]
   },
   "devDependencies": {
     "@do-what/core": "workspace:*",
@@ -26,5 +29,8 @@
     "turbo": "^2.5.6",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
+  },
+  "volta": {
+    "node": "22.22.1"
   }
 }

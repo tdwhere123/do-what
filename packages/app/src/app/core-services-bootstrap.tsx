@@ -1,7 +1,7 @@
-import type { CoreError, WorkbenchHealthSnapshot } from '@do-what/protocol';
+import type { CoreError, WorkbenchHealthSnapshot, WorkbenchSnapshot } from '@do-what/protocol';
 import { useEffect } from 'react';
 import { normalizeCoreError } from '../lib/contracts';
-import { buildCoreUrl } from '../lib/core-http-client/core-http-client';
+import { buildCoreUrl, CoreHttpError } from '../lib/core-http-client';
 import { getAppServices, type AppServices } from '../lib/runtime/app-services';
 import { startAppStoreRuntime } from '../stores/app-store-runtime';
 import { useHotStateStore } from '../stores/hot-state';
@@ -28,12 +28,24 @@ function readCurrentSessionToken(services: AppServices): string | null {
 }
 
 function readErrorStatus(error: unknown): number | null {
+  if (error instanceof CoreHttpError) {
+    return error.status;
+  }
+
   return typeof error === 'object' &&
     error !== null &&
     'status' in error &&
     typeof (error as { status?: unknown }).status === 'number'
     ? (error as { status: number }).status
     : null;
+}
+
+function readCoreError(error: unknown, fallbackMessage: string): CoreError {
+  if (error instanceof CoreHttpError) {
+    return error.coreError;
+  }
+
+  return normalizeCoreError(error, fallbackMessage);
 }
 
 function resolveFailureCode(error: CoreError, status: number | null, fallback: string): string {
@@ -66,9 +78,15 @@ function isAuthFailure(error: CoreError, status: number | null): boolean {
 
 function buildBootstrapHealth(
   connectionState: 'connected' | 'disconnected',
+  failureStage?: BootstrapFailureStage,
 ): WorkbenchHealthSnapshot {
   const current = useHotStateStore.getState().health;
-  const unresolvedStatus = connectionState === 'disconnected' ? 'offline' : 'booting';
+  const unresolvedStatus =
+    connectionState === 'disconnected'
+      ? 'offline'
+      : failureStage === 'modules'
+        ? 'degraded'
+        : 'booting';
 
   return {
     claude: current.claude === 'unknown' ? unresolvedStatus : current.claude,
@@ -83,7 +101,7 @@ function classifyBootstrapFailure(
   error: unknown,
   sessionToken: string | null,
 ): ClassifiedBootstrapFailure {
-  const normalized = normalizeCoreError(error, 'Failed to bootstrap workbench');
+  const normalized = readCoreError(error, 'Failed to bootstrap workbench');
   const status = readErrorStatus(error);
 
   if (sessionToken === null) {
@@ -118,6 +136,18 @@ function classifyBootstrapFailure(
   };
 }
 
+function classifyModuleBootstrapFailure(error: unknown): ClassifiedBootstrapFailure {
+  const normalized = readCoreError(error, 'Failed to initialize workbench modules');
+  const status = readErrorStatus(error);
+
+  return {
+    code: resolveFailureCode(normalized, status, 'module_init_failed'),
+    error: normalized,
+    stage: 'modules',
+    status,
+  };
+}
+
 function shouldRetryBootstrap(): boolean {
   const state = useUiStore.getState();
   return (
@@ -130,7 +160,7 @@ function setBootstrapError(failure: ClassifiedBootstrapFailure): void {
   useHotStateStore.getState().applyBootstrapDiagnostics({
     connectionState: 'connected',
     error: failure.error,
-    health: buildBootstrapHealth('connected'),
+    health: buildBootstrapHealth('connected', failure.stage),
   });
   useUiStore.getState().setBootstrapState('error', {
     bootstrapError: failure.error.message,
@@ -153,6 +183,26 @@ function setBootstrapOffline(): void {
   });
 }
 
+function startWorkbenchRuntime(
+  services: AppServices,
+  bootstrapSnapshot: WorkbenchSnapshot,
+): { cleanupStores: () => void; stopEvents: () => void } {
+  const cleanupStores = startAppStoreRuntime(services, {
+    bootstrapSnapshot,
+  });
+
+  try {
+    const stopEvents = services.eventClient.start();
+    return {
+      cleanupStores,
+      stopEvents,
+    };
+  } catch (error) {
+    cleanupStores();
+    throw error;
+  }
+}
+
 function startMockBootstrap(services: AppServices): () => void {
   let cleanupStores: (() => void) | null = null;
   let stopEvents: (() => void) | null = null;
@@ -167,10 +217,15 @@ function startMockBootstrap(services: AppServices): () => void {
         return;
       }
 
-      cleanupStores = startAppStoreRuntime(services, {
-        bootstrapSnapshot,
-      });
-      stopEvents = services.eventClient.start();
+      try {
+        const runtime = startWorkbenchRuntime(services, bootstrapSnapshot);
+        cleanupStores = runtime.cleanupStores;
+        stopEvents = runtime.stopEvents;
+      } catch (error) {
+        setBootstrapError(classifyModuleBootstrapFailure(error));
+        return;
+      }
+
       useUiStore.getState().setBootstrapState('ready');
     } catch (error) {
       if (!disposed) {
@@ -192,11 +247,10 @@ function startHttpBootstrap(services: AppServices): () => void {
   let disposed = false;
   let retrying = false;
   let bootstrapRetryTimer: ReturnType<typeof setInterval> | null = null;
+  let cleanupStores: (() => void) | null = null;
+  let stopEvents: (() => void) | null = null;
 
   useUiStore.getState().setBootstrapState('loading');
-
-  const cleanupStores = startAppStoreRuntime(services);
-  const stopEvents = services.eventClient.start();
 
   const loadSnapshot = async (): Promise<void> => {
     try {
@@ -205,7 +259,15 @@ function startHttpBootstrap(services: AppServices): () => void {
         return;
       }
 
-      useHotStateStore.getState().applyWorkbenchSnapshot(snapshot);
+      try {
+        const runtime = startWorkbenchRuntime(services, snapshot);
+        cleanupStores = runtime.cleanupStores;
+        stopEvents = runtime.stopEvents;
+      } catch (error) {
+        setBootstrapError(classifyModuleBootstrapFailure(error));
+        return;
+      }
+
       useUiStore.getState().setBootstrapState('ready');
     } catch (error) {
       if (disposed) {
@@ -268,22 +330,6 @@ function startHttpBootstrap(services: AppServices): () => void {
     }, 3000);
   }
 
-  const unsubscribe = services.eventBus.subscribe((message) => {
-    if (message.kind !== 'connection' || message.state !== 'connected') {
-      return;
-    }
-
-    if (!shouldRetryBootstrap() || retrying) {
-      return;
-    }
-
-    retrying = true;
-    useUiStore.getState().setBootstrapState('loading');
-    void loadSnapshot().finally(() => {
-      retrying = false;
-    });
-  });
-
   void loadSnapshot();
 
   return () => {
@@ -292,9 +338,8 @@ function startHttpBootstrap(services: AppServices): () => void {
       clearInterval(bootstrapRetryTimer);
       bootstrapRetryTimer = null;
     }
-    unsubscribe();
     stopEvents?.();
-    cleanupStores();
+    cleanupStores?.();
   };
 }
 

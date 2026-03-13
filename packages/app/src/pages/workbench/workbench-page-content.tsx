@@ -104,6 +104,7 @@ function fromCreateRunModalDraft(draft: CreateRunModalDraft): CreateRunDraft {
 const BOOTSTRAP_STAGE_LABELS = {
   auth: 'Authentication',
   connection: 'Core Reachability',
+  modules: 'Module Initialization',
   snapshot: 'Workbench Snapshot',
   unknown: 'Bootstrap',
 } as const;
@@ -121,7 +122,7 @@ function buildBootstrapMeta(props: {
     props.bootstrapFailureStatus !== null ? `HTTP ${props.bootstrapFailureStatus}` : null,
   ].filter((part): part is string => part !== null);
 
-  return parts.length ? parts.join(' ¡¤ ') : null;
+  return parts.length ? parts.join(' | ') : null;
 }
 
 function buildModuleStatusSummary(health: WorkbenchHealthSnapshot): string {
@@ -131,7 +132,7 @@ function buildModuleStatusSummary(health: WorkbenchHealthSnapshot): string {
     `Claude ${formatHealthStatus(health.claude)}`,
     `Codex ${formatHealthStatus(health.codex)}`,
     `Soul ${formatHealthStatus(health.soul)}`,
-  ].join(' ¡¤ ');
+  ].join(' | ');
 }
 
 function StatusBanner(props: {
@@ -589,3 +590,4 @@ export function WorkbenchPageContent() {
     </section>
   );
 }
+

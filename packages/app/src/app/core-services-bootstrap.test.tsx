@@ -49,21 +49,11 @@ describe('CoreServicesBootstrap', () => {
   it('treats a reachable Core without a session token as an auth bootstrap failure until retry succeeds', async () => {
     const eventBus = new NormalizedEventBus();
     const readFreshSessionToken = vi
-      .fn()
-      .mockReturnValueOnce(null as string | null)
-      .mockReturnValueOnce('mock-core-token');
+      .fn(() => 'mock-core-token' as string | null)
+      .mockReturnValueOnce(null as string | null);
     const getWorkbenchSnapshot = vi
       .fn()
       .mockRejectedValueOnce(new Error('initial hot-state refresh failed'))
-      .mockRejectedValueOnce(
-        new CoreHttpError(
-          {
-            code: 'auth_required',
-            message: 'Unauthorized',
-          },
-          401,
-        ),
-      )
       .mockResolvedValueOnce(ACTIVE_WORKBENCH_FIXTURE);
     const fetchMock = vi.fn(async () => new Response(null, { status: 200 }));
 
@@ -114,8 +104,56 @@ describe('CoreServicesBootstrap', () => {
     await flushMicrotasks();
 
     expect(useUiStore.getState().bootstrapStatus).toBe('ready');
-    expect(getWorkbenchSnapshot).toHaveBeenCalledTimes(3);
+    expect(getWorkbenchSnapshot).toHaveBeenCalledTimes(2);
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(readFreshSessionToken).toHaveBeenCalledTimes(2);
+  });
+
+  it('classifies module initialization failures after snapshot bootstrap', async () => {
+    const eventBus = new NormalizedEventBus();
+    const getWorkbenchSnapshot = vi.fn().mockResolvedValue(ACTIVE_WORKBENCH_FIXTURE);
+
+    setAppServicesForTesting({
+      config: {
+        baseUrl: 'http://127.0.0.1:3847',
+        mockScenario: 'active',
+        readFreshSessionToken: () => 'mock-core-token',
+        reconnectDelayMs: 1000,
+        sessionToken: 'mock-core-token',
+        transportMode: 'http',
+      },
+      coreApi: {
+        getApprovalProbe: vi.fn(),
+        getInspectorSnapshot: vi.fn(),
+        getMemoryProbe: vi.fn(),
+        getSettingsSnapshot: vi.fn(),
+        getTimelinePage: vi.fn(),
+        getWorkbenchSnapshot,
+        listTemplates: vi.fn().mockResolvedValue([]),
+        postCommand: vi.fn(),
+        probeCommand: vi.fn(),
+      },
+      eventBus,
+      eventClient: {
+        start: vi.fn(() => {
+          throw new Error('SSE handshake failed');
+        }),
+        stop: vi.fn(),
+      },
+      sessionGuard: new CoreSessionGuard(),
+      templateRegistry: {
+        listTemplates: vi.fn().mockResolvedValue([]),
+      },
+    });
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 200 })) as typeof fetch);
+
+    render(<CoreServicesBootstrap />);
+
+    await flushMicrotasks();
+
+    expect(useUiStore.getState().bootstrapStatus).toBe('error');
+    expect(useUiStore.getState().bootstrapFailureStage).toBe('modules');
+    expect(useUiStore.getState().bootstrapFailureCode).toBe('module_init_failed');
+    expect(useUiStore.getState().bootstrapError).toBe('SSE handshake failed');
   });
 });

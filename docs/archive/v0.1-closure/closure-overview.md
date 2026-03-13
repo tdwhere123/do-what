@@ -50,7 +50,7 @@
 | ID | 任务 | 优先级 | 依赖 | 状态 |
 | --- | --- | --- | --- | --- |
 | C001 | `tasks/C001-fix-default-transport.md` | P0 | - | 已完成（任务体系已重置） |
-| C002 | `tasks/C002-disable-unsupported-buttons.md` | P0 | C001 | 待执行 |
+| C002 | `tasks/C002-disable-unsupported-buttons.md` | P0 | C001 | 已完成 |
 | C003 | `tasks/C003-readme-startup-update.md` | P0 | C002 | 待执行 |
 | C004 | `tasks/C004-settings-banner.md` | P0 | C003 | 待执行 |
 | C005 | `tasks/C005-engine-boundary-docs.md` | P0 | C004 | 待执行 |

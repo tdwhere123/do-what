@@ -24,7 +24,7 @@ export type SettingsTabId =
   | 'policies'
   | 'soul';
 export type BootstrapStatus = 'error' | 'idle' | 'loading' | 'offline' | 'ready';
-export type BootstrapFailureStage = 'auth' | 'connection' | 'snapshot' | 'unknown';
+export type BootstrapFailureStage = 'auth' | 'connection' | 'modules' | 'snapshot' | 'unknown';
 
 export interface BootstrapStateDetails {
   readonly bootstrapError?: string | null;
