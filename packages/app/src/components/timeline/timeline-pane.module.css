@@ -202,6 +202,13 @@
   flex-shrink: 0;
 }
 
+.inputHint {
+  margin: 0 0 8px;
+  color: var(--status-waiting);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .approvalOverlay {
   font-family: var(--font-mono);
   position: absolute;
@@ -292,6 +299,11 @@
 
 .inputBox textarea::placeholder {
   color: var(--text-muted);
+}
+
+.inputBox textarea:disabled {
+  cursor: not-allowed;
+  color: var(--text-secondary);
 }
 
 .sendButton {

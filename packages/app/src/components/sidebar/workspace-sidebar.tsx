@@ -1,5 +1,14 @@
-import type { WorkbenchHealthSnapshot } from '@do-what/protocol';
+import type {
+  ModuleStatusSnapshot,
+  WorkbenchHealthSnapshot,
+  WorkbenchModulesSnapshot,
+} from '@do-what/protocol';
 import { Link } from 'react-router-dom';
+import {
+  formatModuleState,
+  getModuleTone,
+  selectPrimaryEngineModule,
+} from '../../lib/module-status';
 import {
   SettingsSunIcon,
   SoulSpiralIcon,
@@ -25,7 +34,21 @@ export interface SidebarWorkspaceSummary {
   readonly workspaceId: string;
 }
 
-interface WorkspaceSidebarProps {
+interface ModernWorkspaceSidebarProps {
+  readonly isFrozen: boolean;
+  readonly isOpeningWorkspace: boolean;
+  readonly modules: WorkbenchModulesSnapshot;
+  readonly onCreateRun: (workspaceId: string) => void;
+  readonly onOpenWorkspace: () => void;
+  readonly onSelectRun: (runId: string, workspaceId: string) => void;
+  readonly onSelectWorkspace: (workspaceId: string) => void;
+  readonly selectedRunId: string | null;
+  readonly selectedWorkspaceId: string | null;
+  readonly runsById: Record<string, SidebarRunSummary>;
+  readonly workspaces: readonly SidebarWorkspaceSummary[];
+}
+
+interface LegacyWorkspaceSidebarProps {
   readonly health: WorkbenchHealthSnapshot;
   readonly isFrozen: boolean;
   readonly onCreateRun: () => void;
@@ -36,6 +59,8 @@ interface WorkspaceSidebarProps {
   readonly runsById: Record<string, SidebarRunSummary>;
   readonly workspaces: readonly SidebarWorkspaceSummary[];
 }
+
+type WorkspaceSidebarProps = ModernWorkspaceSidebarProps | LegacyWorkspaceSidebarProps;
 
 function getStatusTone(status: string): 'attention' | 'ok' | 'running' {
   if (status === 'running' || status === 'started') {
@@ -68,6 +93,41 @@ function StatusDot(props: { readonly status: string }) {
 function HealthRow(props: {
   readonly icon: 'core' | 'engine' | 'soul';
   readonly label: string;
+  readonly module: ModuleStatusSnapshot;
+}) {
+  const tone = getModuleTone(props.module);
+  const icon =
+    props.icon === 'core' ? (
+      <SoulSpiralIcon size={12} />
+    ) : props.icon === 'soul' ? (
+      <WorkbenchFlowerIcon size={12} />
+    ) : tone === 'ok' ? (
+      <StatusSuccessIcon size={12} />
+    ) : tone === 'running' ? (
+      <StatusRunningIcon size={12} />
+    ) : (
+      <StatusWaitingIcon size={12} />
+    );
+
+  const toneClass =
+    tone === 'ok'
+      ? styles.healthOk
+      : tone === 'running'
+        ? styles.healthRunning
+        : styles.healthAttention;
+
+  return (
+    <div className={styles.healthRow}>
+      <span className={styles.healthIcon}>{icon}</span>
+      <span className={styles.healthLabel}>{props.label}</span>
+      <span className={toneClass}>{formatModuleState(props.module)}</span>
+    </div>
+  );
+}
+
+function LegacyHealthRow(props: {
+  readonly icon: 'core' | 'engine' | 'soul';
+  readonly label: string;
   readonly value: string;
 }) {
   const icon =
@@ -83,7 +143,7 @@ function HealthRow(props: {
       <StatusWaitingIcon size={12} />
     );
 
-  const tone =
+  const toneClass =
     props.value === 'healthy' || props.value === 'idle'
       ? styles.healthOk
       : props.value === 'running'
@@ -94,20 +154,30 @@ function HealthRow(props: {
     <div className={styles.healthRow}>
       <span className={styles.healthIcon}>{icon}</span>
       <span className={styles.healthLabel}>{props.label}</span>
-      <span className={tone}>{props.value}</span>
+      <span className={toneClass}>{props.value}</span>
     </div>
   );
 }
 
 export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
+  const modernProps = 'modules' in props ? props : null;
+  const legacyProps = 'health' in props ? props : null;
+  const primaryEngine = modernProps ? selectPrimaryEngineModule(modernProps.modules) : null;
+  const openButtonDisabled = modernProps
+    ? props.isFrozen || modernProps.isOpeningWorkspace
+    : props.isFrozen;
+  const openButtonLabel = modernProps ? 'Add Workspace' : 'Create Run';
+
   return (
     <section className={styles.sidebar}>
       <header className={styles.header}>
-        <span className={styles.labelCaps}>Workspaces</span>
+        <span className={styles.labelCaps}>工作区</span>
         <button
+          aria-label={openButtonLabel}
           className={styles.iconButton}
-          disabled={props.isFrozen}
-          onClick={props.onCreateRun}
+          disabled={openButtonDisabled}
+          onClick={modernProps ? modernProps.onOpenWorkspace : legacyProps?.onCreateRun}
+          title={openButtonLabel}
           type="button"
         >
           +
@@ -117,10 +187,13 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
       <div className={styles.workspaceList}>
         {props.workspaces.map((workspace) => {
           const expanded = workspace.workspaceId === props.selectedWorkspaceId;
+          const workspaceLabelClass = expanded
+            ? `${styles.workspaceLabel} ${styles.workspaceLabelActive}`
+            : styles.workspaceLabel;
           return (
             <section className={styles.workspaceBlock} key={workspace.workspaceId}>
               <button
-                className={styles.workspaceLabel}
+                className={workspaceLabelClass}
                 onClick={() => props.onSelectWorkspace(workspace.workspaceId)}
                 type="button"
               >
@@ -131,7 +204,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
               {expanded ? (
                 <div className={styles.runList}>
                   {workspace.runIds.length === 0 ? (
-                    <div className={styles.emptyRuns}>No runs yet</div>
+                    <div className={styles.emptyRuns}>暂无运行</div>
                   ) : null}
                   {workspace.runIds.map((runId) => {
                     const run = props.runsById[runId];
@@ -158,11 +231,15 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
                   <button
                     className={styles.newRunButton}
                     disabled={props.isFrozen}
-                    onClick={props.onCreateRun}
+                    onClick={() =>
+                      modernProps
+                        ? modernProps.onCreateRun(workspace.workspaceId)
+                        : legacyProps?.onCreateRun()
+                    }
                     type="button"
                   >
                     <WorkbenchFlowerIcon className={styles.newRunIcon} size={12} />
-                    New Run
+                    新建 Run
                   </button>
                 </div>
               ) : null}
@@ -172,14 +249,24 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
       </div>
 
       <div className={styles.statusCluster}>
-        <HealthRow icon="engine" label="Engine" value={props.health.claude} />
-        <HealthRow icon="core" label="Core" value={props.health.core} />
-        <HealthRow icon="soul" label="Soul" value={props.health.soul} />
+        {modernProps && primaryEngine ? (
+          <>
+            <HealthRow icon="engine" label="Engine" module={primaryEngine} />
+            <HealthRow icon="core" label="Core" module={modernProps.modules.core} />
+            <HealthRow icon="soul" label="Soul" module={modernProps.modules.soul} />
+          </>
+        ) : legacyProps ? (
+          <>
+            <LegacyHealthRow icon="engine" label="Engine" value={legacyProps.health.claude} />
+            <LegacyHealthRow icon="core" label="Core" value={legacyProps.health.core} />
+            <LegacyHealthRow icon="soul" label="Soul" value={legacyProps.health.soul} />
+          </>
+        ) : null}
         <Link className={styles.settingsLink} to="/settings">
           <span className={styles.healthIcon}>
             <SettingsSunIcon size={14} />
           </span>
-          <span className={styles.settingsLabel}>Settings</span>
+          <span className={styles.settingsLabel}>设置</span>
         </Link>
       </div>
     </section>

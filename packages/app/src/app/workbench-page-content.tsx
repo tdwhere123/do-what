@@ -1,26 +1,24 @@
 import type {
   CoreCommandAck,
-  TemplateDescriptor,
   ModuleStatusSnapshot,
+  TemplateDescriptor,
+  WorkbenchRunSummary,
   WorkbenchModulesSnapshot,
 } from '@do-what/protocol';
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 import {
   CreateRunModal,
   type CreateRunModalDraft,
 } from '../components/create-run/create-run-modal';
+import { WorkspaceFirstEmptyState } from '../components/empty/workbench-empty-state';
 import { InspectorRail } from '../components/inspector/inspector-rail';
-import {
-  SettingsSunIcon,
-  SoulSpiralIcon,
-  StatusRunningIcon,
-  StatusSuccessIcon,
-  StatusWaitingIcon,
-  WorkbenchFlowerIcon,
-} from '../components/icons';
 import { WorkbenchShell } from '../components/layout/workbench-shell';
+import {
+  WorkspaceSidebar,
+  type SidebarRunSummary,
+  type SidebarWorkspaceSummary,
+} from '../components/sidebar/workspace-sidebar';
 import { TimelinePane } from '../components/timeline/timeline-pane';
 import {
   dispatchApprovalDecision,
@@ -36,12 +34,7 @@ import type { DispatchCoreCommandResult } from '../lib/commands';
 import { createCoreCommandRequest } from '../lib/commands/core-commands';
 import { createCoreHttpClient, CoreHttpError } from '../lib/core-http-client';
 import { parseCoreCommandAck } from '../lib/contracts';
-import {
-  buildModulesSummary,
-  formatModuleState,
-  getModuleTone,
-  selectPrimaryEngineModule,
-} from '../lib/module-status';
+import { buildModulesSummary } from '../lib/module-status';
 import { getAppServices } from '../lib/runtime/app-services';
 import {
   selectBootstrapError,
@@ -68,27 +61,16 @@ import { useProjectionStore } from '../stores/projection';
 import { useSettingsBridgeStore } from '../stores/settings-bridge';
 import { useUiStore, type CreateRunDraft } from '../stores/ui';
 import { dismissAckOverlay, retryAckOverlaySync, retryPendingMessageSync } from '../lib/reconciliation';
-import emptyStyles from '../components/empty/workbench-empty-state.module.css';
-import sidebarStyles from '../components/sidebar/workspace-sidebar.module.css';
 import styles from '../pages/workbench/workbench-page-content.module.css';
-
-interface SidebarRunSummary {
-  readonly approvalCount: number;
-  readonly lastEventAt?: string;
-  readonly runId: string;
-  readonly status: string;
-  readonly title: string;
-}
-
-interface SidebarWorkspaceSummary {
-  readonly name: string;
-  readonly runIds: readonly string[];
-  readonly status: string;
-  readonly workspaceId: string;
-}
 
 interface WorkspaceOpenResult extends DispatchCoreCommandResult {
   readonly ack: CoreCommandAck | null;
+}
+
+interface ComposerAvailability {
+  readonly blockedReason: string | null;
+  readonly isBlocked: boolean;
+  readonly placeholder: string;
 }
 
 const PARTICIPANT_MODE_TO_VALUES: Record<string, readonly string[]> = {
@@ -163,17 +145,6 @@ function buildBootstrapMeta(props: {
 
   return parts.length ? parts.join(' | ') : null;
 }
-function getStatusTone(status: string): 'attention' | 'ok' | 'running' {
-  if (status === 'running' || status === 'started') {
-    return 'running';
-  }
-
-  if (status === 'waiting_approval' || status === 'failed' || status === 'interrupted') {
-    return 'attention';
-  }
-
-  return 'ok';
-}
 
 function readOpenWorkspaceError(error: unknown): string {
   if (error instanceof CoreHttpError) {
@@ -181,6 +152,71 @@ function readOpenWorkspaceError(error: unknown): string {
   }
 
   return error instanceof Error ? error.message : 'Failed to open workspace.';
+}
+
+function selectRunEngineModule(
+  modules: WorkbenchModulesSnapshot,
+  run: WorkbenchRunSummary | null,
+): ModuleStatusSnapshot | null {
+  if (run?.engine === 'claude' || run?.engine === 'codex') {
+    return modules.engines[run.engine];
+  }
+
+  return null;
+}
+
+function buildComposerAvailability(input: {
+  readonly globalLocked: boolean;
+  readonly modules: WorkbenchModulesSnapshot;
+  readonly run: WorkbenchRunSummary | null;
+  readonly workspaceId: string | null;
+}): ComposerAvailability {
+  if (!input.workspaceId) {
+    return {
+      blockedReason: 'Open a workspace before continuing this run.',
+      isBlocked: true,
+      placeholder: 'Open a workspace first...',
+    };
+  }
+
+  if (!input.run) {
+    return {
+      blockedReason: 'Select or create a run before sending a message.',
+      isBlocked: true,
+      placeholder: 'Select or create a run...',
+    };
+  }
+
+  if (input.globalLocked) {
+    return {
+      blockedReason: 'Commands stay disabled until Core returns to a healthy state.',
+      isBlocked: true,
+      placeholder: 'Core is still recovering...',
+    };
+  }
+
+  const engineModule = selectRunEngineModule(input.modules, input.run);
+  if (!engineModule) {
+    return {
+      blockedReason: 'This run has no assigned engine yet.',
+      isBlocked: true,
+      placeholder: 'Assign an engine before sending...',
+    };
+  }
+
+  if (engineModule.status !== 'connected' || engineModule.phase !== 'ready') {
+    return {
+      blockedReason: `${engineModule.label} is unavailable for this run. Open Settings > Engines to reconnect it.`,
+      isBlocked: true,
+      placeholder: `${engineModule.label} is unavailable...`,
+    };
+  }
+
+  return {
+    blockedReason: null,
+    isBlocked: false,
+    placeholder: `Continue ${input.run.title}...`,
+  };
 }
 
 function createOpenWorkspaceTransport() {
@@ -263,199 +299,6 @@ async function dispatchOpenWorkspace(rootPath: string): Promise<WorkspaceOpenRes
   }
 }
 
-function StatusDot(props: { readonly status: string }) {
-  const tone = getStatusTone(props.status);
-  return (
-    <span
-      aria-hidden="true"
-      className={
-        tone === 'running'
-          ? `${sidebarStyles.runDot} ${sidebarStyles.runDotRunning}`
-          : tone === 'attention'
-            ? `${sidebarStyles.runDot} ${sidebarStyles.runDotAttention}`
-            : `${sidebarStyles.runDot} ${sidebarStyles.runDotOk}`
-      }
-    />
-  );
-}
-
-function SidebarHealthRow(props: {
-  readonly icon: 'core' | 'engine' | 'soul';
-  readonly label: string;
-  readonly module: ModuleStatusSnapshot;
-}) {
-  const icon =
-    props.icon === 'core' ? (
-      <SoulSpiralIcon size={12} />
-    ) : props.icon === 'soul' ? (
-      <WorkbenchFlowerIcon size={12} />
-    ) : getModuleTone(props.module) === 'ok' ? (
-      <StatusSuccessIcon size={12} />
-    ) : getModuleTone(props.module) === 'running' ? (
-      <StatusRunningIcon size={12} />
-    ) : (
-      <StatusWaitingIcon size={12} />
-    );
-
-  const tone = getModuleTone(props.module);
-  const toneClass =
-    tone === 'ok'
-      ? sidebarStyles.healthOk
-      : tone === 'running'
-        ? sidebarStyles.healthRunning
-        : sidebarStyles.healthAttention;
-
-  return (
-    <div className={sidebarStyles.healthRow}>
-      <span className={sidebarStyles.healthIcon}>{icon}</span>
-      <span className={sidebarStyles.healthLabel}>{props.label}</span>
-      <span className={toneClass}>{formatModuleState(props.module)}</span>
-    </div>
-  );
-}
-
-function WorkspaceFirstSidebar(props: {
-  readonly isFrozen: boolean;
-  readonly isOpeningWorkspace: boolean;
-  readonly modules: WorkbenchModulesSnapshot;
-  readonly onCreateRun: (workspaceId: string) => void;
-  readonly onOpenWorkspace: () => void;
-  readonly onSelectRun: (runId: string, workspaceId: string) => void;
-  readonly onSelectWorkspace: (workspaceId: string) => void;
-  readonly selectedRunId: string | null;
-  readonly selectedWorkspaceId: string | null;
-  readonly runsById: Record<string, SidebarRunSummary>;
-  readonly workspaces: readonly SidebarWorkspaceSummary[];
-}) {
-  const primaryEngine = selectPrimaryEngineModule(props.modules);
-
-  return (
-    <section className={sidebarStyles.sidebar}>
-      <header className={sidebarStyles.header}>
-        <span className={sidebarStyles.labelCaps}>Workspaces</span>
-        <button
-          className={sidebarStyles.iconButton}
-          disabled={props.isFrozen || props.isOpeningWorkspace}
-          onClick={props.onOpenWorkspace}
-          type="button"
-        >
-          +
-        </button>
-      </header>
-
-      <div className={sidebarStyles.workspaceList}>
-        {props.workspaces.map((workspace) => {
-          const expanded = workspace.workspaceId === props.selectedWorkspaceId;
-          return (
-            <section className={sidebarStyles.workspaceBlock} key={workspace.workspaceId}>
-              <button
-                className={sidebarStyles.workspaceLabel}
-                onClick={() => props.onSelectWorkspace(workspace.workspaceId)}
-                type="button"
-              >
-                <span className={sidebarStyles.workspaceChevron}>{expanded ? 'v' : '>'}</span>
-                <span className={sidebarStyles.workspaceName}>/{workspace.name}</span>
-              </button>
-
-              {expanded ? (
-                <div className={sidebarStyles.runList}>
-                  {workspace.runIds.length === 0 ? (
-                    <div className={sidebarStyles.emptyRuns}>No runs yet</div>
-                  ) : null}
-                  {workspace.runIds.map((runId) => {
-                    const run = props.runsById[runId];
-                    if (!run) {
-                      return null;
-                    }
-
-                    const active = runId === props.selectedRunId;
-                    return (
-                      <button
-                        key={runId}
-                        className={
-                          active
-                            ? `${sidebarStyles.runButton} ${sidebarStyles.runButtonActive}`
-                            : sidebarStyles.runButton
-                        }
-                        onClick={() => props.onSelectRun(runId, workspace.workspaceId)}
-                        type="button"
-                      >
-                        <StatusDot status={run.status} />
-                        <span className={sidebarStyles.runTitle}>{run.title}</span>
-                        {run.approvalCount > 0 ? (
-                          <span className={sidebarStyles.runMeta}>{run.approvalCount}</span>
-                        ) : null}
-                      </button>
-                    );
-                  })}
-                  <button
-                    className={sidebarStyles.newRunButton}
-                    disabled={props.isFrozen}
-                    onClick={() => props.onCreateRun(workspace.workspaceId)}
-                    type="button"
-                  >
-                    <WorkbenchFlowerIcon className={sidebarStyles.newRunIcon} size={12} />
-                    New Run
-                  </button>
-                </div>
-              ) : null}
-            </section>
-          );
-        })}
-      </div>
-
-      <div className={sidebarStyles.statusCluster}>
-        <SidebarHealthRow
-          icon="engine"
-          label={primaryEngine.label}
-          module={primaryEngine}
-        />
-        <SidebarHealthRow icon="core" label="Core" module={props.modules.core} />
-        <SidebarHealthRow icon="soul" label="Soul" module={props.modules.soul} />
-        <Link className={sidebarStyles.settingsLink} to="/settings">
-          <span className={sidebarStyles.healthIcon}>
-            <SettingsSunIcon size={14} />
-          </span>
-          <span className={sidebarStyles.settingsLabel}>Settings</span>
-        </Link>
-      </div>
-    </section>
-  );
-}
-
-function WorkspaceFirstEmptyState(props: {
-  readonly description: string;
-  readonly error: string | null;
-  readonly isBusy: boolean;
-  readonly isFrozen: boolean;
-  readonly onOpenWorkspace: () => void;
-  readonly title: string;
-}) {
-  return (
-    <section className={emptyStyles.empty}>
-      <div className={emptyStyles.iconWrap}>
-        <WorkbenchFlowerIcon className={emptyStyles.icon} size={56} />
-      </div>
-      <h2 className={emptyStyles.title}>{props.title}</h2>
-      <p className={emptyStyles.description}>{props.description}</p>
-      {props.error ? <p className={styles.bannerInline}>{props.error}</p> : null}
-      <div className={emptyStyles.actions}>
-        <button
-          className={emptyStyles.primaryButton}
-          disabled={props.isFrozen || props.isBusy}
-          onClick={props.onOpenWorkspace}
-          type="button"
-        >
-          {props.isBusy ? 'Opening...' : 'Open Workspace'}
-        </button>
-        <button className={emptyStyles.ghostButton} disabled type="button">
-          Browse History (v0.2)
-        </button>
-      </div>
-    </section>
-  );
-}
-
 function StatusBanner(props: {
   readonly bootstrapError: string | null;
   readonly bootstrapFailureCode: string | null;
@@ -466,15 +309,6 @@ function StatusBanner(props: {
   readonly lastError: string | null;
   readonly modules: WorkbenchModulesSnapshot;
 }) {
-  if (props.bootstrapStatus === 'loading') {
-    return (
-      <div className={styles.banner}>
-        <strong>Bootstrapping workbench</strong>
-        <p>Reading snapshot and opening the event stream.</p>
-      </div>
-    );
-  }
-
   if (props.bootstrapStatus === 'error') {
     const bootstrapMeta = buildBootstrapMeta(props);
     const stageLabel =
@@ -691,11 +525,22 @@ export function WorkspaceFirstWorkbenchPageContent() {
   const selectedRun = selectedRunId ? runsById[selectedRunId] ?? null : null;
   const selectedWorkspace =
     selectedWorkspaceId ? workspacesById[selectedWorkspaceId] ?? null : null;
+  const activeWorkspaceId = selectedRun?.workspaceId ?? selectedWorkspaceId ?? null;
   const workspaceLabel = selectedWorkspace?.name ?? 'Open a workspace first';
   const activeRunDraft =
     selectedRunId && composerDraftsByRun[selectedRunId] ? composerDraftsByRun[selectedRunId] : '';
   const activeCreateRunDraft = toCreateRunModalDraft(
     selectedWorkspaceId ? createRunDraftsByWorkspace[selectedWorkspaceId] : undefined,
+  );
+  const composerAvailability = useMemo(
+    () =>
+      buildComposerAvailability({
+        globalLocked,
+        modules,
+        run: selectedRun,
+        workspaceId: activeWorkspaceId,
+      }),
+    [activeWorkspaceId, globalLocked, modules, selectedRun],
   );
 
   useEffect(() => {
@@ -727,11 +572,10 @@ export function WorkspaceFirstWorkbenchPageContent() {
   async function refreshAndSelectWorkspace(workspaceId: string | undefined): Promise<void> {
     const snapshot = await services.coreApi.getWorkbenchSnapshot();
     useHotStateStore.getState().applyWorkbenchSnapshot(snapshot);
-    if (!workspaceId) {
-      return;
-    }
-
-    const workspace = snapshot.workspaces.find((entry) => entry.workspaceId === workspaceId);
+    const workspace =
+      (workspaceId
+        ? snapshot.workspaces.find((entry) => entry.workspaceId === workspaceId)
+        : null) ?? snapshot.workspaces[0];
     if (!workspace) {
       return;
     }
@@ -770,7 +614,7 @@ export function WorkspaceFirstWorkbenchPageContent() {
   }
 
   function handleCreateRunIntent(workspaceId?: string): void {
-    const nextWorkspaceId = workspaceId ?? selectedWorkspaceId ?? workspaceIds[0] ?? null;
+    const nextWorkspaceId = workspaceId ?? selectedWorkspaceId;
     if (!nextWorkspaceId) {
       setWorkspaceActionError('Open a workspace before creating a run.');
       setCreateRunSubmitError(null);
@@ -785,7 +629,7 @@ export function WorkspaceFirstWorkbenchPageContent() {
   }
 
   async function handleSubmitCreateRun(): Promise<void> {
-    const nextWorkspaceId = selectedWorkspaceId ?? workspaceIds[0] ?? null;
+    const nextWorkspaceId = selectedWorkspaceId;
     if (!nextWorkspaceId) {
       setCreateRunSubmitError('Open a workspace before starting a run.');
       return;
@@ -803,6 +647,28 @@ export function WorkspaceFirstWorkbenchPageContent() {
 
     clearCreateRunDraft(nextWorkspaceId);
     setActiveModal(null);
+  }
+
+  function handleSendMessage(): void {
+    if (composerAvailability.isBlocked || !selectedRun || !activeWorkspaceId) {
+      return;
+    }
+
+    const message = activeRunDraft.trim();
+    if (message.length === 0) {
+      return;
+    }
+
+    void dispatchRunMessage(
+      selectedRun.runId,
+      activeWorkspaceId,
+      message,
+      services.coreApi,
+    ).then((result) => {
+      if (result.ok) {
+        clearComposerDraft(selectedRun.runId);
+      }
+    });
   }
 
   return (
@@ -887,12 +753,15 @@ export function WorkspaceFirstWorkbenchPageContent() {
             <TimelinePane
               approvals={selectedApprovals}
               composerDraft={activeRunDraft}
+              composerBlockedReason={composerAvailability.blockedReason}
+              composerPlaceholder={composerAvailability.placeholder}
               globalLocked={globalLocked}
               hasMoreBefore={timelineProjection?.hasMoreBefore ?? false}
               isLoading={
                 timelineProjection?.status === 'loading' ||
                 timelineProjection?.status === 'refreshing'
               }
+              isComposerBlocked={composerAvailability.isBlocked}
               markers={timelineProjection?.markers ?? []}
               onAllowOnce={(approvalId) =>
                 void dispatchApprovalDecision(
@@ -938,20 +807,7 @@ export function WorkspaceFirstWorkbenchPageContent() {
               onRetryOverlay={(clientCommandId) =>
                 void retryAckOverlaySync(clientCommandId, services.coreApi)
               }
-              onSendMessage={() =>
-                selectedRun
-                  ? void dispatchRunMessage(
-                      selectedRun.runId,
-                      selectedRun.workspaceId ?? selectedWorkspaceId,
-                      activeRunDraft,
-                      services.coreApi,
-                    ).then((result) => {
-                      if (result.ok) {
-                        clearComposerDraft(selectedRun.runId);
-                      }
-                    })
-                  : undefined
-              }
+              onSendMessage={handleSendMessage}
               onSetViewMode={setTimelineViewMode}
               optimisticMessages={optimisticMessages}
               overlayEntries={ackOverlays}
@@ -964,8 +820,8 @@ export function WorkspaceFirstWorkbenchPageContent() {
             <WorkspaceFirstEmptyState
               description={
                 workspaces.length
-                  ? 'Pick a workspace and start the next run. The right rail stays mounted so later projections do not shift the shell.'
-                  : 'Open a workspace first, then create a run inside that workspace.'
+                  ? '从左侧工作区中选择，或直接用侧栏里的新建 Run 发起一次协作。'
+                  : '先在侧栏中打开一个工作区，再创建 Run。'
               }
               error={workspaceActionError}
               isBusy={isOpeningWorkspace}
@@ -973,7 +829,7 @@ export function WorkspaceFirstWorkbenchPageContent() {
               onOpenWorkspace={() => {
                 void handleOpenWorkspace();
               }}
-              title={workspaces.length ? 'No active run selected' : 'No workspace yet'}
+              title={workspaces.length ? '暂无运行' : '暂无工作区'}
             />
           )
         }
@@ -989,7 +845,7 @@ export function WorkspaceFirstWorkbenchPageContent() {
                 setActiveModal(null);
               }}
               onDraftChange={(draft) => {
-                const nextWorkspaceId = selectedWorkspaceId ?? workspaceIds[0] ?? null;
+                const nextWorkspaceId = selectedWorkspaceId;
                 if (!nextWorkspaceId) {
                   return;
                 }
@@ -1004,7 +860,7 @@ export function WorkspaceFirstWorkbenchPageContent() {
           ) : null
         }
         sidebar={
-          <WorkspaceFirstSidebar
+          <WorkspaceSidebar
             isFrozen={globalLocked}
             isOpeningWorkspace={isOpeningWorkspace}
             modules={modules}

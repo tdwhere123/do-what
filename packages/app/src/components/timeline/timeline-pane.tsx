@@ -15,9 +15,12 @@ import styles from './timeline-pane.module.css';
 interface TimelinePaneProps {
   readonly approvals: readonly HotApprovalSummary[];
   readonly composerDraft: string;
+  readonly composerBlockedReason: string | null;
+  readonly composerPlaceholder: string;
   readonly globalLocked: boolean;
   readonly hasMoreBefore: boolean;
   readonly isLoading: boolean;
+  readonly isComposerBlocked: boolean;
   readonly markers: readonly TimelineMarker[];
   readonly onAllowOnce: (approvalId: string) => void;
   readonly onAllowSession: (approvalId: string) => void;
@@ -305,19 +308,20 @@ export function TimelinePane(props: TimelinePaneProps) {
           </div>
         ) : null}
 
+        {props.composerBlockedReason ? (
+          <p className={styles.inputHint}>{props.composerBlockedReason}</p>
+        ) : null}
         <div className={styles.inputBox}>
           <textarea
-            disabled={!props.selectedRunId}
+            disabled={props.isComposerBlocked}
             onChange={(event) => props.onComposerChange(event.target.value)}
-            placeholder="Continue the active run..."
+            placeholder={props.composerPlaceholder}
             rows={1}
             value={props.composerDraft}
           />
           <button
             className={styles.sendButton}
-            disabled={
-              props.globalLocked || !props.selectedRunId || props.composerDraft.trim().length === 0
-            }
+            disabled={props.isComposerBlocked || props.composerDraft.trim().length === 0}
             onClick={props.onSendMessage}
             type="button"
           >

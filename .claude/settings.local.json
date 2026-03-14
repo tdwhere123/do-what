@@ -25,7 +25,8 @@
       "Bash(done)",
       "Bash(find /d/makefun/do-what/do-what-new -maxdepth 2 -name 'vite*.config.*' -o -name 'forge.config.*' -o -name '.github' 2>/dev/null | head -20)",
       "Bash(find /d/makefun/do-what/do-what-new/packages/app/src/pages -o /d/makefun/do-what/do-what-new/packages/app/src/components -type f -name \"*.tsx\" 2>/dev/null | head -20)",
-      "Bash(printf ' \\\\n' | pnpm approve-builds 2>&1 || true)"
+      "Bash(printf ' \\\\n' | pnpm approve-builds 2>&1 || true)",
+      "Bash(find D:/makefun/do-what/do-what-new/packages/app/src/assets/decorative -type f -name \"*.svg\" 2>/dev/null | sort)"
     ]
   }
 }

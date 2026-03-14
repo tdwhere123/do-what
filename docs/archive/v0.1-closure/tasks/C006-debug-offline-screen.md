@@ -67,5 +67,5 @@
 
 ## 完成后更新
 
-- [ ] `closure-overview.md` 中 C006 状态改为“已完成”
-- [ ] `AGENTS.md` 中收口任务进度同步
+- [x] `closure-overview.md` 中 C006 状态改为“已完成”
+- [x] `AGENTS.md` 中收口任务进度同步

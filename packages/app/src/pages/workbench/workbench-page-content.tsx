@@ -1,6 +1,7 @@
 import type { TemplateDescriptor, WorkbenchHealthSnapshot } from '@do-what/protocol';
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+export { WorkspaceFirstWorkbenchPageContent as WorkbenchPageContent } from '../../app/workbench-page-content';
 import {
   CreateRunModal,
   type CreateRunModalDraft,
@@ -186,7 +187,7 @@ function StatusBanner(props: {
   return null;
 }
 
-export function WorkbenchPageContent() {
+function LegacyWorkbenchPageContent() {
   const services = getAppServices();
   const activeModal = useUiStore((state) => state.activeModal);
   const createRunDraftsByWorkspace = useUiStore((state) => state.createRunDraftsByWorkspace);
@@ -455,9 +456,20 @@ export function WorkbenchPageContent() {
             <TimelinePane
               approvals={selectedApprovals}
               composerDraft={activeRunDraft}
+              composerBlockedReason={
+                globalLocked
+                  ? 'Commands stay disabled until Core returns to a healthy state.'
+                  : !selectedRun
+                    ? 'Select or create a run before sending a message.'
+                    : null
+              }
+              composerPlaceholder={
+                selectedRun ? `Continue ${selectedRun.title}...` : 'Select or create a run...'
+              }
               globalLocked={globalLocked}
               hasMoreBefore={timelineProjection?.hasMoreBefore ?? false}
               isLoading={timelineProjection?.status === 'loading' || timelineProjection?.status === 'refreshing'}
+              isComposerBlocked={globalLocked || !selectedRun}
               markers={timelineProjection?.markers ?? []}
               onAllowOnce={(approvalId) =>
                 void dispatchApprovalDecision(
@@ -529,12 +541,12 @@ export function WorkbenchPageContent() {
             <WorkbenchEmptyState
               description={
                 workspaces.length
-                  ? 'Pick a workspace and start the next run. The right rail stays mounted so later projections do not shift the shell.'
-                  : 'Workbench is waiting for workspace snapshot data. Create Run remains the primary entry point.'
+                  ? '从左侧工作区中选择，或直接用侧栏里的新建 Run 发起一次协作。'
+                  : '先在侧栏中打开一个工作区，再创建 Run。'
               }
               isFrozen={globalLocked}
               onCreateRun={() => setActiveModal('create-run')}
-              title={workspaces.length ? 'No active run selected' : 'No runs yet'}
+              title={workspaces.length ? '暂无运行' : '暂无工作区'}
             />
           )
         }

@@ -25,6 +25,41 @@ const TAB_CONFIG: Array<{ id: SettingsTabId; label: string; sectionId: string }>
   { id: 'appearance', label: 'Appearance', sectionId: 'appearance' },
 ];
 
+const TAB_COPY: Record<
+  SettingsTabId,
+  {
+    note: string;
+    summary: string;
+    tier: string;
+  }
+> = {
+  appearance: {
+    note: 'Appearance remains a session-level shell for v0.1. Persisted theme changes stay marked for v0.2.',
+    summary: 'Typography, motion, and theme controls stay visible here instead of leaking into the workbench shell.',
+    tier: 'B/C',
+  },
+  engines: {
+    note: 'Module status is real. Refreshing module status re-reads the latest workbench snapshot from Core.',
+    summary: 'Engines is the only settings tab that must surface live Core / Engine / Soul status in v0.1.',
+    tier: 'A',
+  },
+  environment: {
+    note: 'Runtime inspection is real. Install and repair flows remain honest placeholders until v0.2.',
+    summary: 'Environment holds runtime and host context instead of treating it as a generic extra card.',
+    tier: 'B/C',
+  },
+  policies: {
+    note: 'Policy editing remains a light shell. Lease and overlay state stay visible here because they gate writes.',
+    summary: 'Policies is where governance and write-safety context live during closure, even before C010 rebuilds the IA.',
+    tier: 'B/C',
+  },
+  soul: {
+    note: 'Soul stays a front-end shell for v0.1, but it must read as a distinct surface rather than another generic form.',
+    summary: 'Soul keeps memory-related controls grouped behind one tab with honest v0.1 boundaries.',
+    tier: 'B/C',
+  },
+};
+
 const FALLBACK_RUNTIME = {
   coreSessionToken: null,
   coreSessionTokenPath: 'unknown',
@@ -71,6 +106,11 @@ function readFieldValue(value: unknown): string {
   }
 
   return '';
+}
+
+async function refreshModuleSnapshot(): Promise<void> {
+  const snapshot = await getAppServices().coreApi.getWorkbenchSnapshot();
+  useHotStateStore.getState().applyWorkbenchSnapshot(snapshot);
 }
 
 function LeaseInterruptionNotice() {
@@ -126,6 +166,8 @@ export function SettingsPageContent() {
   const overlayEntriesById = useAckOverlayStore((state) => state.entriesById);
   const [draftFields, setDraftFields] = useState<Record<string, unknown>>({});
   const handledLeaseRef = useRef<string | null>(null);
+  const [isRefreshingModules, setIsRefreshingModules] = useState(false);
+  const [moduleRefreshError, setModuleRefreshError] = useState<string | null>(null);
 
   const query = useQuery<SettingsSnapshot>({
     queryKey: SETTINGS_QUERY_KEY,
@@ -176,6 +218,7 @@ export function SettingsPageContent() {
 
   const activeSection = useMemo(() => getSectionForTab(query.data, activeTab), [activeTab, query.data]);
   const primaryEngineModule = useMemo(() => selectPrimaryEngineModule(modules), [modules]);
+  const activeTabCopy = TAB_COPY[activeTab];
 
   const saveDisabled = globalLocked || Object.keys(draftFields).length === 0 || query.isLoading;
 
@@ -209,6 +252,42 @@ export function SettingsPageContent() {
           </div>
 
           <LeaseInterruptionNotice />
+
+          <section className={styles.introCard}>
+            <div className={styles.settingsCardTitle}>
+              <span>{TAB_CONFIG.find((tab) => tab.id === activeTab)?.label ?? 'Settings'}</span>
+              <span className={styles.introBadge}>{activeTabCopy.tier}</span>
+            </div>
+            <p className={styles.introSummary}>{activeTabCopy.summary}</p>
+            <p className={styles.rowSubtext}>{activeTabCopy.note}</p>
+            {activeTab === 'engines' ? (
+              <div className={styles.footerActions}>
+                <button
+                  className={styles.secondaryButton}
+                  disabled={isRefreshingModules}
+                  onClick={async () => {
+                    setModuleRefreshError(null);
+                    setIsRefreshingModules(true);
+                    try {
+                      await refreshModuleSnapshot();
+                    } catch (error) {
+                      setModuleRefreshError(
+                        error instanceof Error
+                          ? error.message
+                          : 'Failed to refresh module status.',
+                      );
+                    } finally {
+                      setIsRefreshingModules(false);
+                    }
+                  }}
+                  type="button"
+                >
+                  {isRefreshingModules ? 'Refreshing...' : 'Refresh Module Status'}
+                </button>
+              </div>
+            ) : null}
+            {moduleRefreshError ? <p className={styles.errorText}>{moduleRefreshError}</p> : null}
+          </section>
 
           <section className={styles.settingsCard}>
             <div className={styles.settingsCardTitle}>
@@ -363,75 +442,95 @@ export function SettingsPageContent() {
             </div>
           </section>
 
-          <section className={styles.settingsCard}>
-            <div className={styles.settingsCardTitle}>Runtime</div>
-            <div className={styles.settingsRow}>
-              <div className={styles.settingsRowLabel}>
-                <span className={styles.labelMain}>Electron</span>
-              </div>
-              <span className={styles.valueLabel}>{runtime.versions.electron}</span>
-            </div>
-            <div className={styles.settingsRow}>
-              <div className={styles.settingsRowLabel}>
-                <span className={styles.labelMain}>Chrome</span>
-              </div>
-              <span className={styles.valueLabel}>{runtime.versions.chrome}</span>
-            </div>
-            <div className={styles.settingsRow}>
-              <div className={styles.settingsRowLabel}>
-                <span className={styles.labelMain}>Node</span>
-              </div>
-              <span className={styles.valueLabel}>{runtime.versions.node}</span>
-            </div>
-            <div className={styles.settingsRow}>
-              <div className={styles.settingsRowLabel}>
-                <span className={styles.labelMain}>Token path</span>
-              </div>
-              <span className={styles.valueLabel}>{runtime.coreSessionTokenPath}</span>
-            </div>
-          </section>
-
-          <section className={styles.settingsCard}>
-            <div className={styles.settingsCardTitle}>Lease locks</div>
-            {lockedFieldIds.length === 0 ? (
-              <p className={styles.rowSubtext}>No fields are locked by the current governance lease.</p>
-            ) : (
-              lockedFieldIds.map((fieldId) => (
-                <div className={styles.settingsRow} key={fieldId}>
-                  <div className={styles.settingsRowLabel}>
-                    <span className={styles.labelMain}>{fieldId}</span>
-                  </div>
-                  <span className={styles.valueLabel}>locked</span>
-                </div>
-              ))
-            )}
-          </section>
-
-          {overlays.length > 0 ? (
+          {activeTab === 'environment' ? (
             <section className={styles.settingsCard}>
-              <div className={styles.settingsCardTitle}>Settings overlays</div>
-              {overlays.map((entry) => (
-                <article className={styles.overlayCard} key={entry.clientCommandId}>
-                  <div className={styles.settingsRow}>
-                    <div className={styles.settingsRowLabel}>
-                      <span className={styles.labelMain}>{entry.action}</span>
-                    </div>
-                    <span className={styles.valueLabel}>{entry.status}</span>
-                  </div>
-                  {entry.errorMessage ? <p className={styles.rowSubtext}>{entry.errorMessage}</p> : null}
-                  {entry.status === 'desynced' ? (
-                    <div className={styles.footerActions}>
-                      <button className={styles.secondaryButton} onClick={() => void retryAckOverlaySync(entry.clientCommandId, services.coreApi)} type="button">
-                        Retry Sync
-                      </button>
-                      <button className={styles.ghostButton} onClick={() => dismissAckOverlay(entry.clientCommandId)} type="button">
-                        Dismiss
-                      </button>
-                    </div>
-                  ) : null}
-                </article>
-              ))}
+              <div className={styles.settingsCardTitle}>Runtime</div>
+              <div className={styles.settingsRow}>
+                <div className={styles.settingsRowLabel}>
+                  <span className={styles.labelMain}>Electron</span>
+                </div>
+                <span className={styles.valueLabel}>{runtime.versions.electron}</span>
+              </div>
+              <div className={styles.settingsRow}>
+                <div className={styles.settingsRowLabel}>
+                  <span className={styles.labelMain}>Chrome</span>
+                </div>
+                <span className={styles.valueLabel}>{runtime.versions.chrome}</span>
+              </div>
+              <div className={styles.settingsRow}>
+                <div className={styles.settingsRowLabel}>
+                  <span className={styles.labelMain}>Node</span>
+                </div>
+                <span className={styles.valueLabel}>{runtime.versions.node}</span>
+              </div>
+              <div className={styles.settingsRow}>
+                <div className={styles.settingsRowLabel}>
+                  <span className={styles.labelMain}>Token path</span>
+                </div>
+                <span className={styles.valueLabel}>{runtime.coreSessionTokenPath}</span>
+              </div>
             </section>
+          ) : null}
+
+          {activeTab === 'policies' ? (
+            <>
+              <section className={styles.settingsCard}>
+                <div className={styles.settingsCardTitle}>Lease locks</div>
+                {lockedFieldIds.length === 0 ? (
+                  <p className={styles.rowSubtext}>
+                    No fields are locked by the current governance lease.
+                  </p>
+                ) : (
+                  lockedFieldIds.map((fieldId) => (
+                    <div className={styles.settingsRow} key={fieldId}>
+                      <div className={styles.settingsRowLabel}>
+                        <span className={styles.labelMain}>{fieldId}</span>
+                      </div>
+                      <span className={styles.valueLabel}>locked</span>
+                    </div>
+                  ))
+                )}
+              </section>
+
+              {overlays.length > 0 ? (
+                <section className={styles.settingsCard}>
+                  <div className={styles.settingsCardTitle}>Settings overlays</div>
+                  {overlays.map((entry) => (
+                    <article className={styles.overlayCard} key={entry.clientCommandId}>
+                      <div className={styles.settingsRow}>
+                        <div className={styles.settingsRowLabel}>
+                          <span className={styles.labelMain}>{entry.action}</span>
+                        </div>
+                        <span className={styles.valueLabel}>{entry.status}</span>
+                      </div>
+                      {entry.errorMessage ? (
+                        <p className={styles.rowSubtext}>{entry.errorMessage}</p>
+                      ) : null}
+                      {entry.status === 'desynced' ? (
+                        <div className={styles.footerActions}>
+                          <button
+                            className={styles.secondaryButton}
+                            onClick={() =>
+                              void retryAckOverlaySync(entry.clientCommandId, services.coreApi)
+                            }
+                            type="button"
+                          >
+                            Retry Sync
+                          </button>
+                          <button
+                            className={styles.ghostButton}
+                            onClick={() => dismissAckOverlay(entry.clientCommandId)}
+                            type="button"
+                          >
+                            Dismiss
+                          </button>
+                        </div>
+                      ) : null}
+                    </article>
+                  ))}
+                </section>
+              ) : null}
+            </>
           ) : null}
         </div>
       </div>

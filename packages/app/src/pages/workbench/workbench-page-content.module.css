@@ -16,6 +16,7 @@
   align-items: center;
   gap: 10px;
   padding: 0 14px;
+  -webkit-app-region: drag;
 }
 
 .topbarLogo {

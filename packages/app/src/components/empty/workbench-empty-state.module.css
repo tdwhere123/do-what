@@ -12,45 +12,26 @@
   overflow: hidden;
 }
 
-.empty::before,
-.empty::after {
-  content: '';
+
+.decoTL {
   position: absolute;
+  top: -16px;
+  left: -16px;
   width: 120px;
-  height: 120px;
-  border: 2px solid rgba(30, 27, 22, 0.08);
-  border-radius: 34px;
+  opacity: 0.10;
   pointer-events: none;
+  user-select: none;
 }
 
-.empty::before {
-  top: -40px;
-  left: -36px;
-  border-right: 0;
-  border-bottom: 0;
-  transform: rotate(-10deg);
-}
-
-.empty::after {
-  right: -36px;
-  bottom: -42px;
-  border-left: 0;
-  border-top: 0;
-  transform: rotate(14deg);
-}
-
-.iconWrap {
-  width: 88px;
-  height: 88px;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  background: rgba(206, 74, 46, 0.06);
-  color: rgba(90, 84, 76, 0.88);
-}
-
-.icon {
-  opacity: 0.85;
+.decoBR {
+  position: absolute;
+  bottom: -16px;
+  right: -16px;
+  width: 130px;
+  opacity: 0.10;
+  transform: rotate(180deg);
+  pointer-events: none;
+  user-select: none;
 }
 
 .title {
@@ -65,6 +46,14 @@
   margin: 0;
   color: var(--text-secondary);
   line-height: 1.55;
+}
+
+.error {
+  max-width: 44ch;
+  margin: 0;
+  color: var(--status-error);
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 .actions {

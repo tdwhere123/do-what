@@ -7,18 +7,19 @@
 
 html {
   font-family: var(--font-ui);
+  height: 100vh;
+  overflow: hidden;
 }
 
 html,
 body,
 #root {
-  min-height: 100vh;
+  height: 100vh;
 }
 
 body {
   margin: 0;
-  padding: 24px;
-  background: #d6d0c6;
+  background: var(--surface);
   color: var(--text-primary);
   font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
@@ -46,7 +47,9 @@ img {
 }
 
 #root {
-  min-height: calc(100vh - 48px);
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
 }
 
 code,
@@ -69,13 +72,3 @@ pre {
   }
 }
 
-@media (max-width: 768px) {
-  body {
-    padding: 0;
-    background: var(--surface);
-  }
-
-  #root {
-    min-height: 100vh;
-  }
-}

@@ -664,6 +664,17 @@ Codex 原始事件类型当前归一化规则：
 - `approval_request` 兼容 `requestId | id | request_id`。
 - plan 节点状态会被映射为 `pending | active | done | failed`。
 
+### 6. 开发态单入口启动编排
+
+源文件：`scripts/dev.mjs`
+
+- 根命令 `pnpm dev` 为默认开发启动入口。
+- 启动脚本优先探测 `VITE_CORE_BASE_URL`，否则回退到 `http://127.0.0.1:${DOWHAT_PORT || 3847}`。
+- 若目标地址的 `GET /health` 已健康，则直接复用现有 Core，再启动 `pnpm --filter @do-what/app start`。
+- 若目标地址未健康，则先启动 `pnpm --filter @do-what/core start`，按 `500ms` 间隔轮询 `/health`，最长等待 `30s`。
+- Core 在健康前提前退出、spawn 失败或健康检查超时时，脚本会打印可解释错误并以非零码退出。
+- `dev:core` / `dev:app` 保留为独立调试入口；仅当 Core 是由 `pnpm dev` 本次拉起时，App 退出后才会被联动关闭。
+
 ---
 
 ## 变更记录
@@ -687,3 +698,4 @@ Codex 原始事件类型当前归一化规则：
 | 2026-03-11 | T030 / T031 / T032 | 补充 `/api/*` query / command / probe surface、`AckEntityType` 扩展，以及 `CoreSseEnvelope` 的 `coreSessionId` / `causedBy` 实际输出说明 |
 | 2026-03-13 | C003 | 新增 `OpenWorkspaceRequest`、`POST /api/workspaces/open`，并为 `CoreCommandAck` 补充 `entityType` / `entityId` 回传说明 |
 | 2026-03-13 | C004 | 新增 `ModuleStatus*` / `WorkbenchModulesSnapshot` / `CoreHotState.modules`，明确 `/api/workbench/snapshot` 的 `modules` 契约、`health` 派生语义，以及 `POST /api/runs` 的 `workspace_not_found` 边界 |
+| 2026-03-13 | C005 | 补充根命令 `pnpm dev` 的开发态启动编排、Core 复用策略与 `/health` 轮询规则 |

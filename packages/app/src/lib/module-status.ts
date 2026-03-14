@@ -11,16 +11,25 @@ const ENGINE_PRIORITY: Record<ModuleStatusSnapshot['status'], number> = {
   connected: 0,
 };
 
+const STATUS_LABELS: Record<ModuleStatusSnapshot['status'], string> = {
+  connected: '已就绪',
+  disconnected: '离线',
+  not_installed: '未安装',
+  probe_failed: '探测失败',
+  auth_failed: '认证失败',
+  disabled: '已禁用',
+};
+
 export function formatModuleState(module: ModuleStatusSnapshot): string {
   if (module.phase === 'probing') {
-    return 'probing';
+    return '探测中';
   }
 
   if (module.phase === 'degraded' && module.status === 'connected') {
-    return 'degraded';
+    return '已降级';
   }
 
-  return module.status.replaceAll('_', ' ');
+  return STATUS_LABELS[module.status] ?? module.status.replaceAll('_', ' ');
 }
 
 export function getModuleTone(module: ModuleStatusSnapshot): ModuleTone {

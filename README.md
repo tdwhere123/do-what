@@ -58,7 +58,18 @@ pnpm install
 pnpm -w build
 ```
 
-### 启动（需要两个终端）
+### 启动（默认单入口）
+
+```powershell
+pnpm dev
+```
+
+`pnpm dev` 会先探测默认 Core 地址的 `/health`，若已有健康 Core 则直接复用；否则先拉起 Core，等待其健康后再启动 App。
+默认探测地址优先使用 `VITE_CORE_BASE_URL`，否则回退到 `http://127.0.0.1:${DOWHAT_PORT || 3847}`。
+
+> **注意：** 若 `pnpm dev` 自己拉起了 Core，则 App 退出时会一并关闭该 Core；若复用的是已有健康 Core，则不会代为关闭。
+
+### 调试入口（保留双终端）
 
 **终端 1：启动 Core daemon**
 
@@ -74,7 +85,7 @@ pnpm dev:app
 # Electron 窗口打开后会默认通过 HTTP 连接 Core
 ```
 
-> **注意：** Core 必须先于 UI 启动。若 Core 未运行，UI 会展示“Core 未运行”离线页，而不是静默退回 mock。
+`dev:core` / `dev:app` 继续保留给调试使用；单独运行 `dev:app` 且 Core 未启动时，UI 仍会展示“Core 未运行”离线页，而不是静默退回 mock。
 
 ### 开发调试（Mock 模式）
 
@@ -139,6 +150,7 @@ Soul
 ## 常用命令
 
 ```powershell
+pnpm dev
 pnpm -w build
 pnpm -w test
 pnpm --filter @do-what/core test

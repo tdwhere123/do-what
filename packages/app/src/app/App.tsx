@@ -22,8 +22,8 @@ export function App() {
   }, [location.pathname, setCurrentRoute]);
 
   return (
-    <div className={styles.windowChrome} data-route={currentRoute}>
-      <main className={styles.frame}>
+    <div className={styles.app} data-route={currentRoute}>
+      <main className={styles.routeFrame}>
         {showOfflineScreen ? (
           <CoreOfflineScreen />
         ) : (

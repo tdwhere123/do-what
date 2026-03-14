@@ -53,11 +53,11 @@
 | C002 | 修复 bootstrap 错误诚实性 | P0 | C001 | 已完成 |
 | C003 | 建立 workspace-first 主业务契约 | P0 | C002 | 已完成 |
 | C004 | 补齐 Core / Engine / Soul 默认接线与状态语义 | P0 | C003 | 已完成 |
-| C005 | 收口为单入口启动 | P0 | C004 | 待执行 |
-| C006 | 建立 UI 交互分层模型 | P0 | C005 | 待执行 |
-| C007 | 恢复 App 壳结构并剥离展示舞台 | P0 | C006 | 待执行 |
-| C008 | 恢复 Empty 与 Sidebar 的 workspace-first 体验 | P0 | C007 | 待执行 |
-| C009 | 恢复 Active / Workbench 主页面 | P0 | C008 | 待执行 |
+| C005 | 收口为单入口启动 | P0 | C004 | 已完成 |
+| C006 | 建立 UI 交互分层模型 | P0 | C005 | 已完成 |
+| C007 | 恢复 App 壳结构并剥离展示舞台 | P0 | C006 | 已完成 |
+| C008 | 恢复 Empty 与 Sidebar 的 workspace-first 体验 | P0 | C007 | 已完成 |
+| C009 | 恢复 Active / Workbench 主页面 | P0 | C008 | 已完成 |
 | C010 | 重建 Settings 信息架构 | P0 | C009 | 待执行 |
 | C011 | 同步 README 与实现边界文档 | P1 | C010 | 待执行 |
 | C012 | 硬化占位能力与 UI 诚实性 | P1 | C011 | 待执行 |
@@ -132,10 +132,10 @@ C001 重置 closure 基线与文档真相源
 
 ### 默认运行路径
 
-- [ ] `pnpm dev` 可作为默认启动入口
-- [ ] Core 启动后可提供 `GET /health`
-- [ ] App 启动后不再卡在通用 bootstrap 错误
-- [ ] Core / Engine / Soul 状态在启动后进入可解释状态，不长期停在 `unknown`
+- [x] `pnpm dev` 可作为默认启动入口
+- [x] Core 启动后可提供 `GET /health`
+- [x] App 启动后不再卡在通用 bootstrap 错误
+- [x] Core / Engine / Soul 状态在启动后进入可解释状态，不长期停在 `unknown`
 - [ ] 用户可先创建 workspace，再在该 workspace 下创建 run
 - [ ] Run 创建后，Workbench 的 timeline、右栏和输入区与当前 run 正确绑定
 

@@ -1,25 +1,13 @@
-.windowChrome {
-  width: 100%;
-  max-width: 1280px;
-  min-height: min(740px, calc(100vh - 48px));
-  margin: 0 auto;
-  overflow: hidden;
-  border-radius: 10px;
-  background: var(--surface);
-  box-shadow:
-    0 8px 40px rgba(0, 0, 0, 0.18),
-    0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.frame {
+.app {
+  min-height: 100vh;
   display: flex;
-  min-height: min(740px, calc(100vh - 48px));
+  background: var(--surface);
+  color: var(--text-primary);
 }
 
-@media (max-width: 768px) {
-  .windowChrome {
-    min-height: 100vh;
-    border-radius: 0;
-    box-shadow: none;
-  }
+.routeFrame {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
 }

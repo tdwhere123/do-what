@@ -23,13 +23,13 @@
 | `empty/settings-empty.svg` | `UI/svg/organic/shape/sun/Elements-organic-shape-sun.svg` | 目前仅通过 `assets/index.ts` 导出，尚未接入页面 |
 | `empty/workbench-empty.svg` | `UI/svg/organic/shape/flower/Elements-organic-shape-flower-nature-splash.svg` | 目前仅通过 `assets/index.ts` 导出，尚未接入页面 |
 | `icons/raw/engine-smile.svg` | `UI/svg/organic/shape/smile/Elements-organic-shape-smile-eye.svg` | `components/timeline/timeline-pane.tsx` |
-| `icons/raw/settings-sun.svg` | `UI/svg/organic/shape/sun/Elements-organic-shape-sun.svg` | `components/sidebar/workspace-sidebar.tsx` |
-| `icons/raw/soul-spiral.svg` | `UI/svg/organic/shape/spiral/Elements-organic-shape-spiral.svg` | `components/sidebar/workspace-sidebar.tsx` |
-| `icons/raw/status-running.svg` | `UI/svg/organic/shape/circle/Elements-organic-shape-circle--loading-spin.svg` | `components/sidebar/workspace-sidebar.tsx` |
-| `icons/raw/status-success.svg` | `UI/svg/organic/shape/star/Elements-organic-shape-star-wink.svg` | `components/sidebar/workspace-sidebar.tsx` |
-| `icons/raw/status-waiting.svg` | `UI/svg/organic/shape/hand/Elements-organic-shape-hand.svg` | `components/sidebar/workspace-sidebar.tsx` |
+| `icons/raw/settings-sun.svg` | `UI/svg/organic/shape/sun/Elements-organic-shape-sun.svg` | `app/workbench-page-content.tsx`, `components/sidebar/workspace-sidebar.tsx` |
+| `icons/raw/soul-spiral.svg` | `UI/svg/organic/shape/spiral/Elements-organic-shape-spiral.svg` | `app/workbench-page-content.tsx`, `components/sidebar/workspace-sidebar.tsx` |
+| `icons/raw/status-running.svg` | `UI/svg/organic/shape/circle/Elements-organic-shape-circle--loading-spin.svg` | `app/workbench-page-content.tsx`, `components/sidebar/workspace-sidebar.tsx` |
+| `icons/raw/status-success.svg` | `UI/svg/organic/shape/star/Elements-organic-shape-star-wink.svg` | `app/workbench-page-content.tsx`, `components/sidebar/workspace-sidebar.tsx` |
+| `icons/raw/status-waiting.svg` | `UI/svg/organic/shape/hand/Elements-organic-shape-hand.svg` | `app/workbench-page-content.tsx`, `components/sidebar/workspace-sidebar.tsx` |
 | `icons/raw/user-face.svg` | `UI/svg/organic/shape/face/Elements-organic-shape-face.svg` | `components/timeline/timeline-pane.tsx` |
-| `icons/raw/workbench-flower.svg` | `UI/svg/organic/shape/flower/Elements-organic-shape-flower-nature-splash.svg` | `components/create-run/create-run-modal.tsx`, `components/empty/workbench-empty-state.tsx`, `components/sidebar/workspace-sidebar.tsx`, `app/core-offline-screen.tsx` |
+| `icons/raw/workbench-flower.svg` | `UI/svg/organic/shape/flower/Elements-organic-shape-flower-nature-splash.svg` | `components/create-run/create-run-modal.tsx`, `components/empty/workbench-empty-state.tsx`, `components/sidebar/workspace-sidebar.tsx`, `app/workbench-page-content.tsx`, `app/core-offline-screen.tsx` |
 
 ### 已打包但暂未被页面直接使用的资产
 

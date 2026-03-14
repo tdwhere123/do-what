@@ -1,3 +1,4 @@
+import workbenchEmptySvg from '../../assets/empty/workbench-empty.svg?raw';
 import engineSmileSvg from '../../assets/icons/raw/engine-smile.svg?raw';
 import settingsSunSvg from '../../assets/icons/raw/settings-sun.svg?raw';
 import soulCanonSvg from '../../assets/icons/raw/soul-canon.svg?raw';
@@ -24,6 +25,7 @@ export const StatusRunningIcon = createRawSvgIcon(statusRunningSvg, 'StatusRunni
 export const StatusSuccessIcon = createRawSvgIcon(statusSuccessSvg, 'StatusSuccessIcon');
 export const StatusWaitingIcon = createRawSvgIcon(statusWaitingSvg, 'StatusWaitingIcon');
 export const UserFaceIcon = createRawSvgIcon(userFaceSvg, 'UserFaceIcon');
+export const WorkbenchEmptyIcon = createRawSvgIcon(workbenchEmptySvg, 'WorkbenchEmptyIcon');
 export const WorkbenchFlowerIcon = createRawSvgIcon(
   workbenchFlowerSvg,
   'WorkbenchFlowerIcon',

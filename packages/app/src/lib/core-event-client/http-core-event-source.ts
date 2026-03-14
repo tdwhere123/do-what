@@ -17,7 +17,7 @@ export class HttpCoreEventSource implements CoreEventSource {
   private readonly config: RuntimeCoreConfig;
   private readonly fetchImpl: typeof fetch;
 
-  constructor(config: RuntimeCoreConfig, fetchImpl: typeof fetch = fetch) {
+  constructor(config: RuntimeCoreConfig, fetchImpl: typeof fetch = globalThis.fetch.bind(globalThis)) {
     this.config = config;
     this.fetchImpl = fetchImpl;
   }

@@ -70,6 +70,11 @@
   background: rgba(0, 0, 0, 0.04);
 }
 
+.workspaceLabelActive {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-primary);
+}
+
 .workspaceChevron {
   width: 10px;
   flex-shrink: 0;

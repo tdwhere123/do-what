@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import leavesTwigUrl from '../../assets/empty/leaves-twig.svg';
+import workbenchFlowerUrl from '../../assets/icons/raw/workbench-flower.svg';
 import type { AckOverlayEntry } from '../../stores/ack-overlay';
 import type { RunInspectorProjection, SoulPanelProjection } from '../../stores/projection';
 import type { InterruptedSettingsDraft } from '../../stores/settings-bridge';
@@ -53,11 +55,18 @@ interface InspectorRailProps {
   readonly workspaceName: string | null;
 }
 
-function EmptyBlock(props: { readonly title: string; readonly text: string }) {
+function EmptyBlock(props: {
+  readonly title: string;
+  readonly text: string;
+  readonly icon?: React.ReactNode;
+}) {
   return (
     <section className={styles.block}>
       <div className={styles.blockTitle}>{props.title}</div>
-      <div className={styles.emptyBlock}>{props.text}</div>
+      <div className={styles.emptyBlock}>
+        {props.icon ? <span className={styles.emptyBlockIcon}>{props.icon}</span> : null}
+        <span>{props.text}</span>
+      </div>
     </section>
   );
 }
@@ -107,8 +116,8 @@ export function InspectorRail(props: InspectorRailProps) {
   if (!props.runTitle) {
     return (
       <div className={styles.rail}>
-        <EmptyBlock title="Overview" text="Engine is idle." />
-        <EmptyBlock title="History" text="No runs have been selected yet." />
+        <EmptyBlock title="概览" text="引擎待机中" icon={<img alt="" src={workbenchFlowerUrl} style={{ width: 60, height: 60 }} />} />
+        <EmptyBlock title="历史" text="暂无历史记录" icon={<img alt="" src={leavesTwigUrl} style={{ width: 48, height: 48 }} />} />
       </div>
     );
   }
@@ -117,7 +126,7 @@ export function InspectorRail(props: InspectorRailProps) {
     <>
       <div className={styles.rail}>
         <section className={styles.block}>
-          <div className={styles.blockTitle}>Files</div>
+          <div className={styles.blockTitle}>文件</div>
           <div className={styles.blockBody}>
             {(props.inspector?.snapshot.files ?? []).map((file) => (
               <div className={styles.diffRow} key={file.path}>
@@ -126,13 +135,13 @@ export function InspectorRail(props: InspectorRailProps) {
               </div>
             ))}
             {!props.inspector || props.inspector.snapshot.files.length === 0 ? (
-              <div className={styles.emptyBlock}>No files changed yet.</div>
+              <div className={styles.emptyBlock}>暂无修改文件</div>
             ) : null}
           </div>
         </section>
 
         <section className={styles.block}>
-          <div className={styles.blockTitle}>Plan</div>
+          <div className={styles.blockTitle}>计划</div>
           <div className={styles.blockBody}>
             {(props.inspector?.snapshot.plans ?? []).map((plan) => (
               <div className={styles.checkItem} key={plan.id}>
@@ -149,13 +158,13 @@ export function InspectorRail(props: InspectorRailProps) {
             {!props.inspector ||
             (props.inspector.snapshot.plans.length === 0 &&
               props.inspector.snapshot.history.length === 0) ? (
-              <div className={styles.emptyBlock}>No planned work yet.</div>
+              <div className={styles.emptyBlock}>暂无计划</div>
             ) : null}
           </div>
         </section>
 
         <section className={styles.block}>
-          <div className={styles.blockTitle}>Git / Collaboration</div>
+          <div className={styles.blockTitle}>Git / 协作</div>
           <div className={styles.blockBody}>
             <div className={styles.toggleRow}>
               <button
@@ -183,7 +192,7 @@ export function InspectorRail(props: InspectorRailProps) {
             </div>
             {props.inspectorMode === 'git'
               ? gitTree.length === 0
-                ? <div className={styles.emptyBlock}>Git tree is still thin.</div>
+                ? <div className={styles.emptyBlock}>暂无 Git 记录</div>
                 : gitTree.map((item) => (
                     <div className={styles.gitRow} key={item}>
                       <span className={styles.gitFold}>v</span>
@@ -191,7 +200,7 @@ export function InspectorRail(props: InspectorRailProps) {
                     </div>
                   ))
               : collaboration.length === 0
-                ? <div className={styles.emptyBlock}>No parallel runs.</div>
+                ? <div className={styles.emptyBlock}>暂无并行运行</div>
                 : collaboration.map((node) => (
                     <div className={styles.historyRow} key={String(node.id)}>
                       <strong>{String(node.title ?? node.id)}</strong>
@@ -202,7 +211,7 @@ export function InspectorRail(props: InspectorRailProps) {
         </section>
 
         <section className={styles.block}>
-          <div className={styles.blockTitle}>Governance</div>
+          <div className={styles.blockTitle}>治理</div>
           <div className={styles.blockBody}>
             <div className={styles.historyRow}>
               <strong>Workspace</strong>
@@ -253,7 +262,7 @@ export function InspectorRail(props: InspectorRailProps) {
         </section>
 
         <section className={styles.block}>
-          <div className={styles.blockTitle}>Soul</div>
+          <div className={styles.blockTitle}>记忆</div>
           <div className={styles.blockBody}>
             {(props.soulPanel?.proposals ?? []).map((proposal) => (
               <article className={styles.inlineCard} key={proposal.id}>
@@ -296,7 +305,7 @@ export function InspectorRail(props: InspectorRailProps) {
               );
             })}
             {!props.soulPanel || props.soulPanel.entries.length === 0 ? (
-              <div className={styles.emptyBlock}>Memory is blank.</div>
+              <div className={styles.emptyBlock}>记忆为空</div>
             ) : null}
           </div>
         </section>

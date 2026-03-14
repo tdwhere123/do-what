@@ -46,11 +46,11 @@
 | C002 | 修复 bootstrap 错误诚实性 | 已完成 |
 | C003 | 建立 workspace-first 主业务契约 | 已完成 |
 | C004 | 补齐 Core / Engine / Soul 默认接线与状态语义 | 已完成 |
-| C005 | 收口为单入口启动 | 待执行 |
-| C006 | 建立 UI 交互分层模型 | 待执行 |
-| C007 | 恢复 App 壳结构并剥离展示舞台 | 待执行 |
-| C008 | 恢复 Empty 与 Sidebar 的 workspace-first 体验 | 待执行 |
-| C009 | 恢复 Active / Workbench 主页面 | 待执行 |
+| C005 | 收口为单入口启动 | 已完成 |
+| C006 | 建立 UI 交互分层模型 | 已完成 |
+| C007 | 恢复 App 壳结构并剥离展示舞台 | 已完成 |
+| C008 | 恢复 Empty 与 Sidebar 的 workspace-first 体验 | 已完成 |
+| C009 | 恢复 Active / Workbench 主页面 | 已完成 |
 | C010 | 重建 Settings 信息架构 | 待执行 |
 | C011 | 同步 README 与实现边界文档 | 待执行 |
 | C012 | 硬化占位能力与 UI 诚实性 | 待执行 |
