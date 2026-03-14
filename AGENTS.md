@@ -51,10 +51,10 @@
 | C007 | 恢复 App 壳结构并剥离展示舞台 | 已完成 |
 | C008 | 恢复 Empty 与 Sidebar 的 workspace-first 体验 | 已完成 |
 | C009 | 恢复 Active / Workbench 主页面 | 已完成 |
-| C010 | 重建 Settings 信息架构 | 待执行 |
-| C011 | 同步 README 与实现边界文档 | 待执行 |
-| C012 | 硬化占位能力与 UI 诚实性 | 待执行 |
-| C013 | 最终 UI fidelity 与 closure sign-off | 待执行 |
+| C010 | 重建 Settings 信息架构 | 已完成 |
+| C011 | 同步 README 与实现边界文档 | 已完成 |
+| C012 | 硬化占位能力与 UI 诚实性 | 已完成 |
+| C013 | 最终 UI fidelity 与 closure sign-off | 已完成 |
 
 **完整任务规格：** `docs/archive/v0.1-closure/tasks/C001-C013`  
 **收口总览：** `docs/archive/v0.1-closure/closure-overview.md`

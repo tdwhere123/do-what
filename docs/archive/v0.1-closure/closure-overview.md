@@ -58,10 +58,10 @@
 | C007 | 恢复 App 壳结构并剥离展示舞台 | P0 | C006 | 已完成 |
 | C008 | 恢复 Empty 与 Sidebar 的 workspace-first 体验 | P0 | C007 | 已完成 |
 | C009 | 恢复 Active / Workbench 主页面 | P0 | C008 | 已完成 |
-| C010 | 重建 Settings 信息架构 | P0 | C009 | 待执行 |
-| C011 | 同步 README 与实现边界文档 | P1 | C010 | 待执行 |
-| C012 | 硬化占位能力与 UI 诚实性 | P1 | C011 | 待执行 |
-| C013 | 最终 UI fidelity 与 closure sign-off | P0 | C012 | 待执行 |
+| C010 | 重建 Settings 信息架构 | P0 | C009 | 已完成 |
+| C011 | 同步 README 与实现边界文档 | P1 | C010 | 已完成 |
+| C012 | 硬化占位能力与 UI 诚实性 | P1 | C011 | 已完成 |
+| C013 | 最终 UI fidelity 与 closure sign-off | P0 | C012 | 已完成 |
 
 > 任务卡文件名仍沿用历史路径；以正文主题和本表编号为准。
 
@@ -136,32 +136,32 @@ C001 重置 closure 基线与文档真相源
 - [x] Core 启动后可提供 `GET /health`
 - [x] App 启动后不再卡在通用 bootstrap 错误
 - [x] Core / Engine / Soul 状态在启动后进入可解释状态，不长期停在 `unknown`
-- [ ] 用户可先创建 workspace，再在该 workspace 下创建 run
-- [ ] Run 创建后，Workbench 的 timeline、右栏和输入区与当前 run 正确绑定
+- [x] 用户可先创建 workspace，再在该 workspace 下创建 run
+- [x] Run 创建后，Workbench 的 timeline、右栏和输入区与当前 run 正确绑定
 
 ### UI 与交互诚实性
 
-- [ ] 未实现功能被统一处理为 disabled、tooltip、`v0.2 实现` 或纯展示
-- [ ] 以上占位能力不再触发误导性命令、假提交或 desynced overlay
-- [ ] Active / Empty / Settings 的页面结构明显回到 preview 基线
-- [ ] 运行时 SVG 仅来自 `packages/app/src/assets/`，且设计源可追溯到 `UI/svg/`
-- [ ] 未引入第三方图标体系
-- [ ] 外层展示舞台未被误实现为 App 内部背景
+- [x] 未实现功能被统一处理为 disabled、tooltip、`v0.2 实现` 或纯展示
+- [x] 以上占位能力不再触发误导性命令、假提交或 desynced overlay
+- [x] Active / Empty / Settings 的页面结构明显回到 preview 基线
+- [x] 运行时 SVG 仅来自 `packages/app/src/assets/`，且设计源可追溯到 `UI/svg/`
+- [x] 未引入第三方图标体系
+- [x] 外层展示舞台未被误实现为 App 内部背景
 
 ### 文档一致性
 
-- [ ] `AGENTS.md`、`closure-overview.md`、任务卡中的编号、顺序、状态一致
+- [x] `AGENTS.md`、`closure-overview.md`、任务卡中的编号、顺序、状态一致
 - [ ] 全仓不再引用 `UI/UI-DESIGN-SPEC-v0.1.md`
 - [ ] `docs/archive/v0.1-closure/code-vs-expected-audit.md` 已记录当前代码与预期的主要偏差
-- [ ] `README.md` 与 `docs/implementation-status-v0.1.md` 反映新的主路径与边界
+- [x] `README.md` 与 `docs/implementation-status-v0.1.md` 反映新的主路径与边界
 - [ ] 若接口发生变化，`docs/INTERFACE_INDEX.md` 已同步更新
 
 ### 最终 sign-off
 
-- [ ] 已提交 preview 对照截图
-- [ ] 已提交 A/B/C/D 交互清单
-- [ ] 已提交 SVG 来源与第三方图标残留检查
-- [ ] 已提交仍延期到 v0.2 的项目清单
+- [x] 已提交 preview 对照截图
+- [x] 已提交 A/B/C/D 交互清单
+- [x] 已提交 SVG 来源与第三方图标残留检查
+- [x] 已提交仍延期到 v0.2 的项目清单
 
 ---
 

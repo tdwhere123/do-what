@@ -52,8 +52,14 @@
 
 ---
 
+## 完成记录（2026-03-14）
+
+- README 已同步默认 `pnpm dev`、workspace-first 主路径、五域 Settings 和当前真实限制。
+- `docs/implementation-status-v0.1.md` 已移除过时的 workspace-first / Settings IA 偏差，并改为当前延期边界。
+- 本轮未新增 protocol 或 Core HTTP 契约，因此 `docs/INTERFACE_INDEX.md` 无需追加变更记录。
+
 ## 完成后更新
 
-- [ ] `closure-overview.md` 中 C011 状态改为“已完成”
-- [ ] `AGENTS.md` 中收口任务进度同步
-- [ ] 若新增接口，`docs/INTERFACE_INDEX.md` 追加变更记录
+- [x] `closure-overview.md` 中 C011 状态改为“已完成”
+- [x] `AGENTS.md` 中收口任务进度同步
+- [x] 若新增接口，`docs/INTERFACE_INDEX.md` 追加变更记录

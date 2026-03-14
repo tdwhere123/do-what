@@ -11,6 +11,11 @@ import {
 } from '../lib/contracts';
 import { CoreHttpError } from '../lib/core-http-client';
 import { CoreSessionGuard } from '../lib/core-session-guard';
+import {
+  DEFERRED_HISTORY_COPY,
+  DEFERRED_HISTORY_LABEL,
+  DEFERRED_TO_V0_2_TITLE,
+} from '../lib/ui-placeholders';
 import { NormalizedEventBus } from '../lib/events';
 import { resetAppServices, setAppServicesForTesting } from '../lib/runtime/app-services';
 import { resetAckOverlayStore } from '../stores/ack-overlay';
@@ -203,6 +208,12 @@ describe('AppRoot scaffold', () => {
     await waitFor(() => {
       expect(findPrimaryEmptyStateButton()).toBeTruthy();
       expect(screen.queryByText('Create Run')).toBeNull();
+      const historyButton = screen.getByRole('button', {
+        name: DEFERRED_HISTORY_LABEL,
+      }) as HTMLButtonElement;
+      expect(historyButton.disabled).toBe(true);
+      expect(historyButton.getAttribute('title')).toBe(DEFERRED_TO_V0_2_TITLE);
+      expect(screen.getByText(DEFERRED_HISTORY_COPY)).toBeTruthy();
     });
   });
 
@@ -606,11 +617,11 @@ describe('AppRoot scaffold', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Environment' }));
 
     expect(screen.getByText('Electron')).toBeTruthy();
-    expect(screen.getByText('35.7.5')).toBeTruthy();
+    expect(screen.getAllByText('35.7.5').length).toBeGreaterThan(0);
     expect(screen.getByText('Chrome')).toBeTruthy();
     expect(screen.getByText('134.0.0.0')).toBeTruthy();
     expect(screen.getByText('Node')).toBeTruthy();
-    expect(screen.getByText('22.14.0')).toBeTruthy();
+    expect(screen.getAllByText('22.14.0').length).toBeGreaterThan(0);
   });
 
   it('shows the Core offline screen when HTTP bootstrap cannot reach Core', async () => {

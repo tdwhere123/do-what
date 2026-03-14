@@ -63,7 +63,13 @@
 
 ---
 
+## 完成记录（2026-03-14）
+
+- 已提交 `docs/archive/v0.1-closure/sign-off/active.png`、`empty.png`、`settings.png`。
+- 已提交 `docs/archive/v0.1-closure/sign-off/sign-off.md`，包含 preview 对照、A/B/C/D 引用、SVG 来源、第三方图标检查、代码偏差摘要与 v0.2 清单。
+- `docs/archive/v0.1-closure/code-vs-expected-audit.md` 已改为只保留当前真实残余项。
+
 ## 完成后更新
 
-- [ ] `closure-overview.md` 中 C013 状态改为“已完成”
-- [ ] `AGENTS.md` 中收口任务进度同步
+- [x] `closure-overview.md` 中 C013 状态改为“已完成”
+- [x] `AGENTS.md` 中收口任务进度同步

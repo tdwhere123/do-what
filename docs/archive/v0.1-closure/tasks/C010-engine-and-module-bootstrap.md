@@ -68,6 +68,6 @@ Settings 页面当前最容易出现两类问题：
 
 ## 完成后更新
 
-- [ ] `closure-overview.md` 中 C010 状态改为“已完成”
-- [ ] `AGENTS.md` 中收口任务进度同步
+- [x] `closure-overview.md` 中 C010 状态改为“已完成”
+- [x] `AGENTS.md` 中收口任务进度同步
 - [ ] 若新增接口或字段，`docs/INTERFACE_INDEX.md` 追加变更记录

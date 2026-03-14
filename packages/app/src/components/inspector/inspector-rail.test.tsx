@@ -2,10 +2,12 @@
 
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import {
+  createDeferredToV0_2Note,
+  DEFERRED_TO_V0_2_TITLE,
+} from '../../lib/ui-placeholders';
 import type { SoulPanelProjection } from '../../stores/projection';
 import { InspectorRail } from './inspector-rail';
-
-const UNSUPPORTED_TITLE = '此功能将在 v0.2 中支持';
 
 function createSoulPanel(): SoulPanelProjection {
   const memory = {
@@ -70,12 +72,14 @@ describe('InspectorRail unsupported actions', () => {
     expect(editButton.disabled).toBe(true);
     expect(supersedeButton.disabled).toBe(true);
 
-    expect(resolveDriftButton.getAttribute('title')).toBe(UNSUPPORTED_TITLE);
-    expect(approveGateButton.getAttribute('title')).toBe(UNSUPPORTED_TITLE);
-    expect(blockGateButton.getAttribute('title')).toBe(UNSUPPORTED_TITLE);
-    expect(pinButton.getAttribute('title')).toBe(UNSUPPORTED_TITLE);
-    expect(editButton.getAttribute('title')).toBe(UNSUPPORTED_TITLE);
-    expect(supersedeButton.getAttribute('title')).toBe(UNSUPPORTED_TITLE);
+    expect(resolveDriftButton.getAttribute('title')).toBe(DEFERRED_TO_V0_2_TITLE);
+    expect(approveGateButton.getAttribute('title')).toBe(DEFERRED_TO_V0_2_TITLE);
+    expect(blockGateButton.getAttribute('title')).toBe(DEFERRED_TO_V0_2_TITLE);
+    expect(pinButton.getAttribute('title')).toBe(DEFERRED_TO_V0_2_TITLE);
+    expect(editButton.getAttribute('title')).toBe(DEFERRED_TO_V0_2_TITLE);
+    expect(supersedeButton.getAttribute('title')).toBe(DEFERRED_TO_V0_2_TITLE);
+    expect(screen.getByText(createDeferredToV0_2Note('治理写入动作'))).toBeTruthy();
+    expect(screen.getByText(createDeferredToV0_2Note('记忆维护动作'))).toBeTruthy();
 
     fireEvent.click(resolveDriftButton);
     fireEvent.click(approveGateButton);

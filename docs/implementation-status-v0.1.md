@@ -21,28 +21,30 @@
 
 - `packages/app/src/main/main.ts`
 - `packages/app/src/app/App.tsx`
-- `packages/app/src/pages/workbench/workbench-page-content.tsx`
+- `packages/app/src/app/workbench-page-content.tsx`
+- `packages/app/src/components/sidebar/workspace-sidebar.tsx`
+- `packages/app/src/components/empty/workbench-empty-state.tsx`
 - `packages/app/src/pages/settings/settings-page-content.tsx`
 
 **当前判断**
 
-- Electron 壳、路由、sidebar、timeline、inspector、settings 都已存在。
-- create-run modal、message composer、approval UI、overlay UI 已存在。
-- UI 不是纯静态脚手架。
+- Electron 壳、路由、sidebar、timeline、inspector、settings 都已落到 live 页面实现，不再依赖 preview 舞台包装。
+- 主路径已经收口为 `workspace-first`：Empty 主 CTA 打开工作区，Sidebar `+` 走真实 `workspace.open`，`New Run` 只在具体 workspace 上下文内发起。
+- Active / Workbench 已把 timeline、composer、inspector 绑定到当前 `workspace + run + engine`，发送行为会按引擎可用性和全局锁诚实禁用。
+- Settings 已重组为 `Engines / Soul / Policies / Environment / Appearance` 五域独立内容区，而不是单一字段节视图。
 - UI 默认 transport 已切为 `http`；Core 不可达时展示离线屏，显式 `?transport=mock` / `VITE_CORE_TRANSPORT=mock` 才进入 mock。
 
 **已知缺口 / 限制**
 
-- Inspector 中的 `memory pin/edit/supersede`、`drift resolution`、`integration gate decision` 当前保留可见入口，但在 UI 中已 disabled，等待 v0.2 接通真实写路径。
-- `workspace.create` 命令和 Core 写路径已存在，但主界面仍未提供“创建 / 打开 workspace”的真实入口；左栏 `+` 与 Empty 主 CTA 仍偏向 `Create Run`，workspace-first 业务流尚未成立。
-- `workbench-page-content.tsx` 在无 workspace 时仍存在 `workspace-main` 硬编码 fallback，说明主路径仍未完全受真实 workspace 实体约束。
-- Settings 页面虽有五个 tab，但当前主体仍是“按 tab 选 section + 单一字段卡片 + runtime/lease/overlay 附加块”的结构，离目标信息架构仍有明显差距。
-- 运行时 SVG 已集中在 `packages/app/src/assets`，且当前代码未再直接引用 `UI/svg`；但 `UI/svg` 仍是设计源素材库，后续 UI 收口需继续按最小运行时集合维护这条边界。
+- Inspector 中的 `memory pin/edit/supersede`、`drift resolution`、`integration gate decision` 当前保留可见入口，但在 UI 中已 disabled，并统一标注 `v0.2` 占位。
+- Empty 次动作 `浏览历史` 当前仍是 disabled 的诚实占位，不会触发命令或假提交。
+- Settings 仍是进程内 session-local 草稿，不会在重启后持久化。
+- 运行时 SVG 已集中在 `packages/app/src/assets`，且当前代码未再直接引用 `UI/svg`；`UI/svg` 继续仅作为设计源素材库维护。
 
 **是否可视为 v0.1 完成**
 
-- 不能按“完整产品闭环”视为完成。
-- 可视为“具备实际页面与状态逻辑的工作台实现”。
+- 可以视为 v0.1 主路径已经成立。
+- 仍不能把延期到 v0.2 的占位能力误写成已完成产品能力。
 
 ## 2. 状态管理
 
@@ -260,18 +262,18 @@
 
 - 适配器代码和测试都在。
 - 事件归一化、审批转发、process manager 都不是空实现。
+- Core 启动后会对 `Core / Claude / Codex / Soul` 做默认探测，并通过 `WorkbenchSnapshot.modules` 向 UI 暴露显式模块状态。
+- UI 已按当前 run 的引擎绑定发送门禁；未连接、探测失败、认证失败或未安装时都会给出明确状态与禁用提示。
 
 **已知缺口 / 限制**
 
 - Core 启动后不会自动拉起 Claude/Codex 适配器；适配器需要人工外部启动。
 - `create-run` 会创建 RunMachine，但在无引擎事件输入时只会停留在 waiting / idle，不会自动产生执行进展。
-- 当前 UI 已有 timeline / inspector 空态，C005 的人工验收仍需确认无 `console.error`。
-- `WorkbenchHealthSnapshot` 与当前侧栏状态展示仍只提供较粗粒度的健康语义，尚未覆盖 `not_installed`、`auth_failed`、`disabled` 等更细的产品状态。
-- 左下状态区当前以 `health.claude` 代表 Engine 状态，尚未形成完整的引擎接入语义。
+- 当前开发态单入口 `pnpm dev` 只负责等待 Core 健康并启动 App，不负责 packaged 场景下的引擎编排。
 
 **是否可视为 v0.1 完成**
 
-- 不能按运行闭环视为完成。
+- 不能按“自动引擎执行闭环”视为完成。
 
 ## 9. Governance / baseline lock / focus surface / integration
 
@@ -320,6 +322,7 @@
 **证据文件**
 
 - 根 `package.json`
+- `scripts/dev.mjs`
 - `pnpm-workspace.yaml`
 - `turbo.json`
 - `packages/app/forge.config.js`
@@ -330,11 +333,13 @@
 
 - Monorepo、构建和 Electron 打包配置是存在的。
 - 运行时目录与 token 约定明确。
+- 根命令 `pnpm dev` 已成为默认开发启动入口，会先等待 Core `/health`，再拉起 App。
+- `pnpm dev:core` / `pnpm dev:app` 继续保留给调试使用。
 
 **已知缺口 / 限制**
 
-- 无统一一键开发脚本。
-- UI 默认 transport 为 `http`，真实启动路径使用 `pnpm dev:core` + `pnpm dev:app`；mock 仅在显式配置时开启。
+- 单入口编排目前只覆盖开发态，不处理 packaged 场景下的 Core / engine 自启动。
+- UI 默认 transport 为 `http`；mock 仅在显式配置时开启。
 - `toolchain` 包目前基本为空。
 - 本次盘点未发现统一 ESLint / Prettier 配置。
 
@@ -356,6 +361,9 @@
 
 - `packages/core/src/__tests__/*`
 - `packages/app/src/__tests__/real-core.integration.test.ts`
+- `packages/app/src/app/app-root.test.tsx`
+- `packages/app/src/pages/settings/settings-page-content.test.tsx`
+- `packages/app/src/components/inspector/inspector-rail.test.tsx`
 - `packages/soul/src/__tests__/*`
 - `packages/engines/claude/src/__tests__/*`
 - `packages/engines/codex/src/__tests__/*`
@@ -365,12 +373,13 @@
 
 - 仓库有较多针对核心链路的测试。
 - `app` 还有真实 Core 集成测试，不只是 mock 测试。
+- `app` 侧回归已覆盖 workspace-first 空态、run 切换、发送门禁、Settings 五域和占位诚实性。
 
 **已知缺口 / 限制**
 
 - 当前没有从仓库中直接看到覆盖率门禁。
 - 测试存在不等于默认运行体验完整。
-- `app-root.test.tsx` 与若干 fixtures 仍固化旧产品假设，例如把 `Create Run` 当作 Empty 主入口、使用 `workspace-main` 作为默认 fallback，并保留了带乱码的文案断言。
+- sign-off 截图已入库，但当前还没有自动化视觉 diff 门禁。
 
 **是否可视为 v0.1 完成**
 
@@ -397,6 +406,7 @@
 - archive 文档很多，但它们主要是历史方案和任务卡。
 - README 已回填真实启动路径、已知限制与引擎接入边界。
 - `docs/archive/v0.1-closure/code-vs-expected-audit.md` 现在承担“当前代码 vs 预期”的证据化审计，不再只靠任务卡口头描述。
+- `docs/archive/v0.1-closure/sign-off/` 已补齐 Active / Empty / Settings 截图与最终 sign-off 说明。
 
 **已知缺口 / 限制**
 

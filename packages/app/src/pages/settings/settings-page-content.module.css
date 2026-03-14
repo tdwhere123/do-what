@@ -83,6 +83,12 @@
   background: var(--bg);
 }
 
+.panelGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .settingsBanner {
   border: 1px solid rgba(201, 155, 74, 0.38);
   border-radius: 10px;
@@ -144,6 +150,63 @@
   line-height: 1.55;
 }
 
+.moduleGrid {
+  display: grid;
+  gap: 10px;
+}
+
+.moduleTile {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 12px;
+}
+
+.moduleTileHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.moduleTileTitle {
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.moduleTileNote {
+  margin: 8px 0 0;
+  color: var(--accent-primary);
+  font-size: 10px;
+  font-family: var(--font-mono);
+}
+
+.statusPill {
+  margin-left: auto;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.statusPillOk {
+  background: rgba(62, 125, 79, 0.14);
+  color: var(--status-ready);
+}
+
+.statusPillRunning {
+  background: rgba(201, 155, 74, 0.16);
+  color: var(--status-running);
+}
+
+.statusPillAttention {
+  background: rgba(206, 74, 46, 0.12);
+  color: var(--status-error);
+}
+
 .settingsRow {
   display: flex;
   align-items: center;
@@ -179,6 +242,16 @@
 
 .errorText {
   color: var(--status-error);
+}
+
+.noteList {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-secondary);
+  display: grid;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.55;
 }
 
 .input,
@@ -278,6 +351,66 @@
   cursor: not-allowed;
 }
 
+.toolchainList {
+  display: grid;
+}
+
+.themePreviewGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.themePreviewCard {
+  display: grid;
+  gap: 8px;
+}
+
+.themePreviewCardMuted {
+  opacity: 0.68;
+}
+
+.themePreviewSurface {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.18));
+  padding: 8px;
+  min-height: 76px;
+}
+
+.themePreviewSidebar,
+.themePreviewSidebarMuted,
+.themePreviewMain,
+.themePreviewMainMuted {
+  border-radius: 8px;
+  display: block;
+}
+
+.themePreviewSidebar {
+  background: linear-gradient(180deg, rgba(136, 95, 44, 0.24), rgba(136, 95, 44, 0.08));
+}
+
+.themePreviewMain {
+  background: rgba(255, 248, 235, 0.92);
+}
+
+.themePreviewSidebarMuted {
+  background: rgba(55, 58, 64, 0.68);
+}
+
+.themePreviewMainMuted {
+  background: rgba(30, 32, 36, 0.82);
+}
+
+.themePreviewLabel {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
 .overlayCard {
   border-top: 1px solid var(--border);
   padding-top: 10px;
@@ -294,6 +427,11 @@
 }
 
 @media (max-width: 800px) {
+  .panelGrid,
+  .themePreviewGrid {
+    grid-template-columns: 1fr;
+  }
+
   .settingsRow {
     align-items: stretch;
     flex-direction: column;

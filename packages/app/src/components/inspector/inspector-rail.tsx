@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import leavesTwigUrl from '../../assets/empty/leaves-twig.svg';
 import workbenchFlowerUrl from '../../assets/icons/raw/workbench-flower.svg';
+import {
+  createDeferredToV0_2Note,
+  DEFERRED_TO_V0_2_TITLE,
+} from '../../lib/ui-placeholders';
 import type { AckOverlayEntry } from '../../stores/ack-overlay';
 import type { RunInspectorProjection, SoulPanelProjection } from '../../stores/projection';
 import type { InterruptedSettingsDraft } from '../../stores/settings-bridge';
@@ -26,8 +30,6 @@ interface PendingGlobalMemoryAction {
   readonly memoryId: string;
   readonly mode: 'edit' | 'supersede';
 }
-
-const UNSUPPORTED_V0_2_TITLE = '此功能将在 v0.2 中支持';
 
 interface InspectorRailProps {
   readonly inspector: RunInspectorProjection | null;
@@ -116,8 +118,30 @@ export function InspectorRail(props: InspectorRailProps) {
   if (!props.runTitle) {
     return (
       <div className={styles.rail}>
-        <EmptyBlock title="概览" text="引擎待机中" icon={<img alt="" src={workbenchFlowerUrl} style={{ width: 60, height: 60 }} />} />
-        <EmptyBlock title="历史" text="暂无历史记录" icon={<img alt="" src={leavesTwigUrl} style={{ width: 48, height: 48 }} />} />
+        <EmptyBlock
+          title="概览"
+          text="引擎待机中"
+          icon={
+            <img
+              alt=""
+              aria-hidden="true"
+              src={workbenchFlowerUrl}
+              style={{ width: 60, height: 60 }}
+            />
+          }
+        />
+        <EmptyBlock
+          title="历史"
+          text="暂无历史记录"
+          icon={
+            <img
+              alt=""
+              aria-hidden="true"
+              src={leavesTwigUrl}
+              style={{ width: 48, height: 48 }}
+            />
+          }
+        />
       </div>
     );
   }
@@ -247,14 +271,15 @@ export function InspectorRail(props: InspectorRailProps) {
                 <span>{String(item.summary ?? 'soft stale')}</span>
               </div>
             ))}
+            <p className={styles.mutedText}>{createDeferredToV0_2Note('治理写入动作')}</p>
             <div className={styles.actionRow}>
-              <button className={styles.primaryButton} disabled title={UNSUPPORTED_V0_2_TITLE} type="button">
+              <button className={styles.primaryButton} disabled title={DEFERRED_TO_V0_2_TITLE} type="button">
                 Resolve Drift
               </button>
-              <button className={styles.secondaryButton} disabled title={UNSUPPORTED_V0_2_TITLE} type="button">
+              <button className={styles.secondaryButton} disabled title={DEFERRED_TO_V0_2_TITLE} type="button">
                 Approve Gate
               </button>
-              <button className={styles.ghostButton} disabled title={UNSUPPORTED_V0_2_TITLE} type="button">
+              <button className={styles.ghostButton} disabled title={DEFERRED_TO_V0_2_TITLE} type="button">
                 Block Gate
               </button>
             </div>
@@ -290,14 +315,15 @@ export function InspectorRail(props: InspectorRailProps) {
                   <p className={styles.mutedText}>
                     {memory.scope ?? 'project'} / {memory.retentionState ?? 'working'}
                   </p>
+                  <p className={styles.mutedText}>{createDeferredToV0_2Note('记忆维护动作')}</p>
                   <div className={styles.actionRow}>
-                    <button className={styles.primaryButton} disabled title={UNSUPPORTED_V0_2_TITLE} type="button">
+                    <button className={styles.primaryButton} disabled title={DEFERRED_TO_V0_2_TITLE} type="button">
                       Pin
                     </button>
-                    <button className={styles.secondaryButton} disabled title={UNSUPPORTED_V0_2_TITLE} type="button">
+                    <button className={styles.secondaryButton} disabled title={DEFERRED_TO_V0_2_TITLE} type="button">
                       Edit
                     </button>
-                    <button className={styles.ghostButton} disabled title={UNSUPPORTED_V0_2_TITLE} type="button">
+                    <button className={styles.ghostButton} disabled title={DEFERRED_TO_V0_2_TITLE} type="button">
                       Supersede
                     </button>
                   </div>

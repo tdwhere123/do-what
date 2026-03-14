@@ -62,7 +62,13 @@
 
 ---
 
+## 完成记录（2026-03-14）
+
+- Empty 次动作 `浏览历史` 已改为 disabled 的 `v0.2` 诚实占位，并补充统一 tooltip / copy。
+- Inspector 中未接通的治理与记忆维护动作继续保留为 disabled，可见但不会再触发误导性命令。
+- 占位口径已收口到共享常量，避免多个页面继续漂移。
+
 ## 完成后更新
 
-- [ ] `closure-overview.md` 中 C012 状态改为“已完成”
-- [ ] `AGENTS.md` 中收口任务进度同步
+- [x] `closure-overview.md` 中 C012 状态改为“已完成”
+- [x] `AGENTS.md` 中收口任务进度同步

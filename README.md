@@ -12,7 +12,7 @@
 ## 当前代码库实际做成了什么
 
 - `packages/core` 实现了 Core HTTP/SSE 服务、SQLite 事件日志、HotState 聚合、UI 查询面、审批队列、worktree 生命周期和集成治理相关逻辑。
-- `packages/app` 实现了 Electron + React 工作台，包含 workbench、timeline、inspector、settings、乐观消息 tail、ack overlay 和与 Core 对接的 HTTP/SSE 客户端。
+- `packages/app` 实现了 Electron + React 工作台，包含 workspace-first 的 workbench 主路径、timeline、inspector、五域 Settings、乐观消息 tail、ack overlay 和与 Core 对接的 HTTP/SSE 客户端。
 - `packages/protocol` 提供协议、事件、UI 合同、治理与 Soul 相关 Zod schema。
 - `packages/soul` 实现了独立的 `soul.db`、memory search、pointer open/healing、proposal/review、memory_repo Git 持久化等能力。
 - `packages/engines/claude` 与 `packages/engines/codex` 提供适配器和测试，但当前仓库里的 Core 进程不会自动拉起这两个适配器。
@@ -23,6 +23,7 @@
 | --- | --- | --- |
 | Settings 不持久化 | 设置只保存在进程内快照，重启后恢复默认值 | v0.2 |
 | 引擎需手动接入 | Create Run 会创建 RunMachine，但 Core 不会自动拉起 Claude/Codex 适配器 | v0.2 |
+| 历史浏览仍为占位 | Empty 次动作 `浏览历史` 目前保留为 disabled 的诚实占位，不会触发假提交 | v0.2 |
 | 部分 Inspector 操作不可用 | `memory pin/edit/supersede`、`drift resolution`、`integration gate decision` 当前仅保留可见 disabled 入口 | v0.2 |
 
 ## 仓库结构
