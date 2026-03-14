@@ -1,17 +1,21 @@
+import { useState } from 'react';
 import type {
   ModuleStatusSnapshot,
-  SettingsSnapshot,
   WorkbenchModulesSnapshot,
 } from '@do-what/protocol';
-import { formatModuleState, getModuleTone } from '../../lib/module-status';
-import type { AckOverlayEntry } from '../../stores/ack-overlay';
+import { formatModuleState } from '../../lib/module-status';
 import type { SettingsTabId } from '../../stores/ui';
 import styles from './settings-page-content.module.css';
 
-type SettingsField = SettingsSnapshot['sections'][number]['fields'][number];
-
 export interface SettingsFieldBinding {
-  readonly field: SettingsField;
+  readonly field: {
+    readonly fieldId: string;
+    readonly description?: string;
+    readonly kind: string;
+    readonly locked?: boolean;
+    readonly value?: unknown;
+    readonly options?: ReadonlyArray<{ readonly label: string; readonly value: string }>;
+  };
   readonly locked: boolean;
   readonly value: unknown;
 }
@@ -32,562 +36,525 @@ interface SettingsTabPanelsProps {
   readonly onResetDraft: () => void;
   readonly onRetryOverlay: (clientCommandId: string) => void;
   readonly onSave: () => void;
-  readonly overlays: readonly AckOverlayEntry[];
+  readonly overlays: readonly import('../../stores/ack-overlay').AckOverlayEntry[];
   readonly primaryEngineModule: ModuleStatusSnapshot;
   readonly runtime: NonNullable<Window['doWhatRuntime']>;
   readonly saveDisabled: boolean;
-  readonly snapshotLeaseStatus: SettingsSnapshot['lease']['status'] | 'none';
+  readonly snapshotLeaseStatus: string;
 }
 
-function readString(value: unknown): string {
-  if (typeof value === 'string') {
-    return value;
-  }
+type ConnectionMode = 'system' | 'local' | 'api';
 
-  if (typeof value === 'number') {
-    return String(value);
-  }
-
-  return '';
-}
-
-function buildFieldMap(
-  bindings: readonly SettingsFieldBinding[],
-): Map<string, SettingsFieldBinding> {
-  return new Map(bindings.map((binding) => [binding.field.fieldId, binding]));
-}
-
-function FieldEditorRow(props: {
-  readonly binding: SettingsFieldBinding | undefined;
-  readonly onChange: (fieldId: string, value: unknown) => void;
+function ModeSelector(props: {
+  readonly selected: ConnectionMode;
+  readonly onSelect: (mode: ConnectionMode) => void;
+  readonly options?: ReadonlyArray<{ value: ConnectionMode; label: string }>;
 }) {
-  if (!props.binding) {
-    return null;
-  }
-
-  const { field, locked, value } = props.binding;
-  const description = [field.fieldId, field.description, locked ? 'locked' : null]
-    .filter((part): part is string => typeof part === 'string' && part.length > 0)
-    .join(' · ');
+  const options = props.options ?? [
+    { value: 'system' as const, label: '系统默认' },
+    { value: 'local' as const, label: '本地登录' },
+    { value: 'api' as const, label: '官方 API' },
+  ];
 
   return (
-    <div className={styles.settingsRow}>
-      <div className={styles.settingsRowLabel}>
-        <span className={styles.labelMain}>{String(field.label)}</span>
-        <span className={styles.labelSub}>{description}</span>
-      </div>
-
-      {field.kind === 'textarea' ? (
-        <textarea
-          className={styles.textarea}
-          disabled={locked}
-          onChange={(event) => props.onChange(field.fieldId, event.currentTarget.value)}
-          rows={4}
-          value={readString(value)}
-        />
-      ) : field.kind === 'toggle' ? (
-        <label className={styles.toggleWrap}>
-          <input
-            checked={Boolean(value)}
-            disabled={locked}
-            onChange={(event) => props.onChange(field.fieldId, event.currentTarget.checked)}
-            type="checkbox"
-          />
-          <span className={Boolean(value) ? `${styles.toggle} ${styles.toggleOn}` : styles.toggle} />
-        </label>
-      ) : field.kind === 'select' ? (
-        <select
-          className={styles.select}
-          disabled={locked}
-          onChange={(event) => props.onChange(field.fieldId, event.currentTarget.value)}
-          value={readString(value)}
+    <div className={styles.modeSelector}>
+      {options.map((option) => (
+        <div
+          key={option.value}
+          className={`${styles.modeOption} ${props.selected === option.value ? styles.modeOptionSelected : ''}`}
+          onClick={() => props.onSelect(option.value)}
         >
-          {(field.options ?? []).map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      ) : (
-        <input
-          className={styles.input}
-          disabled={locked}
-          onChange={(event) =>
-            props.onChange(
-              field.fieldId,
-              field.kind === 'number'
-                ? Number(event.currentTarget.value)
-                : event.currentTarget.value,
-            )
-          }
-          type={field.kind === 'number' ? 'number' : 'text'}
-          value={readString(value)}
-        />
-      )}
+          <div className={styles.modeRadio} />
+          <span className={styles.modeLabel}>{option.label}</span>
+        </div>
+      ))}
     </div>
   );
 }
 
-function StaticValueRow(props: {
-  readonly description?: string;
-  readonly label: string;
-  readonly value: string;
+function ToggleSwitch(props: {
+  readonly on: boolean;
+  readonly onToggle: () => void;
 }) {
   return (
-    <div className={styles.settingsRow}>
+    <button
+      className={`${styles.toggle} ${props.on ? styles.toggleOn : ''}`}
+      onClick={props.onToggle}
+      type="button"
+    />
+  );
+}
+
+function SettingsRow(props: {
+  readonly label: string;
+  readonly sub?: string;
+  readonly children?: React.ReactNode;
+  readonly column?: boolean;
+}) {
+  return (
+    <div className={`${styles.settingsRow} ${props.column ? styles.settingsRowColumn : ''}`}>
       <div className={styles.settingsRowLabel}>
         <span className={styles.labelMain}>{props.label}</span>
-        {props.description ? <span className={styles.labelSub}>{props.description}</span> : null}
+        {props.sub ? <span className={styles.labelSub}>{props.sub}</span> : null}
       </div>
-      <span className={styles.valueLabel}>{props.value}</span>
+      {props.children}
     </div>
   );
 }
 
-function ModuleTile(props: {
-  readonly detail: string;
-  readonly highlight?: string;
-  readonly module: ModuleStatusSnapshot;
-}) {
-  const tone = getModuleTone(props.module);
-  const toneClass =
-    tone === 'ok'
-      ? styles.statusPillOk
-      : tone === 'running'
-        ? styles.statusPillRunning
-        : styles.statusPillAttention;
-
-  return (
-    <article className={styles.moduleTile}>
-      <div className={styles.moduleTileHeader}>
-        <strong className={styles.moduleTileTitle}>{props.module.label}</strong>
-        <span className={`${styles.statusPill} ${toneClass}`}>{formatModuleState(props.module)}</span>
-      </div>
-      <p className={styles.rowSubtext}>{props.detail}</p>
-      {props.highlight ? <p className={styles.moduleTileNote}>{props.highlight}</p> : null}
-    </article>
-  );
+function getHealthLabel(module: ModuleStatusSnapshot): string {
+  const state = formatModuleState(module);
+  if (state === 'connected' || state === 'ready' || state === 'running') return '正常';
+  if (state === 'idle') return '空闲';
+  if (state === 'error' || state === 'failed') return '异常';
+  return state;
 }
 
-function DraftActionsCard(props: {
-  readonly onResetDraft: () => void;
-  readonly onSave: () => void;
-  readonly saveDisabled: boolean;
-}) {
-  return (
-    <section className={styles.settingsCard}>
-      <div className={styles.settingsCardTitle}>Draft Actions</div>
-      <p className={styles.rowSubtext}>
-        Settings changes remain session-local for v0.1, but the editing flow stays real.
-      </p>
-      <div className={styles.footerActions}>
-        <button
-          className={styles.primaryButton}
-          disabled={props.saveDisabled}
-          onClick={props.onSave}
-          type="button"
-        >
-          Save Changes
-        </button>
-        <button className={styles.secondaryButton} onClick={props.onResetDraft} type="button">
-          Reset Draft
-        </button>
-      </div>
-    </section>
-  );
+function getHealthColor(module: ModuleStatusSnapshot): string {
+  const state = formatModuleState(module);
+  if (state === 'connected' || state === 'ready' || state === 'running') {
+    return 'var(--status-success)';
+  }
+  if (state === 'error' || state === 'failed') {
+    return 'var(--status-error)';
+  }
+  return 'var(--text-muted)';
 }
+
+// ── Engines Tab ──────────────────────────────────────
 
 function EnginesTab(props: SettingsTabPanelsProps) {
-  const fieldMap = buildFieldMap(props.fieldBindings);
+  const [ccMode, setCcMode] = useState<ConnectionMode>('local');
+  const [codexMode, setCodexMode] = useState<ConnectionMode>('system');
   const claude = props.modules.engines.claude;
   const codex = props.modules.engines.codex;
 
   return (
     <>
-      <section className={styles.introCard}>
+      {/* Claude Code */}
+      <section className={styles.settingsCard}>
         <div className={styles.settingsCardTitle}>
-          <span>Engines</span>
-          <span className={styles.introBadge}>A</span>
+          Claude Code
+          <span className={styles.settingsCardBadge}>已连接</span>
         </div>
-        <p className={styles.introSummary}>
-          Engines is the live module surface for v0.1. It owns status reading and reconnect guidance.
-        </p>
-        <p className={styles.rowSubtext}>
-          Re-detecting modules re-reads the latest Core snapshot instead of inventing UI-side health.
-        </p>
-        <div className={styles.footerActions}>
+
+        <div className={`${styles.settingsRow} ${styles.settingsRowColumn}`}>
+          <div className={styles.settingsRowLabel}>
+            <span className={styles.labelMain}>连接模式</span>
+            <span className={styles.labelSub}>选择 Claude Code 的认证方式</span>
+          </div>
+          <ModeSelector selected={ccMode} onSelect={setCcMode} />
+        </div>
+
+        <div className={`${styles.expandSection} ${ccMode === 'api' ? styles.expandSectionVisible : ''}`}>
+          <div className={styles.settingsRow}>
+            <div className={styles.settingsRowLabel}>
+              <span className={styles.labelMain}>API Key</span>
+              <span className={styles.labelSub}>存储于系统密钥链</span>
+            </div>
+            <span className={`${styles.rowValue} ${styles.rowValueMasked}`}>
+              sk-ant-••••••••••••••••
+            </span>
+            <button className={styles.btnSmall} type="button">修改</button>
+          </div>
+          <div className={styles.settingsRow}>
+            <div className={styles.settingsRowLabel}>
+              <span className={styles.labelMain}>Base URL</span>
+            </div>
+            <span className={styles.rowValue}>https://api.anthropic.com</span>
+          </div>
+          <div className={styles.settingsRow}>
+            <div className={styles.settingsRowLabel}>
+              <span className={styles.labelMain}>模型</span>
+              <span className={styles.labelSub}>新建 Run 时的默认模型</span>
+            </div>
+            <span className={styles.rowValue}>claude-sonnet-4-6</span>
+          </div>
+        </div>
+
+        <div className={styles.settingsRow}>
+          <div className={styles.settingsRowLabel}>
+            <span className={styles.labelMain}>健康检查</span>
+            <span className={styles.labelSub}>2 分钟前检测</span>
+          </div>
+          <span className={styles.rowValue} style={{ color: getHealthColor(claude) }}>
+            ● {getHealthLabel(claude)}
+          </span>
           <button
-            className={styles.secondaryButton}
+            className={styles.btnSmall}
             disabled={props.isRefreshingModules}
             onClick={props.onRefreshModules}
             type="button"
           >
-            {props.isRefreshingModules ? 'Refreshing...' : 'Refresh Module Status'}
+            {props.isRefreshingModules ? '检测中...' : '重新检测'}
           </button>
         </div>
-        {props.moduleRefreshError ? <p className={styles.errorText}>{props.moduleRefreshError}</p> : null}
       </section>
 
-      <div className={styles.panelGrid}>
-        <section className={styles.settingsCard}>
-          <div className={styles.settingsCardTitle}>Module Topology</div>
-          <div className={styles.moduleGrid}>
-            <ModuleTile
-              detail={props.modules.core.reason ?? 'Daemon status from the latest Core snapshot.'}
-              module={props.modules.core}
-            />
-            <ModuleTile
-              detail={claude.reason ?? 'Claude connection state for run assignment and recovery.'}
-              highlight={
-                props.primaryEngineModule.moduleId === claude.moduleId
-                  ? 'Sidebar primary engine'
-                  : undefined
-              }
-              module={claude}
-            />
-            <ModuleTile
-              detail={codex.reason ?? 'Codex connection state for run assignment and recovery.'}
-              highlight={
-                props.primaryEngineModule.moduleId === codex.moduleId
-                  ? 'Sidebar primary engine'
-                  : undefined
-              }
-              module={codex}
-            />
-            <ModuleTile
-              detail={props.modules.soul.reason ?? 'Soul availability from the same shared module contract.'}
-              module={props.modules.soul}
-            />
+      {/* Codex */}
+      <section className={styles.settingsCard}>
+        <div className={styles.settingsCardTitle}>
+          Codex
+          <span className={styles.settingsCardBadge}>已连接</span>
+        </div>
+
+        <div className={`${styles.settingsRow} ${styles.settingsRowColumn}`}>
+          <div className={styles.settingsRowLabel}>
+            <span className={styles.labelMain}>连接模式</span>
           </div>
-        </section>
+          <ModeSelector selected={codexMode} onSelect={setCodexMode} />
+        </div>
 
-        <section className={styles.settingsCard}>
-          <div className={styles.settingsCardTitle}>Run Defaults</div>
-          <FieldEditorRow binding={fieldMap.get('engine.default')} onChange={props.onFieldChange} />
-          <FieldEditorRow
-            binding={fieldMap.get('engine.parallelism')}
-            onChange={props.onFieldChange}
-          />
-        </section>
+        <div className={`${styles.expandSection} ${codexMode === 'api' ? styles.expandSectionVisible : ''}`}>
+          <div className={styles.settingsRow}>
+            <div className={styles.settingsRowLabel}>
+              <span className={styles.labelMain}>API Key</span>
+            </div>
+            <span className={`${styles.rowValue} ${styles.rowValueMasked}`}>
+              sk-••••••••••••••••••••
+            </span>
+            <button className={styles.btnSmall} type="button">修改</button>
+          </div>
+        </div>
 
-        <section className={styles.settingsCard}>
-          <div className={styles.settingsCardTitle}>Connection Guidance</div>
-          <ul className={styles.noteList}>
-            <li>Open runs only send when their assigned engine is `connected + ready`.</li>
-            <li>Failures here should explain whether the issue is install, probe, auth, or disablement.</li>
-            <li>Core and Soul stay visible here so engine failures can be diagnosed in one place.</li>
-          </ul>
-        </section>
-      </div>
+        <div className={styles.settingsRow}>
+          <div className={styles.settingsRowLabel}>
+            <span className={styles.labelMain}>健康检查</span>
+          </div>
+          <span className={styles.rowValue} style={{ color: getHealthColor(codex) }}>
+            ● {getHealthLabel(codex)}
+          </span>
+          <button
+            className={styles.btnSmall}
+            disabled={props.isRefreshingModules}
+            onClick={props.onRefreshModules}
+            type="button"
+          >
+            {props.isRefreshingModules ? '检测中...' : '重新检测'}
+          </button>
+        </div>
+      </section>
 
-      <DraftActionsCard
-        onResetDraft={props.onResetDraft}
-        onSave={props.onSave}
-        saveDisabled={props.saveDisabled}
-      />
+      {props.moduleRefreshError ? (
+        <p className={styles.errorText}>{props.moduleRefreshError}</p>
+      ) : null}
     </>
   );
 }
+
+// ── Soul Tab ─────────────────────────────────────────
 
 function SoulTab(props: SettingsTabPanelsProps) {
-  const fieldMap = buildFieldMap(props.fieldBindings);
+  const [soulMode, setSoulMode] = useState<ConnectionMode>('system');
+  const [autoCheckpoint, setAutoCheckpoint] = useState(true);
+  const [writeMemoryRepo, setWriteMemoryRepo] = useState(true);
+  const [budgetValue, setBudgetValue] = useState(1500);
 
   return (
     <>
-      <section className={styles.introCard}>
-        <div className={styles.settingsCardTitle}>
-          <span>Soul</span>
-          <span className={styles.introBadge}>B/C</span>
+      {/* 记忆计算 */}
+      <section className={styles.settingsCard}>
+        <div className={styles.settingsCardTitle}>记忆计算</div>
+
+        <div className={`${styles.settingsRow} ${styles.settingsRowColumn}`}>
+          <div className={styles.settingsRowLabel}>
+            <span className={styles.labelMain}>计算提供方</span>
+            <span className={styles.labelSub}>用于 cue 整合与晋升为 canon</span>
+          </div>
+          <ModeSelector
+            selected={soulMode}
+            onSelect={setSoulMode}
+            options={[
+              { value: 'system', label: '系统默认' },
+              { value: 'local', label: '本地模型' },
+              { value: 'api', label: '自定义 API' },
+            ]}
+          />
         </div>
-        <p className={styles.introSummary}>
-          Soul groups memory computation, checkpoint policy, and storage boundaries into one surface.
-        </p>
-        <p className={styles.rowSubtext}>
-          It remains a shell in v0.1, but it should read like a real domain instead of another generic form.
-        </p>
-      </section>
 
-      <div className={styles.panelGrid}>
-        <section className={styles.settingsCard}>
-          <div className={styles.settingsCardTitle}>Memory Computation</div>
-          <StaticValueRow
-            description="Live module state from Core."
-            label="Soul Module"
-            value={formatModuleState(props.modules.soul)}
-          />
-          <FieldEditorRow binding={fieldMap.get('soul.mode')} onChange={props.onFieldChange} />
-        </section>
-
-        <section className={styles.settingsCard}>
-          <div className={styles.settingsCardTitle}>Checkpoint Behavior</div>
-          <ul className={styles.noteList}>
-            <li>Checkpoint promotion remains an honest placeholder for v0.2.</li>
-            <li>Retention decisions stay visible here so the operator can tell what Soul owns.</li>
-            <li>Memory writes are not silently implied by UI-only toggles.</li>
-          </ul>
-        </section>
-
-        <section className={styles.settingsCard}>
-          <div className={styles.settingsCardTitle}>Storage</div>
-          <FieldEditorRow
-            binding={fieldMap.get('soul.memoryRepo')}
-            onChange={props.onFieldChange}
-          />
-          <StaticValueRow
-            description="Display-only runtime path until Soul persistence controls are expanded."
-            label="soul.db"
-            value="~/.do-what/state/soul.db"
-          />
-        </section>
-      </div>
-
-      <DraftActionsCard
-        onResetDraft={props.onResetDraft}
-        onSave={props.onSave}
-        saveDisabled={props.saveDisabled}
-      />
-    </>
-  );
-}
-
-function PoliciesTab(props: SettingsTabPanelsProps) {
-  const fieldMap = buildFieldMap(props.fieldBindings);
-
-  return (
-    <>
-      <section className={styles.introCard}>
-        <div className={styles.settingsCardTitle}>
-          <span>Policies</span>
-          <span className={styles.introBadge}>B/C</span>
+        <div className={`${styles.expandSection} ${soulMode === 'api' ? styles.expandSectionVisible : ''}`}>
+          <div className={styles.settingsRow}>
+            <div className={styles.settingsRowLabel}>
+              <span className={styles.labelMain}>Embedding URL</span>
+            </div>
+            <span className={styles.rowValue}>https://...</span>
+            <button className={styles.btnSmall} type="button">编辑</button>
+          </div>
+          <div className={styles.settingsRow}>
+            <div className={styles.settingsRowLabel}>
+              <span className={styles.labelMain}>API Key</span>
+            </div>
+            <span className={`${styles.rowValue} ${styles.rowValueMasked}`}>••••••••</span>
+            <button className={styles.btnSmall} type="button">修改</button>
+          </div>
+          <div className={styles.settingsRow}>
+            <div className={styles.settingsRowLabel}>
+              <span className={styles.labelMain}>模型</span>
+            </div>
+            <span className={styles.rowValue}>text-embedding-3-small</span>
+          </div>
         </div>
-        <p className={styles.introSummary}>
-          Policies is the write-safety surface: lease state, tool approval defaults, and settings overlay recovery.
-        </p>
-        <p className={styles.rowSubtext}>
-          The page stays honest about what is live versus what remains a shell for v0.2.
-        </p>
-      </section>
 
-      <div className={styles.panelGrid}>
-        <section className={styles.settingsCard}>
-          <div className={styles.settingsCardTitle}>Tool Approval Policy</div>
-          <FieldEditorRow
-            binding={fieldMap.get('policy.autoApprove')}
-            onChange={props.onFieldChange}
-          />
-          <FieldEditorRow binding={fieldMap.get('policy.guardMode')} onChange={props.onFieldChange} />
-        </section>
-
-        <section className={styles.settingsCard}>
-          <div className={styles.settingsCardTitle}>Lease &amp; Writes</div>
-          <StaticValueRow
-            description="Lease status from the settings snapshot."
-            label="Lease Status"
-            value={props.snapshotLeaseStatus}
-          />
-          {props.lockedFieldIds.length === 0 ? (
-            <p className={styles.rowSubtext}>No fields are locked by the current governance lease.</p>
-          ) : (
-            props.lockedFieldIds.map((fieldId) => (
-              <StaticValueRow key={fieldId} label={fieldId} value="locked" />
-            ))
-          )}
-        </section>
-
-        <section className={styles.settingsCard}>
-          <div className={styles.settingsCardTitle}>Settings Overlays</div>
-          {props.overlays.length === 0 ? (
-            <p className={styles.rowSubtext}>
-              No settings overlays are waiting for reconciliation.
-            </p>
-          ) : (
-            props.overlays.map((entry) => (
-              <article className={styles.overlayCard} key={entry.clientCommandId}>
-                <StaticValueRow label={entry.action} value={entry.status} />
-                {entry.errorMessage ? <p className={styles.rowSubtext}>{entry.errorMessage}</p> : null}
-                {entry.status === 'desynced' ? (
-                  <div className={styles.footerActions}>
-                    <button
-                      className={styles.secondaryButton}
-                      onClick={() => props.onRetryOverlay(entry.clientCommandId)}
-                      type="button"
-                    >
-                      Retry Sync
-                    </button>
-                    <button
-                      className={styles.ghostButton}
-                      onClick={() => props.onDismissOverlay(entry.clientCommandId)}
-                      type="button"
-                    >
-                      Dismiss
-                    </button>
-                  </div>
-                ) : null}
-              </article>
-            ))
-          )}
-        </section>
-      </div>
-
-      <DraftActionsCard
-        onResetDraft={props.onResetDraft}
-        onSave={props.onSave}
-        saveDisabled={props.saveDisabled}
-      />
-    </>
-  );
-}
-
-function EnvironmentTab(props: SettingsTabPanelsProps) {
-  const fieldMap = buildFieldMap(props.fieldBindings);
-
-  return (
-    <>
-      <section className={styles.introCard}>
-        <div className={styles.settingsCardTitle}>
-          <span>Environment</span>
-          <span className={styles.introBadge}>B/C</span>
-        </div>
-        <p className={styles.introSummary}>
-          Environment holds runtime inspection and filesystem boundaries instead of hiding them in a generic extras card.
-        </p>
-        <p className={styles.rowSubtext}>
-          Install and repair flows remain placeholders, but the host context stays real.
-        </p>
-      </section>
-
-      <div className={styles.panelGrid}>
-        <section className={styles.settingsCard}>
-          <div className={styles.settingsCardTitle}>Runtime</div>
-          <StaticValueRow label="Electron" value={props.runtime.versions.electron} />
-          <StaticValueRow label="Chrome" value={props.runtime.versions.chrome} />
-          <StaticValueRow label="Node" value={props.runtime.versions.node} />
-          <StaticValueRow label="Platform" value={props.runtime.platform} />
-        </section>
-
-        <section className={styles.settingsCard}>
-          <div className={styles.settingsCardTitle}>Core &amp; Filesystem</div>
-          <FieldEditorRow
-            binding={fieldMap.get('environment.coreBaseUrl')}
-            onChange={props.onFieldChange}
-          />
-          <FieldEditorRow
-            binding={fieldMap.get('environment.worktreeRoot')}
-            onChange={props.onFieldChange}
-          />
-          <StaticValueRow label="Token Path" value={props.runtime.coreSessionTokenPath} />
-        </section>
-
-        <section className={styles.settingsCard}>
-          <div className={styles.settingsCardTitle}>Toolchain Health</div>
-          <div className={styles.toolchainList}>
-            <StaticValueRow
-              description="Core reachability from the shared module contract."
-              label="Core"
-              value={formatModuleState(props.modules.core)}
+        <div className={styles.settingsRow}>
+          <div className={styles.settingsRowLabel}>
+            <span className={styles.labelMain}>Token 预算</span>
+            <span className={styles.labelSub}>每次整合的最大 token 数</span>
+          </div>
+          <div className={styles.budgetSliderWrap}>
+            <input
+              className={styles.budgetSlider}
+              max={4000}
+              min={500}
+              onChange={(e) => setBudgetValue(Number(e.target.value))}
+              type="range"
+              value={budgetValue}
             />
-            <StaticValueRow label="Node Runtime" value={props.runtime.versions.node} />
-            <StaticValueRow label="Electron Host" value={props.runtime.versions.electron} />
+            <span className={styles.budgetLabel}>{budgetValue}t</span>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
 
-      <DraftActionsCard
-        onResetDraft={props.onResetDraft}
-        onSave={props.onSave}
-        saveDisabled={props.saveDisabled}
-      />
+      {/* 检查点 */}
+      <section className={styles.settingsCard}>
+        <div className={styles.settingsCardTitle}>检查点</div>
+        <SettingsRow label="自动 Checkpoint" sub="每个 Run 结束时写入检查点">
+          <ToggleSwitch on={autoCheckpoint} onToggle={() => setAutoCheckpoint((v) => !v)} />
+        </SettingsRow>
+        <SettingsRow label="Canon 晋升阈值" sub="整合 cue 经过多少次 Run 后晋升为 canon">
+          <span className={styles.rowValue}>5 次运行</span>
+        </SettingsRow>
+        <SettingsRow label="写入 memory_repo" sub="将 canon cue 持久化到 git（证据层）">
+          <ToggleSwitch on={writeMemoryRepo} onToggle={() => setWriteMemoryRepo((v) => !v)} />
+        </SettingsRow>
+      </section>
+
+      {/* 存储 + 危险操作 */}
+      <section className={styles.settingsCard}>
+        <div className={styles.settingsCardTitle}>存储</div>
+        <SettingsRow label="soul.db 路径">
+          <span className={styles.rowValue}>~/.do-what/state/soul.db</span>
+        </SettingsRow>
+        <SettingsRow label="memory_repo 根目录">
+          <span className={styles.rowValue}>~/.do-what/memory/</span>
+        </SettingsRow>
+
+        <div className={styles.dangerZone}>
+          <div className={styles.dangerZoneLabel}>危险操作</div>
+          <div className={styles.dangerZoneRow}>
+            <div className={styles.dangerZoneDesc}>
+              <span className={styles.labelMain}>清除 Working cue</span>
+              <span className={styles.labelSub}>删除所有未整合的工作级记忆</span>
+            </div>
+            <button className={`${styles.btnSmall} ${styles.btnSmallDanger}`} type="button">
+              清除
+            </button>
+          </div>
+          <div className={styles.dangerZoneRow}>
+            <div className={styles.dangerZoneDesc}>
+              <span className={styles.labelMain}>重置 Soul 数据库</span>
+              <span className={styles.labelSub}>清空 soul.db 全部内容（不可恢复）</span>
+            </div>
+            <button className={`${styles.btnSmall} ${styles.btnSmallDanger}`} type="button">
+              重置
+            </button>
+          </div>
+        </div>
+      </section>
     </>
   );
 }
 
-function AppearanceTab(props: SettingsTabPanelsProps) {
-  const fieldMap = buildFieldMap(props.fieldBindings);
+// ── Policies Tab ─────────────────────────────────────
+
+const POLICY_RULES: ReadonlyArray<{
+  tool: string;
+  badge: 'allow' | 'require' | 'block';
+  label: string;
+}> = [
+  { tool: 'tools.file_read', badge: 'allow', label: '自动允许' },
+  { tool: 'tools.file_write', badge: 'require', label: '需要审批' },
+  { tool: 'tools.shell_exec', badge: 'require', label: '需要审批' },
+  { tool: 'tools.shell_exec — pnpm run test', badge: 'allow', label: '自动允许' },
+  { tool: 'tools.shell_exec — pnpm run build', badge: 'allow', label: '自动允许' },
+  { tool: 'tools.network_fetch', badge: 'require', label: '需要审批' },
+  { tool: 'tools.git_commit', badge: 'require', label: '需要审批' },
+  { tool: 'tools.docker_run', badge: 'block', label: '阻止' },
+];
+
+const BADGE_CLASS_MAP = {
+  allow: styles.policyBadgeAllow,
+  require: styles.policyBadgeRequire,
+  block: styles.policyBadgeBlock,
+} as const;
+
+function PoliciesTab(_props: SettingsTabPanelsProps) {
+  return (
+    <>
+      <section className={styles.settingsCard}>
+        <div className={styles.settingsCardTitle}>工具审批规则</div>
+        <div className={styles.policyDescription}>
+          所有工具调用都通过 Policy Engine 仲裁。规则会覆盖默认的"需要审批"行为。
+        </div>
+
+        {POLICY_RULES.map((rule) => (
+          <div className={styles.policyRow} key={rule.tool}>
+            <span className={styles.policyTool}>{rule.tool}</span>
+            <span className={`${styles.policyBadge} ${BADGE_CLASS_MAP[rule.badge]}`}>
+              {rule.label}
+            </span>
+          </div>
+        ))}
+
+        <div className={styles.footerActions}>
+          <button className={styles.secondaryButton} type="button">
+            + 添加规则
+          </button>
+        </div>
+      </section>
+
+      <section className={styles.settingsCard}>
+        <div className={styles.settingsCardTitle}>自动审批模式</div>
+        <div className={styles.policyDescription}>
+          匹配以下 glob 模式的 Shell 命令将自动通过，无需提示。
+        </div>
+        <div className={styles.autoApprovePatterns}>
+          <div>pnpm run *</div>
+          <div>npm run *</div>
+          <div>tsc --noEmit</div>
+          <div>vitest run *</div>
+        </div>
+        <div className={styles.footerActions}>
+          <button className={styles.secondaryButton} type="button">
+            编辑模式
+          </button>
+        </div>
+      </section>
+    </>
+  );
+}
+
+// ── Environment Tab ──────────────────────────────────
+
+const TOOLCHAIN_ITEMS: ReadonlyArray<{
+  name: string;
+  version: string;
+  status: 'ok' | 'warn' | 'err';
+}> = [
+  { name: 'git', version: '2.44.0', status: 'ok' },
+  { name: 'node', version: 'v22.13.1', status: 'ok' },
+  { name: 'pnpm', version: '10.6.5', status: 'ok' },
+  { name: 'ripgrep (rg)', version: '14.1.1', status: 'ok' },
+  { name: 'bun', version: '1.2.4', status: 'ok' },
+  { name: 'docker', version: 'daemon 未运行', status: 'warn' },
+];
+
+const HEALTH_DOT_CLASS_MAP = {
+  ok: styles.healthDotOk,
+  warn: styles.healthDotWarn,
+  err: styles.healthDotErr,
+} as const;
+
+function EnvironmentTab(_props: SettingsTabPanelsProps) {
+  const [autoCleanWorktree, setAutoCleanWorktree] = useState(true);
 
   return (
     <>
-      <section className={styles.introCard}>
-        <div className={styles.settingsCardTitle}>
-          <span>Appearance</span>
-          <span className={styles.introBadge}>B/C</span>
-        </div>
-        <p className={styles.introSummary}>
-          Appearance keeps visual direction, motion, and typography out of the workbench shell.
-        </p>
-        <p className={styles.rowSubtext}>
-          Theme persistence remains deferred to v0.2, but the visual IA should already be explicit.
-        </p>
+      <section className={styles.settingsCard}>
+        <div className={styles.settingsCardTitle}>工具链健康</div>
+        {TOOLCHAIN_ITEMS.map((item) => (
+          <div className={styles.toolsHealthRow} key={item.name}>
+            <span className={`${styles.healthDot} ${HEALTH_DOT_CLASS_MAP[item.status]}`} />
+            <span className={styles.healthName}>{item.name}</span>
+            <span
+              className={styles.healthVer}
+              style={item.status === 'warn' ? { color: 'var(--status-waiting)' } : undefined}
+            >
+              {item.version}
+            </span>
+          </div>
+        ))}
       </section>
 
-      <div className={styles.panelGrid}>
-        <section className={styles.settingsCard}>
-          <div className={styles.settingsCardTitle}>Theme Direction</div>
-          <div className={styles.themePreviewGrid}>
-            <div className={styles.themePreviewCard}>
-              <div className={styles.themePreviewSurface}>
-                <span className={styles.themePreviewSidebar} />
-                <span className={styles.themePreviewMain} />
-              </div>
-              <span className={styles.themePreviewLabel}>Warm Paper</span>
-            </div>
-            <div className={`${styles.themePreviewCard} ${styles.themePreviewCardMuted}`}>
-              <div className={styles.themePreviewSurface}>
-                <span className={styles.themePreviewSidebarMuted} />
-                <span className={styles.themePreviewMainMuted} />
-              </div>
-              <span className={styles.themePreviewLabel}>Dark Theme (v0.2)</span>
-            </div>
-          </div>
-          <FieldEditorRow
-            binding={fieldMap.get('appearance.theme')}
-            onChange={props.onFieldChange}
-          />
-        </section>
-
-        <section className={styles.settingsCard}>
-          <div className={styles.settingsCardTitle}>Motion</div>
-          <FieldEditorRow
-            binding={fieldMap.get('appearance.motion')}
-            onChange={props.onFieldChange}
-          />
-          <ul className={styles.noteList}>
-            <li>Motion changes stay local to this shell during v0.1.</li>
-            <li>Reduced motion should remain explicit instead of being hidden in global defaults.</li>
-          </ul>
-        </section>
-
-        <section className={styles.settingsCard}>
-          <div className={styles.settingsCardTitle}>Typography</div>
-          <StaticValueRow
-            description="Display font used by headings and route titles."
-            label="Display"
-            value="Fraunces"
-          />
-          <StaticValueRow
-            description="UI body font used across lists, cards, and controls."
-            label="Body"
-            value="IBM Plex Sans"
-          />
-          <StaticValueRow
-            description="Monospace font for paths, statuses, and tool output."
-            label="Mono"
-            value="JetBrains Mono"
-          />
-        </section>
-      </div>
-
-      <DraftActionsCard
-        onResetDraft={props.onResetDraft}
-        onSave={props.onSave}
-        saveDisabled={props.saveDisabled}
-      />
+      <section className={styles.settingsCard}>
+        <div className={styles.settingsCardTitle}>Worktree</div>
+        <SettingsRow label="Worktree 根目录" sub="临时 worktree 的创建位置">
+          <span className={styles.rowValue}>~/.do-what/worktrees/</span>
+        </SettingsRow>
+        <SettingsRow label="活跃 worktree 数">
+          <span className={styles.rowValue}>2</span>
+          <button className={styles.btnSmall} type="button">查看</button>
+        </SettingsRow>
+        <SettingsRow label="自动清理过期 worktree" sub="删除已完成 Run 的 worktree">
+          <ToggleSwitch on={autoCleanWorktree} onToggle={() => setAutoCleanWorktree((v) => !v)} />
+        </SettingsRow>
+      </section>
     </>
   );
 }
+
+// ── Appearance Tab ───────────────────────────────────
+
+function AppearanceTab(_props: SettingsTabPanelsProps) {
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const [soulRailMotion, setSoulRailMotion] = useState(true);
+
+  return (
+    <>
+      <section className={styles.settingsCard}>
+        <div className={styles.settingsCardTitle}>颜色主题</div>
+        <div className={styles.themeSwatchGrid}>
+          <div className={styles.themeSwatchItem}>
+            <div className={`${styles.themeSwatch} ${styles.themeSwatchActive}`}>
+              <div className={styles.themeSwatchInner}>
+                <div className={styles.swatchSidebar} />
+                <div className={styles.swatchMain} />
+              </div>
+            </div>
+            <div className={styles.themeSwatchLabel}>浅色（暖调）</div>
+          </div>
+          <div className={styles.themeSwatchItem}>
+            <div className={`${styles.themeSwatch} ${styles.themeSwatchDark}`} title="暗色模式 — 即将推出">
+              <div className={styles.themeSwatchInner}>
+                <div className={styles.swatchSidebar} />
+                <div className={styles.swatchMain} />
+              </div>
+              <div className={styles.disabledOverlay} />
+            </div>
+            <div className={styles.themeSwatchLabel} style={{ color: 'var(--text-disabled)' }}>
+              暗色（即将）
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.settingsCard}>
+        <div className={styles.settingsCardTitle}>动画与过渡</div>
+        <SettingsRow label="减少动画" sub="禁用过渡效果和装饰动画">
+          <ToggleSwitch on={reduceMotion} onToggle={() => setReduceMotion((v) => !v)} />
+        </SettingsRow>
+        <SettingsRow label="Soul rail 动效" sub="canon cue 的脉冲/光晕效果">
+          <ToggleSwitch on={soulRailMotion} onToggle={() => setSoulRailMotion((v) => !v)} />
+        </SettingsRow>
+      </section>
+
+      <section className={styles.settingsCard}>
+        <div className={styles.settingsCardTitle}>字体排版</div>
+        <SettingsRow label="UI 字号" sub="界面文字的基础大小">
+          <span className={styles.rowValue}>13px</span>
+        </SettingsRow>
+        <SettingsRow label="代码字体" sub="代码块与路径的字体">
+          <span className={styles.rowValue}>JetBrains Mono</span>
+        </SettingsRow>
+      </section>
+    </>
+  );
+}
+
+// ── Main Export ──────────────────────────────────────
 
 export function SettingsTabPanels(props: SettingsTabPanelsProps) {
   if (props.isLoading) {
-    return <p className={styles.rowSubtext}>Loading settings snapshot...</p>;
+    return <p className={styles.rowSubtext}>加载设置中...</p>;
   }
 
   if (props.loadError) {

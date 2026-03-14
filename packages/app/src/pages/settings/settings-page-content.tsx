@@ -19,11 +19,11 @@ import styles from './settings-page-content.module.css';
 const SETTINGS_QUERY_KEY = ['settings-snapshot'];
 
 const TAB_CONFIG: Array<{ id: SettingsTabId; label: string; sectionId: string }> = [
-  { id: 'engines', label: 'Engines', sectionId: 'engine' },
+  { id: 'engines', label: '引擎', sectionId: 'engine' },
   { id: 'soul', label: 'Soul', sectionId: 'soul' },
-  { id: 'policies', label: 'Policies', sectionId: 'policy' },
-  { id: 'environment', label: 'Environment', sectionId: 'environment' },
-  { id: 'appearance', label: 'Appearance', sectionId: 'appearance' },
+  { id: 'policies', label: '策略', sectionId: 'policy' },
+  { id: 'environment', label: '环境', sectionId: 'environment' },
+  { id: 'appearance', label: '外观', sectionId: 'appearance' },
 ];
 
 const FALLBACK_RUNTIME = {
@@ -241,10 +241,12 @@ export function SettingsPageContent() {
     <section className={styles.page}>
       <header className={styles.topbar}>
         <button className={styles.backButton} onClick={() => navigate('/')} type="button">
-          <span className={styles.backChevron}>&lt;</span>
-          Back
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M7 1L3 5L7 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          返回
         </button>
-        <span className={styles.title}>Settings</span>
+        <span className={styles.title}>设置</span>
       </header>
 
       <div className={styles.body}>

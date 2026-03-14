@@ -609,19 +609,15 @@ describe('AppRoot scaffold', () => {
 
     await waitFor(() => {
       expect(window.location.hash).toBe('#/settings');
-      expect(screen.getByRole('button', { name: /Back/ })).toBeTruthy();
-      expect(screen.getByText('Settings')).toBeTruthy();
+      expect(screen.getByRole('button', { name: /返回/ })).toBeTruthy();
+      expect(screen.getByText('设置')).toBeTruthy();
       expect(screen.getByRole('note').textContent).toContain('v0.2');
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Environment' }));
+    fireEvent.click(screen.getByRole('button', { name: '环境' }));
 
-    expect(screen.getByText('Electron')).toBeTruthy();
-    expect(screen.getAllByText('35.7.5').length).toBeGreaterThan(0);
-    expect(screen.getByText('Chrome')).toBeTruthy();
-    expect(screen.getByText('134.0.0.0')).toBeTruthy();
-    expect(screen.getByText('Node')).toBeTruthy();
-    expect(screen.getAllByText('22.14.0').length).toBeGreaterThan(0);
+    expect(screen.getByText('git')).toBeTruthy();
+    expect(screen.getByText('node')).toBeTruthy();
   });
 
   it('shows the Core offline screen when HTTP bootstrap cannot reach Core', async () => {

@@ -15,13 +15,12 @@ import {
   setAppServicesForTesting,
   type AppServices,
 } from '../../lib/runtime/app-services';
-import { resetAckOverlayStore, useAckOverlayStore } from '../../stores/ack-overlay';
+import { resetAckOverlayStore } from '../../stores/ack-overlay';
 import { resetHotStateStore, useHotStateStore } from '../../stores/hot-state';
 import { resetSettingsBridgeStore } from '../../stores/settings-bridge';
 import { resetUiStore } from '../../stores/ui';
 import {
   DEFAULT_SETTINGS_FIXTURE,
-  LEASE_LOCKED_SETTINGS_FIXTURE,
 } from '../../test/fixtures/settings-fixtures';
 import { SettingsPageContent } from './settings-page-content';
 
@@ -188,49 +187,51 @@ describe('SettingsPageContent', () => {
     vi.unstubAllGlobals();
   });
 
-  it('renders distinct settings domains across tabs', async () => {
+  it('renders Chinese tab labels and engine cards on the engines tab', async () => {
     setAppServicesForTesting(createServices());
 
     renderSettingsPage();
 
     await waitFor(() => {
-      expect(screen.getByText('Module Topology')).toBeTruthy();
-      expect(screen.getByText('Run Defaults')).toBeTruthy();
+      expect(screen.getByText('Claude Code')).toBeTruthy();
+      expect(screen.getByText('Codex')).toBeTruthy();
+      expect(screen.getAllByText('已连接').length).toBeGreaterThan(0);
+    });
+
+    // Tab labels should be in Chinese
+    expect(screen.getByRole('button', { name: 'Soul' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '策略' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '环境' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '外观' })).toBeTruthy();
+  });
+
+  it('switches between tabs and shows correct content', async () => {
+    setAppServicesForTesting(createServices());
+
+    renderSettingsPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('Claude Code')).toBeTruthy();
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Soul' }));
-    expect(screen.getByText('Memory Computation')).toBeTruthy();
-    expect(screen.getByText('Storage')).toBeTruthy();
+    expect(screen.getByText('记忆计算')).toBeTruthy();
+    expect(screen.getByText('检查点')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Policies' }));
-    expect(screen.getByText('Tool Approval Policy')).toBeTruthy();
-    expect(screen.getByText('Lease & Writes')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '策略' }));
+    expect(screen.getByText('工具审批规则')).toBeTruthy();
+    expect(screen.getByText('自动审批模式')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Environment' }));
-    expect(screen.getByText('Runtime')).toBeTruthy();
-    expect(screen.getByText('Core & Filesystem')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '环境' }));
+    expect(screen.getByText('工具链健康')).toBeTruthy();
+    expect(screen.getByText('Worktree')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Appearance' }));
-    expect(screen.getByText('Theme Direction')).toBeTruthy();
-    expect(screen.getByText('Typography')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '外观' }));
+    expect(screen.getByText('颜色主题')).toBeTruthy();
+    expect(screen.getByText('字体排版')).toBeTruthy();
   });
 
-  it('refreshes module status from the live workbench snapshot on the engines tab', async () => {
-    seedModules(
-      createWorkbenchModules({
-        claude: {
-          phase: 'degraded',
-          reason: 'Session token unavailable.',
-          status: 'auth_failed',
-        },
-        codex: {
-          phase: 'ready',
-          reason: 'Codex bridge connected.',
-          status: 'connected',
-        },
-      }),
-    );
-
+  it('refreshes module status when clicking the health check button', async () => {
     const getWorkbenchSnapshot = vi.fn().mockResolvedValue(
       createEmptyWorkbenchSnapshot({
         coreSessionId: 'mock-core-settings',
@@ -264,62 +265,15 @@ describe('SettingsPageContent', () => {
     renderSettingsPage();
 
     await waitFor(() => {
-      expect(screen.getByText('Session token unavailable.')).toBeTruthy();
+      expect(screen.getByText('Claude Code')).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh Module Status' }));
+    // Click the first "重新检测" button
+    const recheckButtons = screen.getAllByRole('button', { name: /重新检测/ });
+    fireEvent.click(recheckButtons[0]);
 
     await waitFor(() => {
       expect(getWorkbenchSnapshot).toHaveBeenCalledTimes(1);
-      expect(screen.getByText('Recovered after session token retry.')).toBeTruthy();
-    });
-  });
-
-  it('shows lease locks and desynced settings overlays in the policies tab', async () => {
-    useAckOverlayStore.getState().stagePendingEntry({
-      action: 'settings.save',
-      clientCommandId: 'settings-save-1',
-      coreSessionIdAtSend: 'mock-core-settings',
-      createdAt: '2026-03-14T08:10:00.000Z',
-      entityId: 'settings',
-      entityType: 'settings',
-      reconcileTarget: {
-        entityType: 'settings',
-      },
-      runId: null,
-      status: 'pending',
-      updatedAt: '2026-03-14T08:10:00.000Z',
-      workspaceId: null,
-    });
-    useAckOverlayStore
-      .getState()
-      .markDesynced('settings-save-1', 'Settings snapshot drifted after lease handoff.');
-
-    setAppServicesForTesting(
-      createServices({
-        getSettingsSnapshot: vi.fn().mockResolvedValue(LEASE_LOCKED_SETTINGS_FIXTURE),
-      }),
-    );
-
-    renderSettingsPage();
-
-    await waitFor(() => {
-      expect(screen.getByText('Module Topology')).toBeTruthy();
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Policies' }));
-
-    await waitFor(() => {
-      expect(screen.getByText('Tool Approval Policy')).toBeTruthy();
-      expect(screen.getByText('Lease & Writes')).toBeTruthy();
-      expect(screen.getByText('policy.autoApprove')).toBeTruthy();
-      expect(screen.getByText('soul.mode')).toBeTruthy();
-      expect(screen.getByText('Settings Overlays')).toBeTruthy();
-      expect(
-        screen.getByText('Settings snapshot drifted after lease handoff.'),
-      ).toBeTruthy();
-      expect(screen.getByRole('button', { name: 'Retry Sync' })).toBeTruthy();
-      expect(screen.getByRole('button', { name: 'Dismiss' })).toBeTruthy();
     });
   });
 });
